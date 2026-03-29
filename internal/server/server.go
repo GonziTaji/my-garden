@@ -1,8 +1,6 @@
 package server
 
 import (
-	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -26,7 +24,7 @@ func DefaultConfig() ServerConfig {
 
 		RouterConfig: RouterConfig{
 			WebappFolder: "dist",
-			StaticFolder: "static",
+			StaticFolder: "public",
 		},
 	}
 }
@@ -34,12 +32,6 @@ func DefaultConfig() ServerConfig {
 func StartServer(cfg ServerConfig) error {
 	root, err := os.OpenRoot(cfg.FrontendRoot)
 	fsys := root.FS()
-
-	fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
-		log.Printf("\t%s\n", path)
-
-		return nil
-	})
 
 	if err != nil {
 		return err

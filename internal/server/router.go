@@ -16,16 +16,30 @@ type RouterConfig struct {
 }
 
 type AppRouter struct {
-	cfg    RouterConfig
-	fs     fs.FS
-	router *gin.Engine
+	cfg       RouterConfig
+	webapp_fs fs.FS
+	static_fs fs.FS
+	router    *gin.Engine
 }
 
 func GetNewRouter(cfg RouterConfig, fsys fs.FS) *gin.Engine {
+	webapp_fs, err := fs.Sub(fsys, cfg.WebappFolder)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	static_fs, err := fs.Sub(fsys, cfg.StaticFolder)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	app_router := AppRouter{
-		cfg:    cfg,
-		router: gin.Default(),
-		fs:     fsys,
+		cfg:       cfg,
+		router:    gin.Default(),
+		webapp_fs: webapp_fs,
+		static_fs: static_fs,
 	}
 
 	// always at the start
@@ -44,30 +58,17 @@ func (g *AppRouter) registerApiRoutes() {
 }
 
 func (g *AppRouter) registerWebappFiles() {
-	webapp_fs, err := fs.Sub(g.fs, g.cfg.WebappFolder)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	http_webapp_fs := http.FS(webapp_fs)
-
-	_ = fs.WalkDir(webapp_fs, ".", func(path string, d fs.DirEntry, err error) error {
-		log.Printf("\t%s\n", path)
-		return nil
-	})
-
 	g.router.NoRoute(func(ctx *gin.Context) {
 		requested_path := ctx.Request.URL.Path
 
 		if requested_path == "/" {
-			ctx.FileFromFS("/", http_webapp_fs)
+			ctx.FileFromFS("/", http.FS(g.webapp_fs))
 			return
 		}
 
 		trimmed_requested_path := strings.TrimSuffix(strings.TrimPrefix(requested_path, "/"), "/")
 
-		_, err := fs.Stat(webapp_fs, trimmed_requested_path)
+		_, err := fs.Stat(g.webapp_fs, trimmed_requested_path)
 
 		if errors.Is(err, fs.ErrNotExist) {
 			ctx.AbortWithStatus(404)
@@ -79,12 +80,12 @@ func (g *AppRouter) registerWebappFiles() {
 			return
 		}
 
-		ctx.FileFromFS(requested_path, http_webapp_fs)
+		ctx.FileFromFS(requested_path, http.FS(g.webapp_fs))
 	})
 }
 
 func (g *AppRouter) registerStaticFiles() {
-	g.router.Static("/static", g.cfg.StaticFolder)
+	g.router.StaticFS("/static", http.FS(g.static_fs))
 }
 
 // Based on https://github.com/gin-gonic/examples/blob/master/secure-web-app/main.go
