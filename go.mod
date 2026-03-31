@@ -3,6 +3,7 @@ module my-garden
 go 1.25.7
 
 require (
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.12.0
 	modernc.org/sqlite v1.48.0
 )

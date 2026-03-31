@@ -1,7 +1,8 @@
-function App() {
+export default function PlantsList() {
   return (
     <main>
       <h1>My garden</h1>
+
       <section>
         <ul>
           <li>
@@ -37,5 +38,3 @@ function App() {
     </main>
   )
 }
-
-export default App

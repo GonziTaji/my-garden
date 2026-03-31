@@ -1,0 +1,9 @@
+[*]
+indent_size = 2
+max_line_lenght = 100
+
+[*.{js,jsx,html,css}]
+indent_size = 2
+
+[.go]
+indent_size = 4
