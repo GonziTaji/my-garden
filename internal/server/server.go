@@ -31,14 +31,14 @@ func DefaultConfig() ServerConfig {
 	}
 }
 
-// RunningServer holds the HTTP server plus any resources that must stay alive
+// Server holds the HTTP server plus any resources that must stay alive
 // while it is serving (e.g. an os.Root used to build an fs.FS).
-type RunningServer struct {
+type Server struct {
 	HTTP *http.Server
 	root *os.Root
 }
 
-func NewRunningServer(cfg ServerConfig) (*RunningServer, error) {
+func NewWebServer(cfg ServerConfig) (*Server, error) {
 	root, err := os.OpenRoot(cfg.FrontendRoot)
 	if err != nil {
 		return nil, err
@@ -53,10 +53,10 @@ func NewRunningServer(cfg ServerConfig) (*RunningServer, error) {
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 	}
 
-	return &RunningServer{HTTP: httpSrv, root: root}, nil
+	return &Server{HTTP: httpSrv, root: root}, nil
 }
 
-func (s *RunningServer) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown(ctx context.Context) error {
 	// Close the root after the HTTP server is done using it.
 	err := s.HTTP.Shutdown(ctx)
 	closeErr := s.root.Close()
@@ -67,7 +67,7 @@ func (s *RunningServer) Shutdown(ctx context.Context) error {
 }
 
 func StartServer(cfg ServerConfig) error {
-	s, err := NewRunningServer(cfg)
+	s, err := NewWebServer(cfg)
 	if err != nil {
 		return err
 	}
@@ -77,6 +77,7 @@ func StartServer(cfg ServerConfig) error {
 		// If the caller never called Shutdown, make sure we still free the root.
 		return s.root.Close()
 	}
+
 	if err != nil {
 		_ = s.root.Close()
 		return err

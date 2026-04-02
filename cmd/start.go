@@ -26,8 +26,11 @@ func StartApp(db_cfg database.ConnectionConfig, server_cfg server.ServerConfig) 
 			".my-garden-dev",
 			"internal/database/databases",
 		}
+		special := []string{
+			"frontend/src/.vite/manifest.json",
+		}
 
-		go watcher.Start(os.DirFS(projectRoot), ".", ignore, func() error {
+		go watcher.Start(os.DirFS(projectRoot), ".", ignore, special, func() error {
 			log.Printf("change detected; rebuilding...")
 			if err := os.MkdirAll(filepath.Dir(devBin), 0o755); err != nil {
 				return err

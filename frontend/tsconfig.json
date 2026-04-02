@@ -1,7 +1,12 @@
 {
-  "files": [],
+  "extends": "./tsconfig.node.json",
+  "include": ["vite.config.ts"],
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }

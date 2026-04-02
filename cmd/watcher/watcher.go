@@ -14,7 +14,7 @@ type WatchCallback func() error
 
 // Based on:
 // https://github.com/fsnotify/fsnotify/blob/main/cmd/fsnotify/dedup.go
-func Start(fsys fs.FS, root string, ignore_list []string, callback WatchCallback) {
+func Start(fsys fs.FS, root string, ignore_list []string, special_list []string, callback WatchCallback) {
 	// Create a new watcher.
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -25,7 +25,7 @@ func Start(fsys fs.FS, root string, ignore_list []string, callback WatchCallback
 	// Start listening for events.
 	go watchLoop(w, callback)
 
-	paths, err := findDirsWithExt(fsys, root, []string{".go"}, ignore_list)
+	paths, err := findDirsWithExt(fsys, root, []string{".go"}, ignore_list, special_list)
 
 	if err != nil {
 		log.Fatalf("finding dirs to watch: %s", err)
@@ -123,7 +123,7 @@ func watchLoop(w *fsnotify.Watcher, callback WatchCallback) {
 }
 
 // Recursively finds all directories containing a file with the given extension.
-func findDirsWithExt(fsys fs.FS, root string, exts []string, ignore_list []string) ([]string, error) {
+func findDirsWithExt(fsys fs.FS, root string, exts []string, ignore_list []string, special_list []string) ([]string, error) {
 	dirsWithExt := make([]string, 0, 32)
 	foundDirs := make(map[string]struct{})
 
@@ -132,6 +132,14 @@ func findDirsWithExt(fsys fs.FS, root string, exts []string, ignore_list []strin
 			// Log the error but continue the walk
 			log.Printf("Error accessing path %s: %v\n", path, err)
 			return nil
+		}
+
+		if slices.Contains(special_list, path) {
+			dirPath := filepath.Dir(path)
+			if _, ok := foundDirs[dirPath]; !ok {
+				foundDirs[dirPath] = struct{}{}
+				dirsWithExt = append(dirsWithExt, dirPath)
+			}
 		}
 
 		if slices.Contains(ignore_list, path) {

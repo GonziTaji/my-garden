@@ -79,6 +79,10 @@ func (g *AppRouter) registerWebappTemplates() {
 	}
 
 	// how do we handle newly created pages? listen to manifest changes? at least in dev
+	// => idea: spawn a process that
+	// 1) checks the last time it ran to exit if needed
+	// 2) gets the manifest id/hash/timestamp/etc from the disk
+	// 3) if different from the one in memory, then do something to register differences
 	files, err := getHTMLFilesFromManifest(manifest)
 	if err != nil {
 		log.Fatal(err)
