@@ -108,12 +108,12 @@ func (g *AppRouter) registerWebappTemplates() {
 		g.router.GET(uri, func(ctx *gin.Context) {
 			log.Printf("[GET /%s]\n", file.Name)
 
+			// TODO: each domain should route the templates they use
 			ctx.HTML(200, file.Name, gin.H{})
 		})
 	}
 
 	g.router.LoadHTMLFS(http.FS(g.webapp_fs), template_paths...)
-
 }
 
 func (g *AppRouter) registerWebappAssets() {
