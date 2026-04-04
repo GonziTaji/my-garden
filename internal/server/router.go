@@ -1,19 +1,26 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"html/template"
 	"io"
 	"io/fs"
 	"log"
 	"net/http"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type RouterConfig struct {
-	WebappFolder string
-	StaticFolder string
+	WebappFolder  string
+	StaticFolder  string
+	FrontendRoot  string
+	SsrScriptPath string
 }
 
 type AppRouter struct {
@@ -92,6 +99,7 @@ func (g *AppRouter) registerWebappTemplates() {
 
 	var template_paths []string
 	for _, file := range files {
+		file := file
 		uri := "/" + file.Name
 
 		template_paths = append(template_paths, file.Src)
@@ -109,7 +117,12 @@ func (g *AppRouter) registerWebappTemplates() {
 			log.Printf("[GET /%s]\n", file.Name)
 
 			// TODO: each domain should route the templates they use
-			ctx.HTML(200, file.Name, gin.H{})
+			data := gin.H{}
+			if file.Name == "plants/ssrtest" {
+				data["SSR"] = g.renderSSRHTML(ctx)
+			}
+
+			ctx.HTML(200, file.Name, data)
 		})
 	}
 
@@ -150,6 +163,25 @@ func (g *AppRouter) registerWebappAssets() {
 
 func (g *AppRouter) registerStaticFiles() {
 	g.router.StaticFS("/static", http.FS(g.static_fs))
+}
+
+func (g *AppRouter) renderSSRHTML(ctx *gin.Context) template.HTML {
+	if g.cfg.FrontendRoot == "" || g.cfg.SsrScriptPath == "" {
+		return template.HTML("")
+	}
+
+	scriptPath := filepath.Join(g.cfg.FrontendRoot, g.cfg.SsrScriptPath)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx.Request.Context(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctxWithTimeout, "node", scriptPath, ctx.Request.URL.Path)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("[SSR] error: %v | output: %s", err, strings.TrimSpace(string(output)))
+		return template.HTML("")
+	}
+
+	return template.HTML(string(output))
 }
 
 // Based on https://github.com/gin-gonic/examples/blob/master/secure-web-app/main.go

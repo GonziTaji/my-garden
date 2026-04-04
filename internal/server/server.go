@@ -25,8 +25,9 @@ func DefaultConfig() ServerConfig {
 		ReadHeaderTimeout: 5 * time.Second,
 
 		RouterConfig: RouterConfig{
-			WebappFolder: "dist",
-			StaticFolder: "public",
+			WebappFolder:  "dist",
+			StaticFolder:  "public",
+			SsrScriptPath: "ssr/render-ssr.mjs",
 		},
 	}
 }
@@ -45,6 +46,7 @@ func NewWebServer(cfg ServerConfig) (*Server, error) {
 	}
 
 	fsys := root.FS()
+	cfg.RouterConfig.FrontendRoot = cfg.FrontendRoot
 	r := GetNewRouter(cfg.RouterConfig, fsys)
 
 	httpSrv := &http.Server{

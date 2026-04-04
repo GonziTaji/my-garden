@@ -1,6 +1,7 @@
 import mountStrict from "../../../utils/mountReactNode"
-import PlantsList, { type PlantListItem } from "./page"
+import PlantsList, { type PlantListItem } from "./components/plants-list"
 import './styles.css'
+
 
 // TODO: get from backend
 const plants: PlantListItem[] = [

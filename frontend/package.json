@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "devserver": "vite",
-    "dev": "vite build --watch --clearScreen false --sourcemap true --minify false",
+    "dev": "vite build --watch --emptyOutDir --clearScreen false --sourcemap true --minify false",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
