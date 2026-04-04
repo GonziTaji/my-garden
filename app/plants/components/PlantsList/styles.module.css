@@ -1,0 +1,18 @@
+.plantItemButton {
+  font-size: inherit;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: start;
+  align-content: start;
+  padding: 12px 24px;
+
+  .plantItemAlias {
+    display: block;
+  }
+
+  .plantItemName {
+    display: block;
+  }
+}

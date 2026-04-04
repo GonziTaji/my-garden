@@ -1,0 +1,5 @@
+{
+    "camelCase": true,
+    "dialect": "sqlite",
+    "url": "./db/main.db"
+}

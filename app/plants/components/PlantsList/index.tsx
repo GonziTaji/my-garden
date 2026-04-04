@@ -1,3 +1,5 @@
+import styles from './styles.module.css'
+
 export interface PlantListItem {
     id: number
     alias: string
@@ -8,12 +10,7 @@ interface PlantsListProps {
     plants: PlantListItem[]
 }
 
-
 export default function PlantsList({ plants }: PlantsListProps) {
-    if (!Array.isArray(plants)) {
-        throw new Error("plants is not an array")
-    }
-
     return (
         <main id="plants-list-page-content">
             <h1>My garden</h1>
@@ -23,9 +20,9 @@ export default function PlantsList({ plants }: PlantsListProps) {
                     {plants.map((p) =>
                         <li key={p.id}>
                             <details>
-                                <summary className="plant-item-button">
-                                    <span className="plant-item-alias">{p.alias}</span>
-                                    <small className="plant-item-name">{p.name}</small>
+                                <summary className={styles.plantItemButton}>
+                                    <span className={styles.plantItemAlias}>{p.alias}</span>
+                                    <small className={styles.plantItemName}>{p.name}</small>
                                 </summary>
                                 <div>
                                     asdflkajsdlkfj
