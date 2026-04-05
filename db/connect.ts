@@ -1,9 +1,13 @@
-import { Kysely, SqliteDialect } from 'kysely';
+import { CamelCasePlugin, Kysely, SqliteDialect } from 'kysely';
 import { DB } from 'kysely-codegen';
 import SQLite from 'better-sqlite3';
 
-const dialect = new SqliteDialect({
-    database: new SQLite('db/main.db')
-})
+const database = new SQLite('db/main.db');
+database.pragma('foreign_keys = ON');
 
-export const db = new Kysely<DB>({ dialect });
+const dialect = new SqliteDialect({ database });
+
+export const db = new Kysely<DB>({
+    dialect,
+    plugins: [new CamelCasePlugin()],
+});

@@ -1,87 +1,120 @@
-import { createPlant } from "../actions"
+'use client'
 
-export interface CreatePlantFormData {
-    alias: string
-    name: string
+import { createPlant, ActionResult } from '../actions'
+import { useTransition, useState } from 'react'
+import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
+
+export interface CreatePlantFormProps {
+    plantDefinitions: PlantDefinitionRow[]
+    onCreated?: (newPlantId: number) => void
 }
 
-export default function CreatePlantForm() {
-    // const [isCreatingPlant, setIsCreatingPlant] = useState(false)
+export default function CreatePlantForm({ plantDefinitions, onCreated }: CreatePlantFormProps) {
+    const [isPending, startTransition] = useTransition()
+    const [error, setError] = useState<string | null>(null)
+    const [fieldError, setFieldError] = useState<string | null>(null)
 
-    // const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
-    //     e.preventDefault()
-    //     setIsCreatingPlant(true)
-    //
-    //     const fd = new FormData(e.currentTarget)
-    //
-    //     const data: CreatePlantFormData = {
-    //         name: fd.get("name") as string || "",
-    //         alias: fd.get("alias") as string || "",
-    //     }
-    //
-    //     if (data.alias.trim() === "") {
-    //         setIsCreatingPlant(false)
-    //         return
-    //     }
-    //
-    //     // fetch
-    //     const r = await fetch("api/plants/", { method: "POST", body: JSON.stringify(data) })
-    //     if (!r.ok) {
-    //         setIsCreatingPlant(false)
-    //         alert(r.statusText)
-    //         return
-    //     }
-    //
-    //     if (r.status != 201) {
-    //         setIsCreatingPlant(false)
-    //         alert(r.statusText)
-    //         return
-    //     }
-    //
-    //     const location = r.headers.get('location')
-    //     if (!location) {
-    //         setIsCreatingPlant(false)
-    //         alert('Something happened: Created plant not found. Refresh this page.')
-    //         return
-    //     }
-    //
-    //     window.location.replace(location)
-    //     setIsCreatingPlant(false)
-    // }
+    function submit(fd: FormData) {
+        setError(null)
+        setFieldError(null)
+
+        startTransition(async () => {
+            const result: ActionResult = await createPlant(fd)
+
+            if (result.success && result.id) {
+                onCreated?.(result.id)
+            } else if (result.error) {
+                setError(result.error)
+                setFieldError(result.field ?? null)
+            }
+        })
+    }
 
     return (
-        <form className="new-plant-name-form" action={createPlant}>
+        <form className="new-plant-form" action={submit}>
+            {error && (
+                <div className="form-error" role="alert">
+                    {error}
+                </div>
+            )}
+
             <div>
-                <label htmlFor="plant-alias">Alias</label>
-                <input
-                    id="plant-alias"
-                    name="alias"
-                    type="text"
-                    placeholder="Jade plant"
-                    minLength={3}
-                    // disabled={isCreatingPlant}
+                <label htmlFor="plantDefinitionId">Tipo de planta</label>
+                <select
+                    id="plantDefinitionId"
+                    name="plantDefinitionId"
+                    disabled={isPending}
                     required
+                    aria-invalid={fieldError === 'plantDefinitionId'}
+                >
+                    <option value="">Selecciona un tipo...</option>
+                    {plantDefinitions.map((def) => (
+                        <option key={def.id} value={def.id}>
+                            {def.commonName} ({def.scientificName})
+                        </option>
+                    ))}
+                </select>
+                {plantDefinitions.length === 0 && (
+                    <small>
+                        No hay tipos de plantas. <a href="/plant-definitions">Crea uno primero</a>.
+                    </small>
+                )}
+            </div>
+
+            <div>
+                <label htmlFor="nickname">Nombre (apodo)</label>
+                <input
+                    id="nickname"
+                    name="nickname"
+                    type="text"
+                    placeholder="Mi monstera del balcon"
+                    minLength={1}
+                    disabled={isPending}
+                    required
+                    aria-invalid={fieldError === 'nickname'}
                 />
             </div>
 
             <div>
-                <label htmlFor="plant-name">Name</label>
+                <label htmlFor="location">Ubicacion (opcional)</label>
                 <input
-                    id="plant-name"
-                    name="name"
+                    id="location"
+                    name="location"
                     type="text"
-                    placeholder="Crassula Ovata"
-                    minLength={3}
-                // disabled={isCreatingPlant}
+                    placeholder="Balcon, sala, habitacion..."
+                    disabled={isPending}
                 />
             </div>
-            <button type="submit"
-            // disabled={isCreatingPlant}
-            >Save</button>
-            <button type="reset">Reset</button>
-            <span>asdfa</span>
+
+            <div>
+                <label htmlFor="acquiredAt">Fecha de adquisicion (opcional)</label>
+                <input
+                    id="acquiredAt"
+                    name="acquiredAt"
+                    type="date"
+                    disabled={isPending}
+                />
+            </div>
+
+            <div>
+                <label htmlFor="notes">Notas (opcional)</label>
+                <textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="Cualquier informacion adicional..."
+                    disabled={isPending}
+                    rows={3}
+                />
+            </div>
+
+            <div className="form-actions">
+                <button type="submit" disabled={isPending || plantDefinitions.length === 0}>
+                    {isPending ? 'Guardando...' : 'Guardar'}
+                </button>
+                <button type="reset" disabled={isPending}>
+                    Limpiar
+                </button>
+            </div>
         </form>
     )
 }
-
-

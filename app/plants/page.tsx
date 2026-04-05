@@ -1,20 +1,12 @@
-import plantsStore from "@/db/store";
-import PlantsList, { PlantListItem } from "./components/PlantsList";
-import CreatePlantForm from "./components/CreatePlantForm";
-
-const getPlants = async (): Promise<PlantListItem[]> => {
-    const raw = await plantsStore.listAll()
-
-    return raw.map(p => ({ id: p.id || 0, name: p.name || '', alias: p.alias }))
-}
+import plantsService from '@/services/plants.service'
+import plantDefinitionsService from '@/services/plant-definitions.service'
+import PlantsList from './components/PlantsList'
 
 export default async function Page() {
-    const plants = await getPlants()
+    const [plants, plantDefinitions] = await Promise.all([
+        plantsService.list(),
+        plantDefinitionsService.list(),
+    ])
 
-    return (
-        <>
-            <PlantsList plants={plants} />
-            <CreatePlantForm />
-        </>
-    )
+    return <PlantsList plants={plants} plantDefinitions={plantDefinitions} />
 }
