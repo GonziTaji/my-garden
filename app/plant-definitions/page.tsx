@@ -1,5 +1,5 @@
 import plantDefinitionsService from '@/services/plant-definitions.service'
-import PlantDefinitionsClient from './components/PlantDefinitionsClient'
+import PlantDefinitionsList from './components/PlantDefinitionsList'
 
 export default async function PlantDefinitionsPage() {
     const definitions = await plantDefinitionsService.list()
@@ -7,7 +7,8 @@ export default async function PlantDefinitionsPage() {
     return (
         <main id="plant-definitions-page">
             <h1>Tipos de plantas</h1>
-            <PlantDefinitionsClient initialDefinitions={definitions} />
+
+            <PlantDefinitionsList definitionsList={definitions} />
         </main>
     )
 }

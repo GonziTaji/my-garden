@@ -1,15 +1,14 @@
 'use client'
 
-import { createPlant, ActionResult } from '../actions'
+import { createPlant, ActionResult } from '../../actions'
 import { useTransition, useState } from 'react'
-import { PlantDefinition } from '@/domain/plants/plant-definition'
 
 export interface CreatePlantFormProps {
-    plantDefinitions: PlantDefinition[]
+    plantDefinitionId: number
     onCreated?: (newPlantId: number) => void
 }
 
-export default function CreatePlantForm({ plantDefinitions, onCreated }: CreatePlantFormProps) {
+export default function CreatePlantForm({ plantDefinitionId, onCreated }: CreatePlantFormProps) {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [fieldError, setFieldError] = useState<string | null>(null)
@@ -38,28 +37,7 @@ export default function CreatePlantForm({ plantDefinitions, onCreated }: CreateP
                 </div>
             )}
 
-            <div>
-                <label htmlFor="plantDefinitionId">Tipo de planta</label>
-                <select
-                    id="plantDefinitionId"
-                    name="plantDefinitionId"
-                    disabled={isPending}
-                    required
-                    aria-invalid={fieldError === 'plantDefinitionId'}
-                >
-                    <option value="">Selecciona un tipo...</option>
-                    {plantDefinitions.map((def) => (
-                        <option key={def.id} value={def.id}>
-                            {def.commonName} ({def.scientificName})
-                        </option>
-                    ))}
-                </select>
-                {plantDefinitions.length === 0 && (
-                    <small>
-                        No hay tipos de plantas. <a href="/plant-definitions">Crea uno primero</a>.
-                    </small>
-                )}
-            </div>
+            <input type="hidden" name="pplantDefinitionId" value={plantDefinitionId} />
 
             <div>
                 <label htmlFor="nickname">Nombre (apodo)</label>
@@ -108,7 +86,7 @@ export default function CreatePlantForm({ plantDefinitions, onCreated }: CreateP
             </div>
 
             <div className="form-actions">
-                <button type="submit" disabled={isPending || plantDefinitions.length === 0}>
+                <button type="submit" disabled={isPending}>
                     {isPending ? 'Guardando...' : 'Guardar'}
                 </button>
                 <button type="reset" disabled={isPending}>

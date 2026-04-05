@@ -3,6 +3,7 @@ import type { WaterProfile } from '@/domain/plants/water/water-profile'
 import type { LightLevel } from '@/domain/plants/light/light-level'
 import type { SoilType } from '@/domain/plants/soil/soil-type'
 import type { PlantCategory } from '@/domain/plants/category/plant-category'
+import { PlantDefinition } from '@/domain/plants/plant-definition'
 
 export interface CreatePlantDefinitionInput {
     commonName: string
@@ -40,7 +41,7 @@ async function create(input: CreatePlantDefinitionInput) {
         .executeTakeFirstOrThrow()
 }
 
-async function listAll(): Promise<PlantDefinitionRow[]> {
+async function listAll(): Promise<PlantDefinition[]> {
     const rows = await db
         .selectFrom('plantDefinitions')
         .selectAll()

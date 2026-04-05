@@ -1,6 +1,5 @@
-import plantsStore, { CreatePlantInput, PlantWithDefinition } from '@/db/stores/plants.store'
+import plantsStore, { CreatePlantInput, PlantListFilters, PlantWithDefinition } from '@/db/stores/plants.store'
 import plantDefinitionsStore from '@/db/stores/plant-definitions.store'
-import { waterProfile, WaterProfile } from '@/domain/plants/water/water-profile'
 
 export interface CreatePlantServiceInput {
     nickname: string
@@ -29,17 +28,6 @@ function validateNickname(value: string): string {
     return trimmed
 }
 
-function validateOverridesWaterProfile(value: string | undefined): WaterProfile | undefined {
-    if (!value) return undefined
-    if (!waterProfile.values.includes(value as WaterProfile)) {
-        throw new ValidationError(
-            `Perfil de agua invalido: ${value}. Valores validos: ${waterProfile.values.join(', ')}`,
-            'overridesWaterProfile'
-        )
-    }
-    return value as WaterProfile
-}
-
 export async function createPlant(input: CreatePlantServiceInput): Promise<{ id: number }> {
     const validatedNickname = validateNickname(input.nickname)
 
@@ -58,15 +46,14 @@ export async function createPlant(input: CreatePlantServiceInput): Promise<{ id:
         acquiredAt: input.acquiredAt,
         location: input.location?.trim() || undefined,
         notes: input.notes?.trim() || undefined,
-        overridesWaterProfile: validateOverridesWaterProfile(input.overridesWaterProfile),
     }
 
     const result = await plantsStore.create(createInput)
     return { id: result.id! }
 }
 
-export async function listPlants(): Promise<PlantWithDefinition[]> {
-    return plantsStore.listAll()
+export async function listPlants(filters: PlantListFilters): Promise<PlantWithDefinition[]> {
+    return plantsStore.listAll(filters)
 }
 
 export async function getPlant(id: number): Promise<PlantWithDefinition | undefined> {

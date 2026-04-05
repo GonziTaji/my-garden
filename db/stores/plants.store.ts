@@ -8,6 +8,10 @@ export interface CreatePlantInput {
     notes?: string
 }
 
+export interface PlantListFilters {
+    plantDefinitionId: PlantRow['plantDefinitionId']
+}
+
 export interface PlantRow {
     id: number
     nickname: string
@@ -48,8 +52,8 @@ async function create(input: CreatePlantInput) {
         .executeTakeFirstOrThrow()
 }
 
-async function listAll(): Promise<PlantWithDefinition[]> {
-    const rows = await db
+async function listAll(filters?: PlantListFilters): Promise<PlantWithDefinition[]> {
+    let query = db
         .selectFrom('plants')
         .innerJoin('plantDefinitions', 'plantDefinitions.id', 'plants.plantDefinitionId')
         .select([
@@ -64,6 +68,12 @@ async function listAll(): Promise<PlantWithDefinition[]> {
             'plantDefinitions.commonName',
             'plantDefinitions.scientificName',
         ])
+
+    if (filters?.plantDefinitionId) {
+        query = query.where('plants.plantDefinitionId', '=', filters.plantDefinitionId)
+    }
+
+    const rows = await query
         .orderBy('plants.nickname', 'asc')
         .execute()
 

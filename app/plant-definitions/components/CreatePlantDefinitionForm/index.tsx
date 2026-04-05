@@ -1,6 +1,6 @@
 'use client'
 
-import { createPlantDefinition, ActionResult } from '../actions'
+import { createPlantDefinition, ActionResult } from '../../actions'
 import { useTransition, useState } from 'react'
 import { waterProfile } from '@/domain/plants/water/water-profile'
 import { lightLevel } from '@/domain/plants/light/light-level'
@@ -8,10 +8,9 @@ import { soilType } from '@/domain/plants/soil/soil-type'
 import { plantCategory } from '@/domain/plants/category/plant-category'
 
 export interface CreatePlantDefinitionFormProps {
-    onCreated?: (newId: number) => void
 }
 
-export default function CreatePlantDefinitionForm({ onCreated }: CreatePlantDefinitionFormProps) {
+export default function CreatePlantDefinitionForm({ }: CreatePlantDefinitionFormProps) {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [fieldError, setFieldError] = useState<string | null>(null)
@@ -24,7 +23,7 @@ export default function CreatePlantDefinitionForm({ onCreated }: CreatePlantDefi
             const result: ActionResult = await createPlantDefinition(fd)
 
             if (result.success && result.id) {
-                onCreated?.(result.id)
+                // onCreated?.(result.id)
             } else if (result.error) {
                 setError(result.error)
                 setFieldError(result.field ?? null)

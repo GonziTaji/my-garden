@@ -3,6 +3,7 @@ import { waterProfile, WaterProfile } from '@/domain/plants/water/water-profile'
 import { lightLevel, LightLevel } from '@/domain/plants/light/light-level'
 import { soilType, SoilType } from '@/domain/plants/soil/soil-type'
 import { plantCategory, PlantCategory } from '@/domain/plants/category/plant-category'
+import { PlantDefinition } from '@/domain/plants/plant-definition'
 
 export interface CreatePlantDefinitionServiceInput {
     commonName: string
@@ -123,7 +124,7 @@ export async function createPlantDefinition(
     }
 }
 
-export async function listPlantDefinitions(): Promise<PlantDefinitionRow[]> {
+export async function listPlantDefinitions(): Promise<PlantDefinition[]> {
     return plantDefinitionsStore.listAll()
 }
 
