@@ -1,8 +1,9 @@
 'use client'
 
 import { PlantDefinition } from "@/domain/plants/plant-definition"
-import { deletePlantDefinition } from "../../actions"
+import { deletePlantDefinition } from "@/app/plant-definitions/actions"
 import { useTransition } from "react"
+import styles from './styles.module.css'
 
 export default function DeletePlantDefinitionButton({ className, def }: { className?: string, def: PlantDefinition }) {
     const [isPending, startTransition] = useTransition()
@@ -24,7 +25,7 @@ export default function DeletePlantDefinitionButton({ className, def }: { classN
 
     return (
         <button
-            className={className}
+            className={[className, styles.deleteButton].join(' ')}
             onClick={() => handleDelete(def.id, def.commonName)}
             disabled={isPending}
         >

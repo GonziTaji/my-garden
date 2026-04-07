@@ -1,0 +1,16 @@
+.container {
+  label {
+    &:has(input[type='checkbox']),
+    &:has(input[type='radio']) {
+      position: relative;
+
+      &:has(:checked) {
+        background: pink;
+      }
+    }
+
+    input {
+      display: none;
+    }
+  }
+}

@@ -4,15 +4,7 @@ import type { LightLevel } from '@/domain/plants/light/light-level'
 import type { SoilType } from '@/domain/plants/soil/soil-type'
 import type { PlantCategory } from '@/domain/plants/category/plant-category'
 import { PlantDefinition } from '@/domain/plants/plant-definition'
-
-export interface CreatePlantDefinitionInput {
-    commonName: string
-    scientificName: string
-    waterProfile: WaterProfile
-    lightLevel: LightLevel
-    soilType: SoilType
-    categories: PlantCategory[]
-}
+import { PetToxicity } from '@/domain/plants/toxicity/pet-toxicity'
 
 export interface PlantDefinitionRow {
     id: number
@@ -21,10 +13,14 @@ export interface PlantDefinitionRow {
     waterProfile: WaterProfile
     lightLevel: LightLevel
     soilType: SoilType
+    petToxicity: PetToxicity
+    symptoms: string[]
     categories: PlantCategory[]
     createdAt: string
     updatedAt: string
 }
+
+export type CreatePlantDefinitionInput = Omit<PlantDefinitionRow, 'id' | 'createdAt' | 'updatedAt'>
 
 async function create(input: CreatePlantDefinitionInput) {
     return db
@@ -35,6 +31,8 @@ async function create(input: CreatePlantDefinitionInput) {
             waterProfile: input.waterProfile,
             lightLevel: input.lightLevel,
             soilType: input.soilType,
+            petToxicity: input.petToxicity,
+            symptoms: JSON.stringify(input.symptoms),
             categoriesJson: JSON.stringify(input.categories),
         })
         .returning('id')
@@ -55,6 +53,8 @@ async function listAll(): Promise<PlantDefinition[]> {
         waterProfile: row.waterProfile as WaterProfile,
         lightLevel: row.lightLevel as LightLevel,
         soilType: row.soilType as SoilType,
+        petToxicity: row.petToxicity as PetToxicity,
+        symptoms: JSON.parse(row.symptoms) as string[],
         categories: JSON.parse(row.categoriesJson) as PlantCategory[],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -77,6 +77,8 @@ async function getById(id: number): Promise<PlantDefinitionRow | undefined> {
         waterProfile: row.waterProfile as WaterProfile,
         lightLevel: row.lightLevel as LightLevel,
         soilType: row.soilType as SoilType,
+        petToxicity: row.petToxicity as PetToxicity,
+        symptoms: JSON.parse(row.symptoms) as string[],
         categories: JSON.parse(row.categoriesJson) as PlantCategory[],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,

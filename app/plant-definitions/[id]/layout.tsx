@@ -2,17 +2,20 @@ import { notFound } from 'next/navigation'
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
 import plantDefinitionsService from '@/services/plant-definitions.service'
 import plantsService from '@/services/plants.service'
-import PlantDefinitionDetails from '../components/PlantDefinitionDetails'
-import DeletePlantDefinitionButton from '../components/DeletePlantDefinitionButton'
+import styles from './layout.module.css'
+import { PropsWithChildren } from 'react'
+import PlantDefinitionNav from '../components/PlantDefinitionNav'
 import Spacer from '@/app/components/Spacer'
 
 export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]
 }
 
-export default async function Page({ params }: PageProps<"/plant-definitions/[id]">) {
-    const { id } = await params
+export default async function Layout({ children, params }: PropsWithChildren<PageProps<"/plant-definitions/[id]/[plant_id]">>) {
+    const { id, plant_id } = await params
     const plantDefinitionId = Number(id)
+
+    console.log(plant_id)
 
     if (isNaN(plantDefinitionId)) {
         notFound()
@@ -27,13 +30,11 @@ export default async function Page({ params }: PageProps<"/plant-definitions/[id
 
     const plantsOfDef = await plantsService.list({ plantDefinitionId })
 
-    console.log(plantsOfDef)
-
     return (
-        <div>
-            <PlantDefinitionDetails definition={current} />
-            <Spacer space={6} />
-            <DeletePlantDefinitionButton def={current} />
-        </div>
+        <section className={styles.content}>
+            <PlantDefinitionNav plantDefinitionId={plantDefinitionId} plants={plantsOfDef} />
+            <Spacer space={2} />
+            {children}
+        </section>
     )
 }

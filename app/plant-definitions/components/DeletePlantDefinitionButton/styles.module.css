@@ -1,0 +1,8 @@
+.deleteButton {
+  justify-self: end;
+  background: rgb(200, 100, 100);
+  border: none;
+  padding: var(--space-2) var(--space-4);
+  font-weight: 600;
+  color: white;
+}
