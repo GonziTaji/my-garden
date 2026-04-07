@@ -4,7 +4,7 @@ import { PlantDefinition } from "@/domain/plants/plant-definition"
 import { deletePlantDefinition } from "../../actions"
 import { useTransition } from "react"
 
-export default function DeletePlantDefinitionButton({ def }: { def: PlantDefinition }) {
+export default function DeletePlantDefinitionButton({ className, def }: { className?: string, def: PlantDefinition }) {
     const [isPending, startTransition] = useTransition()
 
     function handleDelete(id: number, name: string) {
@@ -24,7 +24,7 @@ export default function DeletePlantDefinitionButton({ def }: { def: PlantDefinit
 
     return (
         <button
-            className="delete-button"
+            className={className}
             onClick={() => handleDelete(def.id, def.commonName)}
             disabled={isPending}
         >

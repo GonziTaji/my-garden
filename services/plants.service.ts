@@ -52,7 +52,7 @@ export async function createPlant(input: CreatePlantServiceInput): Promise<{ id:
     return { id: result.id! }
 }
 
-export async function listPlants(filters: PlantListFilters): Promise<PlantWithDefinition[]> {
+export async function listPlants(filters?: PlantListFilters): Promise<PlantWithDefinition[]> {
     return plantsStore.listAll(filters)
 }
 

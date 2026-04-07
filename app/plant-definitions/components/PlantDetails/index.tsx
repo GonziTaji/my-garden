@@ -32,10 +32,6 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
                     </>
                 )}
             </dl>
-
-            <nav>
-                <a href="/plants">Volver al listado</a>
-            </nav>
         </section>
     )
 }

@@ -7,6 +7,7 @@ import plantDefinitionsService, {
 } from '@/services/plant-definitions.service'
 import plantsService from '@/services/plants.service'
 import { refresh } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export interface ActionResult {
     success: boolean
@@ -24,6 +25,8 @@ export async function createPlantDefinition(formData: FormData): Promise<ActionR
     const categoriesRaw = formData.getAll('categories')
     const categories = categoriesRaw.map((c) => c.toString())
 
+    let plantDefinitionId = 0
+
     try {
         const { id } = await plantDefinitionsService.create({
             commonName,
@@ -34,8 +37,7 @@ export async function createPlantDefinition(formData: FormData): Promise<ActionR
             categories,
         })
 
-        refresh()
-        return { success: true, id }
+        plantDefinitionId = id
     } catch (error) {
         if (error instanceof ValidationError) {
             return { success: false, error: error.message, field: error.field }
@@ -46,17 +48,21 @@ export async function createPlantDefinition(formData: FormData): Promise<ActionR
         console.error('Error creating plant definition:', error)
         return { success: false, error: 'Error inesperado al crear el tipo de planta' }
     }
+
+    refresh()
+    redirect(`/plant-definitions/${plantDefinitionId}`)
 }
 
 export async function deletePlantDefinition(id: number): Promise<ActionResult> {
     try {
         await plantDefinitionsService.delete(id)
-        refresh()
-        return { success: true }
     } catch (error) {
         console.error('Error deleting plant definition:', error)
         return { success: false, error: 'Error inesperado al eliminar el tipo de planta' }
     }
+
+    refresh()
+    redirect('/plant-definitions')
 }
 
 export interface ActionResult {

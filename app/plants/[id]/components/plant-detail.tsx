@@ -61,10 +61,6 @@ export default function PlantDetail({ plant, definition }: PlantDetailProps) {
                     </>
                 )}
             </dl>
-
-            <nav>
-                <a href="/plants">Volver al listado</a>
-            </nav>
         </section>
     )
 }

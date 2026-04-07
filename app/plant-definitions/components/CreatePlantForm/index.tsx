@@ -37,7 +37,7 @@ export default function CreatePlantForm({ plantDefinitionId, onCreated }: Create
                 </div>
             )}
 
-            <input type="hidden" name="pplantDefinitionId" value={plantDefinitionId} />
+            <input type="hidden" name="plantDefinitionId" value={plantDefinitionId} />
 
             <div>
                 <label htmlFor="nickname">Nombre (apodo)</label>

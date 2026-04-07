@@ -1,12 +1,8 @@
-import plantsService from '@/services/plants.service'
 import plantDefinitionsService from '@/services/plant-definitions.service'
-import PlantsList from './components/PlantsList'
+import PlantDefinitionsList from '../plant-definitions/components/PlantDefinitionsList'
 
 export default async function Page() {
-    const [plants, plantDefinitions] = await Promise.all([
-        plantsService.list(),
-        plantDefinitionsService.list(),
-    ])
+    const plantDefinitions = await plantDefinitionsService.list()
 
-    return <PlantsList plants={plants} plantDefinitions={plantDefinitions} />
+    return <PlantDefinitionsList definitionsList={plantDefinitions} />
 }

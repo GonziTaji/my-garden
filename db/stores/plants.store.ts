@@ -53,6 +53,8 @@ async function create(input: CreatePlantInput) {
 }
 
 async function listAll(filters?: PlantListFilters): Promise<PlantWithDefinition[]> {
+    console.log(filters)
+
     let query = db
         .selectFrom('plants')
         .innerJoin('plantDefinitions', 'plantDefinitions.id', 'plants.plantDefinitionId')
@@ -73,9 +75,9 @@ async function listAll(filters?: PlantListFilters): Promise<PlantWithDefinition[
         query = query.where('plants.plantDefinitionId', '=', filters.plantDefinitionId)
     }
 
-    const rows = await query
-        .orderBy('plants.nickname', 'asc')
-        .execute()
+    query = query.orderBy('plants.nickname', 'asc')
+
+    const rows = await query.execute()
 
     return rows.map((row) => ({
         id: row.id,
