@@ -1,10 +1,7 @@
-@import './resets.css';
-@import './variables.css';
 @import './view_transitions.css';
 
-:root {
-  view-transition-name: none;
+@import './theme.css';
 
-  font-size: var(--font-size-base);
-  font-family: Arial, Helvetica, sans-serif;
+:root {
+  font-size: var(--text-base);
 }

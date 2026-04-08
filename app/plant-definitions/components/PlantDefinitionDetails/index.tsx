@@ -13,7 +13,7 @@ export interface PlantDefinitionDetailsProps {
 export default function PlantDefinitionDetails({ definition }: PlantDefinitionDetailsProps) {
     return (
         <div className={styles.container}>
-            <h1>{definition.commonName}</h1>
+            <h1 className="text-3xl text-center">{definition.commonName}</h1>
 
             <dl>
                 <dt>Nombre scientifico</dt>

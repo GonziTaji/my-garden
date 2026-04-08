@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+
+@theme {
+  --text-base: 12px;
+}

@@ -13,4 +13,45 @@
       display: none;
     }
   }
+
+  .plantCateoriesList {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  dl {
+    dt {
+      font-size: var(--text-lg);
+      display: flex;
+      align-items: center;
+      text-align: center;
+
+      &::before,
+      &::after {
+        margin-inline: 1rem;
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #999;
+      }
+    }
+
+    dd {
+      text-align: center;
+
+      ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: calc(var(--spacing) * 4);
+        align-items: center;
+        margin-inline: calc(var(--spacing) * 8);
+        margin-block: calc(var(--spacing) * 4);
+
+        li {
+          width: min-content;
+        }
+      }
+    }
+  }
 }
