@@ -1,3 +1,5 @@
+"use client"
+
 import { plantCategory } from "@/domain/plants/category/plant-category"
 import { lightLevel } from "@/domain/plants/light/light-level"
 import { PlantDefinition } from "@/domain/plants/plant-definition"
@@ -5,17 +7,73 @@ import { soilType } from "@/domain/plants/soil/soil-type"
 import { petToxicity } from "@/domain/plants/toxicity/pet-toxicity"
 import { waterProfile } from "@/domain/plants/water/water-profile"
 import styles from './styles.module.css'
+import DeletePlantDefinitionButton from "../DeletePlantDefinitionButton"
+import { useRouter, useSearchParams } from "next/navigation"
+import { SubmitEvent, useEffect, useState } from "react"
+import { upsertPlantDefinition } from "../../actions"
 
 export interface PlantDefinitionDetailsProps {
+    isEdit: boolean
     definition: PlantDefinition
 }
 
-export default function PlantDefinitionDetails({ definition }: PlantDefinitionDetailsProps) {
+export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefinitionDetailsProps) {
+    const [isSaving, setIsSaving] = useState(false)
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // have to do this because it cannot be done after a successfull action as-is.
+    // I'll have to read the docs to see how this can be handled withoud an effect
+    useEffect(() => {
+        setIsSaving(false)
+    }, [searchParams, setIsSaving])
+
+    const changeEditMode = (editMode: boolean) => {
+        const url = new URL(location.href)
+        url.searchParams.set('e', editMode ? 'T' : 'F')
+        router.push(url.toString())
+    }
+
+    const handleEdit = () => {
+        changeEditMode(true)
+    }
+
+    const handleCancel = () => {
+        changeEditMode(false)
+    }
+
+    const handleSubmit = async (ev: SubmitEvent<HTMLFormElement>) => {
+        ev.preventDefault()
+        setIsSaving(true)
+
+        const fd = new FormData(ev.currentTarget.closest('form')!)
+        const { error } = await upsertPlantDefinition(fd)
+
+        if (error) {
+            alert(error)
+        }
+    }
+
     return (
-        <div className="border p-4">
+        <form className="border p-4" onSubmit={handleSubmit}>
+            {isSaving && 'SAVING'}
+            <input name="id" type="hidden" defaultValue={definition.id} />
+
             <div className="w-max p-4 ps-12">
-                <h1 className="text-3xl">{definition.commonName}</h1>
-                <em className="text-lg">{definition.scientificName}</em>
+                <input
+                    className="text-3xl block border disabled:border-0 border-slate-300 rounded-sm"
+                    type="text"
+                    name="commonName"
+                    defaultValue={definition.commonName}
+                    disabled={!isEdit}
+                />
+                <input
+                    className="text-lg italic border disabled:border-0 border-slate-300 rounded-sm"
+                    type="text"
+                    name="scientificName"
+                    defaultValue={definition.scientificName}
+                    disabled={!isEdit}
+                />
             </div>
 
             <dl className={styles.detailsList}>
@@ -26,11 +84,11 @@ export default function PlantDefinitionDetails({ definition }: PlantDefinitionDe
                             <li key={opt.value}>
                                 <label>
                                     <input
-                                        name="plant-category"
+                                        name="categories"
                                         type="checkbox"
-                                        value={opt.value}
-                                        checked={definition.categories.includes(opt.value)}
-                                        disabled
+                                        defaultValue={opt.value}
+                                        defaultChecked={definition.categories.includes(opt.value)}
+                                        disabled={!isEdit}
                                     />
                                     <span>{opt.label}</span>
                                 </label>
@@ -46,11 +104,11 @@ export default function PlantDefinitionDetails({ definition }: PlantDefinitionDe
                             <li key={opt.value}>
                                 <label>
                                     <input
-                                        name="plant-waterprofile"
+                                        name="waterProfile"
                                         type="radio"
-                                        value={opt.value}
-                                        checked={definition.waterProfile === opt.value}
-                                        disabled
+                                        defaultValue={opt.value}
+                                        defaultChecked={definition.waterProfile === opt.value}
+                                        disabled={!isEdit}
                                     />
                                     <span>{opt.label}</span>
                                 </label>
@@ -66,11 +124,11 @@ export default function PlantDefinitionDetails({ definition }: PlantDefinitionDe
                             <li key={opt.value}>
                                 <label>
                                     <input
-                                        name="plant-lightlevel"
+                                        name="lightLevel"
                                         type="radio"
-                                        value={opt.value}
-                                        checked={definition.lightLevel === opt.value}
-                                        disabled
+                                        defaultValue={opt.value}
+                                        defaultChecked={definition.lightLevel === opt.value}
+                                        disabled={!isEdit}
                                     />
                                     <span>{opt.label}</span>
                                 </label>
@@ -85,11 +143,11 @@ export default function PlantDefinitionDetails({ definition }: PlantDefinitionDe
                         {soilType.options.map((opt) => (
                             <li key={opt.value}>
                                 <label>
-                                    <input name="plant-soiltype"
+                                    <input name="soilType"
                                         type="radio"
-                                        value={opt.value}
-                                        checked={definition.soilType === opt.value}
-                                        disabled
+                                        defaultValue={opt.value}
+                                        defaultChecked={definition.soilType === opt.value}
+                                        disabled={!isEdit}
                                     />
                                     <span>{opt.label}</span>
                                 </label>
@@ -100,21 +158,53 @@ export default function PlantDefinitionDetails({ definition }: PlantDefinitionDe
 
                 <dt>Pet friendly?</dt>
                 <dd>
-                    {petToxicity.meta[definition.petToxicity].label}
+                    {isEdit ? (
+                        <ul>{
+                            petToxicity.options.map((opt) => (
+                                <li key={opt.value}>
+                                    <label>
+                                        <input name="petToxicity"
+                                            type="radio"
+                                            defaultValue={opt.value}
+                                            defaultChecked={definition.petToxicity === opt.value}
+                                        />
+                                        <span>{opt.label}</span>
+                                    </label>
+                                </li>
+                            ))
+                        }</ul>
+                    ) : petToxicity.meta[definition.petToxicity].label}
 
-                    {definition.symptoms.length > 0 &&
+                    {(definition.symptoms.length > 0 || isEdit) &&
                         <dl>
                             <dt>Síntomas</dt>
                             <dd>
-                                <ul>
-                                    {definition.symptoms.map((s) => <li key={s}>{s}</li>)}
-                                </ul>
+                                <textarea
+                                    className="border disabled:border-0 border-slate-300 rounded-sm not-disabled:w-full"
+                                    name="symptoms"
+                                    disabled={!isEdit}
+                                    defaultValue={definition.symptoms}
+                                >
+                                </textarea>
                             </dd>
                         </dl>
                     }
                 </dd>
-
             </dl>
-        </div>
+
+            {isEdit ? (
+                <div className="flex">
+                    <button type="submit">Guardar</button>
+                    <button type="button" onClick={handleCancel}>Cancelar</button>
+
+                    <div className="grow text-end">
+                        <DeletePlantDefinitionButton def={definition} />
+                    </div>
+
+                </div>
+            ) : (
+                <button type="button" onClick={handleEdit}>Editar</button>
+            )}
+        </form>
     )
 }

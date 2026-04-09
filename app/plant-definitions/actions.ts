@@ -16,25 +16,33 @@ export interface ActionResult {
     field?: string
 }
 
-export async function createPlantDefinition(formData: FormData): Promise<ActionResult> {
+export async function upsertPlantDefinition(formData: FormData): Promise<ActionResult> {
+    const inputId = Number(formData.get('id')) || null
     const commonName = formData.get('commonName')?.toString() ?? ''
     const scientificName = formData.get('scientificName')?.toString() ?? ''
+    const categoriesRaw = formData.getAll('categories')
     const waterProfile = formData.get('waterProfile')?.toString() ?? ''
     const lightLevel = formData.get('lightLevel')?.toString() ?? ''
     const soilType = formData.get('soilType')?.toString() ?? ''
-    const categoriesRaw = formData.getAll('categories')
+    const petToxicity = formData.get('petToxicity')?.toString() ?? ''
+    const symptoms = formData.get('symptoms')?.toString() ?? ''
     const categories = categoriesRaw.map((c) => c.toString())
+
+    console.log({ categoriesRaw, categories })
 
     let plantDefinitionId = 0
 
     try {
-        const { id } = await plantDefinitionsService.create({
+        const { id } = await plantDefinitionsService.upsert({
+            id: inputId,
             commonName,
             scientificName,
             waterProfile,
             lightLevel,
             soilType,
             categories,
+            symptoms,
+            petToxicity,
         })
 
         plantDefinitionId = id

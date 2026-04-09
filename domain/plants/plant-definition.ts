@@ -14,7 +14,7 @@ export interface PlantDefinition {
     lightLevel: LightLevel
     soilType: SoilType
     petToxicity: PetToxicity
-    symptoms: string[]
+    symptoms: string
 
     categories: PlantCategory[]
 }

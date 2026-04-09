@@ -1,16 +1,20 @@
-import plantDefinitionsStore, { CreatePlantDefinitionInput, PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
+import plantDefinitionsStore, { UpsertPlantDefinitionInput, PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
 import { waterProfile, WaterProfile } from '@/domain/plants/water/water-profile'
 import { lightLevel, LightLevel } from '@/domain/plants/light/light-level'
 import { soilType, SoilType } from '@/domain/plants/soil/soil-type'
 import { plantCategory, PlantCategory } from '@/domain/plants/category/plant-category'
 import { PlantDefinition } from '@/domain/plants/plant-definition'
+import { petToxicity, PetToxicity } from '@/domain/plants/toxicity/pet-toxicity'
 
-export interface CreatePlantDefinitionServiceInput {
+export interface UpsertPlantDefinitionServiceInput {
+    id: number | null
     commonName: string
     scientificName: string
     waterProfile: string
     lightLevel: string
     soilType: string
+    petToxicity: string
+    symptoms: string
     categories: string[]
 }
 
@@ -94,25 +98,47 @@ function validateCategories(values: string[]): PlantCategory[] {
     return validCategories
 }
 
+function validatePetToxicity(value: string): PetToxicity {
+    if (!petToxicity.values.includes(value as PetToxicity)) {
+        throw new ValidationError(
+            `Toxicidad invalida: ${value}. Valores validos: ${petToxicity.values.join(', ')}`,
+            'petToxicity'
+        )
+    }
+
+    return value as PetToxicity
+}
+
 function isUniqueConstraintError(error: unknown): boolean {
     return error instanceof Error && error.message.includes('UNIQUE constraint failed')
 }
 
-export async function createPlantDefinition(
-    input: CreatePlantDefinitionServiceInput
+export async function upsertPlantDefinition(
+    input: UpsertPlantDefinitionServiceInput
 ): Promise<{ id: number }> {
-    const validatedInput: CreatePlantDefinitionInput = {
+    const validatedInput: UpsertPlantDefinitionInput = {
+        id: input.id,
         commonName: validateCommonName(input.commonName),
         scientificName: validateScientificName(input.scientificName),
         waterProfile: validateWaterProfile(input.waterProfile),
         lightLevel: validateLightLevel(input.lightLevel),
         soilType: validateSoilType(input.soilType),
         categories: validateCategories(input.categories),
+        petToxicity: validatePetToxicity(input.petToxicity),
+        symptoms: input.symptoms,
     }
 
+    console.log({ validatedInput })
+
     try {
+        if (validatedInput.id) {
+            const result = await plantDefinitionsStore.update(validatedInput)
+            return { id: result.id! }
+        }
+
         const result = await plantDefinitionsStore.create(validatedInput)
         return { id: result.id! }
+
     } catch (error) {
         if (isUniqueConstraintError(error)) {
             throw new UniqueConstraintError(
@@ -137,7 +163,7 @@ export async function deletePlantDefinition(id: number): Promise<void> {
 }
 
 const plantDefinitionsService = {
-    create: createPlantDefinition,
+    upsert: upsertPlantDefinition,
     list: listPlantDefinitions,
     get: getPlantDefinition,
     delete: deletePlantDefinition,

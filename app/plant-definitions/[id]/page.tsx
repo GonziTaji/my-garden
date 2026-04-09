@@ -9,7 +9,7 @@ export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]
 }
 
-export default async function Page({ params }: PageProps<"/plant-definitions/[id]">) {
+export default async function Page({ params, searchParams }: PageProps<"/plant-definitions/[id]">) {
     const { id } = await params
     const plantDefinitionId = Number(id)
 
@@ -24,11 +24,12 @@ export default async function Page({ params }: PageProps<"/plant-definitions/[id
         notFound()
     }
 
+    const { e } = await searchParams
+
+
     return (
         <div>
-            <PlantDefinitionDetails definition={current} />
-            <Spacer space={6} />
-            <DeletePlantDefinitionButton def={current} />
+            <PlantDefinitionDetails definition={current} isEdit={e === 'T'} />
         </div>
     )
 }

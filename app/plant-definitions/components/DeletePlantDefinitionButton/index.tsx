@@ -25,6 +25,7 @@ export default function DeletePlantDefinitionButton({ className, def }: { classN
 
     return (
         <button
+            type="button"
             className={[className, styles.deleteButton].join(' ')}
             onClick={() => handleDelete(def.id, def.commonName)}
             disabled={isPending}
