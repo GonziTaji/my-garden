@@ -53,8 +53,6 @@ async function create(input: CreatePlantInput) {
 }
 
 async function listAll(filters?: PlantListFilters): Promise<PlantWithDefinition[]> {
-    console.log(filters)
-
     let query = db
         .selectFrom('plants')
         .innerJoin('plantDefinitions', 'plantDefinitions.id', 'plants.plantDefinitionId')

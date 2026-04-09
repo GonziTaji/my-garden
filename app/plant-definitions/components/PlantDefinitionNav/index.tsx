@@ -12,8 +12,6 @@ export interface PlantDefinitionNavProps {
 export default function PlantDefinitionNav({ plantDefinitionId, plants }: PlantDefinitionNavProps) {
     const pathName = usePathname()
 
-    console.log({ pathName })
-
     const navItems: NavItem[] = [
         {
             label: 'Detalles',

@@ -22,7 +22,6 @@ export default function CreatePlantDefinitionForm({ }: CreatePlantDefinitionForm
         startTransition(async () => {
             const result: ActionResult = await createPlantDefinition(fd)
 
-            console.log("while redirecting")
             // Only check for error because action redirects on success.
             if (result.error) {
                 setError(result.error)

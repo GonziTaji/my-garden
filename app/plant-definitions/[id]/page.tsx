@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
 import plantDefinitionsService from '@/services/plant-definitions.service'
-import plantsService from '@/services/plants.service'
 import PlantDefinitionDetails from '../components/PlantDefinitionDetails'
 import DeletePlantDefinitionButton from '../components/DeletePlantDefinitionButton'
 import Spacer from '@/app/components/Spacer'
@@ -24,10 +23,6 @@ export default async function Page({ params }: PageProps<"/plant-definitions/[id
     if (!current) {
         notFound()
     }
-
-    const plantsOfDef = await plantsService.list({ plantDefinitionId })
-
-    console.log(plantsOfDef)
 
     return (
         <div>

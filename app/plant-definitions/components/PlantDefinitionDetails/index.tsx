@@ -12,15 +12,13 @@ export interface PlantDefinitionDetailsProps {
 
 export default function PlantDefinitionDetails({ definition }: PlantDefinitionDetailsProps) {
     return (
-        <div className={styles.container}>
-            <h1 className="text-3xl text-center">{definition.commonName}</h1>
+        <div className="border p-4">
+            <div className="w-max p-4 ps-12">
+                <h1 className="text-3xl">{definition.commonName}</h1>
+                <em className="text-lg">{definition.scientificName}</em>
+            </div>
 
-            <dl>
-                <dt>Nombre scientifico</dt>
-                <dd>
-                    <em>{definition.scientificName}</em>
-                </dd>
-
+            <dl className={styles.detailsList}>
                 <dt>Tipo de planta</dt>
                 <dd>
                     <ul>

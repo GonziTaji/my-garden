@@ -15,8 +15,6 @@ export default async function Layout({ children, params }: PropsWithChildren<Pag
     const { id, plant_id } = await params
     const plantDefinitionId = Number(id)
 
-    console.log(plant_id)
-
     if (isNaN(plantDefinitionId)) {
         notFound()
     }
