@@ -14,7 +14,7 @@ export interface PlantDefinitionRow {
     lightLevel: LightLevel
     soilType: SoilType
     petToxicity: PetToxicity
-    symptoms: string
+    petToxicityNotes: string
     categories: PlantCategory[]
     createdAt: string
     updatedAt: string
@@ -33,7 +33,7 @@ async function update(input: UpsertPlantDefinitionInput) {
             lightLevel: input.lightLevel,
             soilType: input.soilType,
             petToxicity: input.petToxicity,
-            symptoms: input.symptoms,
+            petToxicityNotes: input.petToxicityNotes,
             categoriesJson: JSON.stringify(input.categories),
         })
         .returning('id')
@@ -50,7 +50,7 @@ async function create(input: UpsertPlantDefinitionInput) {
             lightLevel: input.lightLevel,
             soilType: input.soilType,
             petToxicity: input.petToxicity,
-            symptoms: input.symptoms,
+            petToxicityNotes: input.petToxicityNotes,
             categoriesJson: JSON.stringify(input.categories),
         })
         .returning('id')
@@ -72,7 +72,7 @@ async function listAll(): Promise<PlantDefinition[]> {
         lightLevel: row.lightLevel as LightLevel,
         soilType: row.soilType as SoilType,
         petToxicity: row.petToxicity as PetToxicity,
-        symptoms: row.symptoms,
+        petToxicityNotes: row.petToxicityNotes,
         categories: JSON.parse(row.categoriesJson) as PlantCategory[],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -96,7 +96,7 @@ async function getById(id: number): Promise<PlantDefinitionRow | undefined> {
         lightLevel: row.lightLevel as LightLevel,
         soilType: row.soilType as SoilType,
         petToxicity: row.petToxicity as PetToxicity,
-        symptoms: row.symptoms,
+        petToxicityNotes: row.petToxicityNotes,
         categories: JSON.parse(row.categoriesJson) as PlantCategory[],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,

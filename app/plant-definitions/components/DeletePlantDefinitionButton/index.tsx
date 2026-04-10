@@ -4,8 +4,15 @@ import { PlantDefinition } from "@/domain/plants/plant-definition"
 import { deletePlantDefinition } from "@/app/plant-definitions/actions"
 import { useTransition } from "react"
 import styles from './styles.module.css'
+import { cn } from "@sglara/cn"
 
-export default function DeletePlantDefinitionButton({ className, def }: { className?: string, def: PlantDefinition }) {
+interface DeletePlantDefinitionButtonProps {
+    className?: string,
+    def: PlantDefinition
+    disabled?: boolean
+}
+
+export default function DeletePlantDefinitionButton({ className, def }: DeletePlantDefinitionButtonProps) {
     const [isPending, startTransition] = useTransition()
 
     function handleDelete(id: number, name: string) {
@@ -26,8 +33,8 @@ export default function DeletePlantDefinitionButton({ className, def }: { classN
     return (
         <button
             type="button"
-            className={[className, styles.deleteButton].join(' ')}
-            onClick={() => handleDelete(def.id, def.commonName)}
+            className={cn(styles.deleteButton, className)}
+            onClick={() => handleDelete(def.id!, def.commonName)}
             disabled={isPending}
         >
             {isPending ? 'Eliminando...' : 'Eliminar'}

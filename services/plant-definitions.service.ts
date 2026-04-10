@@ -125,7 +125,7 @@ export async function upsertPlantDefinition(
         soilType: validateSoilType(input.soilType),
         categories: validateCategories(input.categories),
         petToxicity: validatePetToxicity(input.petToxicity),
-        symptoms: input.symptoms,
+        petToxicityNotes: input.symptoms,
     }
 
     console.log({ validatedInput })

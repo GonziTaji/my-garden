@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
 import plantDefinitionsService from '@/services/plant-definitions.service'
 import plantsService from '@/services/plants.service'
-import styles from './layout.module.css'
 import { PropsWithChildren } from 'react'
 import PlantDefinitionNav from '../components/PlantDefinitionNav'
 import Spacer from '@/app/components/Spacer'
@@ -12,7 +11,7 @@ export interface PlantDefinitionsClientProps {
 }
 
 export default async function Layout({ children, params }: PropsWithChildren<PageProps<"/plant-definitions/[id]/[plant_id]">>) {
-    const { id, plant_id } = await params
+    const { id } = await params
     const plantDefinitionId = Number(id)
 
     if (isNaN(plantDefinitionId)) {
@@ -29,7 +28,7 @@ export default async function Layout({ children, params }: PropsWithChildren<Pag
     const plantsOfDef = await plantsService.list({ plantDefinitionId })
 
     return (
-        <section className={styles.content}>
+        <section className="min-h-full self-stretch">
             <PlantDefinitionNav plantDefinitionId={plantDefinitionId} plants={plantsOfDef} />
             <Spacer space={2} />
             {children}

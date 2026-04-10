@@ -2,8 +2,6 @@ import { notFound } from 'next/navigation'
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
 import plantDefinitionsService from '@/services/plant-definitions.service'
 import PlantDefinitionDetails from '../components/PlantDefinitionDetails'
-import DeletePlantDefinitionButton from '../components/DeletePlantDefinitionButton'
-import Spacer from '@/app/components/Spacer'
 
 export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]

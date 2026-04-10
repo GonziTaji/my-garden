@@ -5,7 +5,7 @@ import type { PlantCategory } from "./category/plant-category"
 import { PetToxicity } from "./toxicity/pet-toxicity"
 
 export interface PlantDefinition {
-    id: number
+    id: number | null
 
     commonName: string
     scientificName: string
@@ -14,7 +14,7 @@ export interface PlantDefinition {
     lightLevel: LightLevel
     soilType: SoilType
     petToxicity: PetToxicity
-    symptoms: string
+    petToxicityNotes: string
 
     categories: PlantCategory[]
 }

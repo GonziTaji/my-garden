@@ -9,8 +9,51 @@ import { waterProfile } from "@/domain/plants/water/water-profile"
 import styles from './styles.module.css'
 import DeletePlantDefinitionButton from "../DeletePlantDefinitionButton"
 import { useRouter, useSearchParams } from "next/navigation"
-import { SubmitEvent, useEffect, useState } from "react"
+import { FC, SubmitEvent, useEffect, useState } from "react"
 import { upsertPlantDefinition } from "../../actions"
+import { cn } from "@sglara/cn"
+
+interface DetailOption { value: string, label: string, selected: boolean }
+
+type DetailChecklistKey = keyof Pick<PlantDefinition,
+    | 'categories'
+    | 'waterProfile'
+    | 'lightLevel'
+    | 'soilType'
+    | 'petToxicity'
+>
+
+type DetailChecklistType = 'radio' | 'checkbox'
+
+const DetailCheckList: FC<{
+    className?: string
+    name: DetailChecklistKey,
+    type: DetailChecklistType,
+    options: DetailOption[],
+    disabled?: boolean
+}> = ({ name, type, options, disabled, className }) => (
+    <ul className={cn("grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-4 justify-items-center items-center", className)}>
+        {options.map((opt) => (
+            <li key={opt.value}>
+                <label className={cn(
+                    "py-1 px-2 content-center block w-full min-w-24 min-h-12",
+                    !disabled && "cursor-pointer",
+                    "bg-olive-100 has-checked:bg-rose-100",
+                )}>
+                    <input
+                        className="hidden"
+                        name={name}
+                        type={type}
+                        defaultValue={opt.value}
+                        defaultChecked={opt.selected}
+                        disabled={disabled}
+                    />
+                    {opt.label}
+                </label>
+            </li>
+        ))}
+    </ul>
+)
 
 export interface PlantDefinitionDetailsProps {
     isEdit: boolean
@@ -54,156 +97,141 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
         }
     }
 
-    return (
-        <form className="border p-4" onSubmit={handleSubmit}>
-            {isSaving && 'SAVING'}
-            <input name="id" type="hidden" defaultValue={definition.id} />
+    // @review: this can be generalized. But should it be generalized?
+    const categoriesOptions = plantCategory.options.map((opt) => ({
+        ...opt, selected: definition.categories.includes(opt.value)
+    }))
 
-            <div className="w-max p-4 ps-12">
+    const waterProfileOptions = waterProfile.options.map((opt) => ({
+        ...opt,
+        selected: definition.waterProfile === opt.value
+    }))
+
+    const lightLevelOptions = lightLevel.options.map((opt) => ({
+        ...opt,
+        selected: definition.lightLevel === opt.value
+    }))
+
+    const soilTypeOptions = soilType.options.map((opt) => ({
+        ...opt,
+        selected: definition.soilType === opt.value
+    }))
+
+    const petToxicityOptions = petToxicity.options.map((opt) => ({
+        ...opt,
+        selected: definition.petToxicity === opt.value
+    }))
+
+    const disabled = !isEdit || isSaving
+
+    return (
+        <form className="border p-4 mx-2 overflow-auto mb-12" onSubmit={handleSubmit}>
+            <input name="id" type="hidden" defaultValue={definition.id || ''} />
+
+            <div className="p-4 flex flex-col gap-2">
                 <input
-                    className="text-3xl block border disabled:border-0 border-slate-300 rounded-sm"
+                    className="text-3xl block border-b border-s border-slate-300 disabled:border-transparent outline-none p-4"
                     type="text"
                     name="commonName"
+                    placeholder="Nombre común"
                     defaultValue={definition.commonName}
-                    disabled={!isEdit}
+                    disabled={disabled}
                 />
                 <input
-                    className="text-lg italic border disabled:border-0 border-slate-300 rounded-sm"
+                    className="text-lg italic border-b border-s border-slate-300 disabled:border-transparent outline-none p-4"
                     type="text"
                     name="scientificName"
+                    placeholder="Nombre scientifico"
                     defaultValue={definition.scientificName}
-                    disabled={!isEdit}
+                    disabled={disabled}
                 />
             </div>
 
             <dl className={styles.detailsList}>
                 <dt>Tipo de planta</dt>
                 <dd>
-                    <ul>
-                        {plantCategory.options.map((opt) => (
-                            <li key={opt.value}>
-                                <label>
-                                    <input
-                                        name="categories"
-                                        type="checkbox"
-                                        defaultValue={opt.value}
-                                        defaultChecked={definition.categories.includes(opt.value)}
-                                        disabled={!isEdit}
-                                    />
-                                    <span>{opt.label}</span>
-                                </label>
-                            </li>
-                        ))}
-                    </ul>
+
+                    <DetailCheckList
+                        options={categoriesOptions}
+                        disabled={disabled}
+                        type="checkbox"
+                        name="categories"
+                    />
                 </dd>
 
-                <dt>Perfil de agua</dt>
+                <dt>Ciclo de agua</dt>
                 <dd>
-                    <ul>
-                        {waterProfile.options.map((opt) => (
-                            <li key={opt.value}>
-                                <label>
-                                    <input
-                                        name="waterProfile"
-                                        type="radio"
-                                        defaultValue={opt.value}
-                                        defaultChecked={definition.waterProfile === opt.value}
-                                        disabled={!isEdit}
-                                    />
-                                    <span>{opt.label}</span>
-                                </label>
-                            </li>
-                        ))}
-                    </ul>
+                    <DetailCheckList
+                        options={waterProfileOptions}
+                        disabled={disabled}
+                        type="radio"
+                        name="waterProfile"
+                    />
                 </dd>
 
                 <dt>Nivel de luz</dt>
                 <dd>
-                    <ul>
-                        {lightLevel.options.map((opt) => (
-                            <li key={opt.value}>
-                                <label>
-                                    <input
-                                        name="lightLevel"
-                                        type="radio"
-                                        defaultValue={opt.value}
-                                        defaultChecked={definition.lightLevel === opt.value}
-                                        disabled={!isEdit}
-                                    />
-                                    <span>{opt.label}</span>
-                                </label>
-                            </li>
-                        ))}
-                    </ul>
+                    <DetailCheckList
+                        options={lightLevelOptions}
+                        disabled={disabled}
+                        type="radio"
+                        name="lightLevel"
+                    />
                 </dd>
 
                 <dt>Tipo de suelo</dt>
                 <dd>
-                    <ul>
-                        {soilType.options.map((opt) => (
-                            <li key={opt.value}>
-                                <label>
-                                    <input name="soilType"
-                                        type="radio"
-                                        defaultValue={opt.value}
-                                        defaultChecked={definition.soilType === opt.value}
-                                        disabled={!isEdit}
-                                    />
-                                    <span>{opt.label}</span>
-                                </label>
-                            </li>
-                        ))}
-                    </ul>
+                    <DetailCheckList
+                        options={soilTypeOptions}
+                        disabled={disabled}
+                        type="radio"
+                        name="soilType"
+                    />
                 </dd>
 
                 <dt>Pet friendly?</dt>
-                <dd>
-                    {isEdit ? (
-                        <ul>{
-                            petToxicity.options.map((opt) => (
-                                <li key={opt.value}>
-                                    <label>
-                                        <input name="petToxicity"
-                                            type="radio"
-                                            defaultValue={opt.value}
-                                            defaultChecked={definition.petToxicity === opt.value}
-                                        />
-                                        <span>{opt.label}</span>
-                                    </label>
-                                </li>
-                            ))
-                        }</ul>
-                    ) : petToxicity.meta[definition.petToxicity].label}
+                <dd className="flex gap-4">
+                    <DetailCheckList
+                        className="flex-col"
+                        options={petToxicityOptions}
+                        disabled={disabled}
+                        type="radio"
+                        name="petToxicity"
+                    />
 
-                    {(definition.symptoms.length > 0 || isEdit) &&
-                        <dl>
-                            <dt>Síntomas</dt>
-                            <dd>
-                                <textarea
-                                    className="border disabled:border-0 border-slate-300 rounded-sm not-disabled:w-full"
-                                    name="symptoms"
-                                    disabled={!isEdit}
-                                    defaultValue={definition.symptoms}
-                                >
-                                </textarea>
-                            </dd>
-                        </dl>
-                    }
+                    <dl className="grow">
+                        <dt>Notas</dt>
+                        <dd>
+                            <textarea
+                                className="border disabled:border-0 border-slate-300 rounded-sm not-disabled:w-full"
+                                name="symptoms"
+                                disabled={disabled}
+                                defaultValue={definition.petToxicityNotes || 'Sin notas'}
+                            >
+                            </textarea>
+                        </dd>
+                    </dl>
                 </dd>
             </dl>
 
             {isEdit ? (
                 <div className="flex">
-                    <button type="submit">Guardar</button>
-                    <button type="button" onClick={handleCancel}>Cancelar</button>
+                    <button className="cursor-pointer" type="submit" disabled={isSaving}>Guardar</button>
+                    <button className="cursor-pointer" type="button" onClick={handleCancel}>Cancelar</button>
 
                     <div className="grow text-end">
-                        <DeletePlantDefinitionButton def={definition} />
+                        <DeletePlantDefinitionButton disabled def={definition} />
                     </div>
 
                 </div>
             ) : (
-                <button type="button" onClick={handleEdit}>Editar</button>
+                <button
+                    className="h-8 w-24 px-3 py-1 bg-rose-200 rounded-md cursor-pointer"
+                    type="button"
+                    onClick={handleEdit}
+                >
+                    Editar
+                </button>
             )}
         </form>
     )

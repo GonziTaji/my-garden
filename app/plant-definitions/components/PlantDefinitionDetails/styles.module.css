@@ -1,4 +1,8 @@
 dl.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+
   dt {
     font-size: var(--text-lg);
     display: flex;
@@ -17,53 +21,16 @@ dl.detailsList {
 
   dd {
     text-align: center;
-    margin-inline: calc(var(--spacing) * 8);
-    margin-block: calc(var(--spacing) * 4);
+    margin-inline: calc(var(--spacing) * 4);
+    margin-block: calc(var(--spacing) * 2);
+    padding-bottom: calc(var(--spacing) * 4);
 
     ul {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      gap: calc(var(--spacing) * 4);
-      align-items: center;
-
-      li {
-        width: min-content;
-
-        label {
-          display: block;
-
-          &:not(:has(:disabled)) {
-            cursor: pointer;
-          }
-
-          &:has(input[type='checkbox']),
-          &:has(input[type='radio']) {
-            position: relative;
-            --label-bg: rgba(200, 200, 200, 0.1);
-
-            &:has(:checked) {
-              --label-bg: rgba(255, 200, 200, 1);
-            }
-          }
-
-          position: relative;
-          &::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--label-bg);
-            z-index: -1;
-          }
-
-          input {
-            display: none;
-          }
-        }
-      }
+      /* display: flex; */
+      /* flex-wrap: wrap; */
+      /* justify-content: space-around; */
+      /* gap: calc(var(--spacing) * 4); */
+      /* align-items: center; */
     }
   }
 }

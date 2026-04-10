@@ -1,6 +1,6 @@
 'use client'
 
-import { createPlantDefinition, ActionResult } from '@/app/plant-definitions/actions'
+import { PlantDefinition, ActionResult } from '@/app/plant-definitions/actions'
 import { useTransition, useState } from 'react'
 import { waterProfile } from '@/domain/plants/water/water-profile'
 import { lightLevel } from '@/domain/plants/light/light-level'
