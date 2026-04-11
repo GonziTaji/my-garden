@@ -23,6 +23,19 @@ const buttonVariants = cva(["h-8 w-24", "px-3", "py-1", "rounded-md", "cursor-po
     }
 })
 
+const namesInputVariants = cva(["transition-all", "border", "outline-rose-400", "p-1"], {
+    variants: {
+        value: {
+            commonName: ["text-3xl", "rounded-t-sm", "border-b-0"],
+            scientificName: ["italic", "text-lg", "rounded-b-sm", "border-t-0"],
+        },
+        disabled: {
+            true: ["border-transparent"],
+            false: ["border-rose-200", "ps-3"],
+        }
+    }
+})
+
 interface DetailOption { value: string, label: string, selected: boolean }
 
 type DetailChecklistKey = keyof Pick<PlantDefinition,
@@ -148,7 +161,7 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
         <form className="border p-4 mx-2 overflow-auto mb-12" onSubmit={handleSubmit}>
             <input name="id" type="hidden" defaultValue={definition.id || ''} />
 
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-2">
                 <div className="flex justify-end gap-3">
                     {isEdit ? (
                         <>
@@ -178,9 +191,9 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
                     )}
                 </div>
 
-                <div className="p-4 flex flex-col gap-2 min-w-0">
+                <div className="flex flex-col min-w-0">
                     <input
-                        className="text-3xl block border-b border-s border-slate-300 disabled:border-transparent outline-none p-4"
+                        className={namesInputVariants({ value: 'commonName', disabled })}
                         type="text"
                         name="commonName"
                         placeholder="Nombre común"
@@ -188,7 +201,7 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
                         disabled={disabled}
                     />
                     <input
-                        className="text-lg italic border-b border-s border-slate-300 disabled:border-transparent outline-none p-4"
+                        className={namesInputVariants({ value: 'scientificName', disabled })}
                         type="text"
                         name="scientificName"
                         placeholder="Nombre scientifico"
