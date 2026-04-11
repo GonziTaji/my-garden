@@ -277,12 +277,12 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
                         </label>
                     </dd>
                 ) : (
-                    <dd>
-                        {petToxicity.meta[definition.petToxicity].label}.{' '}{definition.petToxicityNotes}
+                    <dd className="text-start!">
+                        <span>{petToxicity.meta[definition.petToxicity].label}.</span>
+                        <br />
+                        <span className="text-sm italic">{definition.petToxicityNotes}</span>
                     </dd>
                 )}
-
-
 
                 {isEdit && definition.id && (
                     <>
