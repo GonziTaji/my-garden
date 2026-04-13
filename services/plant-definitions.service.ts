@@ -1,4 +1,4 @@
-import plantDefinitionsStore, { UpsertPlantDefinitionInput, PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
+import plantDefinitionsStore, { UpsertPlantDefinitionInput } from '@/db/stores/plant-definitions.store'
 import { waterProfile, WaterProfile } from '@/domain/plants/water/water-profile'
 import { lightLevel, LightLevel } from '@/domain/plants/light/light-level'
 import { soilType, SoilType } from '@/domain/plants/soil/soil-type'
@@ -14,8 +14,26 @@ export interface UpsertPlantDefinitionServiceInput {
     lightLevel: string
     soilType: string
     petToxicity: string
-    symptoms: string
+    petToxicityNotes: string
     categories: string[]
+    images?: UpsertPlantDefinitionImagesInput
+}
+
+export interface ExistingPlantDefinitionImageInput {
+    id: number
+    filepath: string
+    position: number
+}
+
+export interface NewPlantDefinitionImageInput {
+    filepath: string
+    position: number
+}
+
+export interface UpsertPlantDefinitionImagesInput {
+    existingImages: ExistingPlantDefinitionImageInput[]
+    newImages: NewPlantDefinitionImageInput[]
+    removedImageIds: number[]
 }
 
 export class ValidationError extends Error {
@@ -113,6 +131,49 @@ function isUniqueConstraintError(error: unknown): boolean {
     return error instanceof Error && error.message.includes('UNIQUE constraint failed')
 }
 
+function buildFinalImageFilepaths(
+    imagesInput?: UpsertPlantDefinitionImagesInput
+): { filepath: string, position: number }[] {
+    if (!imagesInput) {
+        return []
+    }
+
+    const removedIds = new Set(imagesInput.removedImageIds)
+    const keepExisting = imagesInput.existingImages
+        .filter((image) => !removedIds.has(image.id))
+        .map((image) => ({
+            filepath: image.filepath,
+            position: image.position,
+        }))
+
+    const newImages = imagesInput.newImages.map((image) => ({
+        filepath: image.filepath,
+        position: image.position,
+    }))
+
+    const mergedImages = [...keepExisting, ...newImages]
+        .map((image) => ({
+            filepath: image.filepath.trim(),
+            position: image.position,
+        }))
+        .filter((image) => image.filepath.length > 0)
+        .filter((image) => image.position >= 0 && image.position < 3)
+        .sort((left, right) => left.position - right.position)
+
+    const byPosition = new Map<number, { filepath: string, position: number }>()
+    for (const image of mergedImages) {
+        byPosition.set(image.position, image)
+    }
+
+    const finalImages = [...byPosition.values()]
+
+    if (finalImages.length > 3) {
+        throw new ValidationError('No se pueden guardar mas de 3 imagenes', 'images')
+    }
+
+    return finalImages
+}
+
 export async function upsertPlantDefinition(
     input: UpsertPlantDefinitionServiceInput
 ): Promise<{ id: number }> {
@@ -125,10 +186,9 @@ export async function upsertPlantDefinition(
         soilType: validateSoilType(input.soilType),
         categories: validateCategories(input.categories),
         petToxicity: validatePetToxicity(input.petToxicity),
-        petToxicityNotes: input.symptoms,
+        petToxicityNotes: input.petToxicityNotes,
+        images: buildFinalImageFilepaths(input.images),
     }
-
-    console.log({ validatedInput })
 
     try {
         if (validatedInput.id) {
@@ -154,7 +214,7 @@ export async function listPlantDefinitions(): Promise<PlantDefinition[]> {
     return plantDefinitionsStore.listAll()
 }
 
-export async function getPlantDefinition(id: number): Promise<PlantDefinitionRow | undefined> {
+export async function getPlantDefinition(id: number): Promise<PlantDefinition | undefined> {
     return plantDefinitionsStore.getById(id)
 }
 
@@ -162,11 +222,16 @@ export async function deletePlantDefinition(id: number): Promise<void> {
     await plantDefinitionsStore.deleteById(id)
 }
 
+export async function countPlantDefinitionImageReferences(filepath: string): Promise<number> {
+    return plantDefinitionsStore.countImageReferences(filepath)
+}
+
 const plantDefinitionsService = {
     upsert: upsertPlantDefinition,
     list: listPlantDefinitions,
     get: getPlantDefinition,
     delete: deletePlantDefinition,
+    countImageReferences: countPlantDefinitionImageReferences,
 }
 
 export default plantDefinitionsService

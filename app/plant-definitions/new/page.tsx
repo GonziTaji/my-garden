@@ -10,7 +10,8 @@ const newDefinition: PlantDefinition = {
     soilType: "well_draining",
     petToxicity: "non_toxic",
     petToxicityNotes: "",
-    categories: []
+    categories: [],
+    images: [],
 }
 
 export default function Page() {

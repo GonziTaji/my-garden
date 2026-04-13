@@ -1,17 +1,19 @@
 export type PlantJournalEntryType =
-  | "watering"
-  | "fertilizing"
-  | "repotting"
-  | "note"
+    | "watering"
+    | "fertilizing"
+    | "repotting"
+    | "note"
 
 export interface PlantJournalEntry {
-  id: number
+    id: number
 
-  plantId: number
+    plantId: number
 
-  type: PlantJournalEntryType
+    type: PlantJournalEntryType
 
-  date: Date
+    date: Date
 
-  notes?: string
+    notes?: string
+
+    images: string[]
 }

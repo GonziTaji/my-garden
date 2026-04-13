@@ -15,9 +15,7 @@ export default async function Page({ params, searchParams }: PageProps<"/plant-d
         notFound()
     }
 
-    const definitionsList = await plantDefinitionsService.list()
-
-    const current = definitionsList.find((d) => d.id === plantDefinitionId)
+    const current = await plantDefinitionsService.get(plantDefinitionId)
     if (!current) {
         notFound()
     }

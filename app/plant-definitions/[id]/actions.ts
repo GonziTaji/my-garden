@@ -23,13 +23,16 @@ export async function createPlantDefinition(formData: FormData): Promise<ActionR
     const categories = categoriesRaw.map((c) => c.toString())
 
     try {
-        const { id } = await plantDefinitionsService.create({
+        const { id } = await plantDefinitionsService.upsert({
+            id: null,
             commonName,
             scientificName,
             waterProfile,
             lightLevel,
             soilType,
             categories,
+            petToxicity: 'non_toxic',
+            petToxicityNotes: '',
         })
 
         refresh()
