@@ -22,35 +22,12 @@ export interface ActionResult {
     field?: string
 }
 
-type ImageSlotInput = {
-    index: number
-    existingId: number | null
-    removed: boolean
-    file: File | null
-}
-
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_IMAGE_COUNT = 3
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp'])
 const UPLOADS_DIR_ABSOLUTE = path.join(process.cwd(), 'public', 'uploads', 'plant-definitions')
 const UPLOADS_DIR_PUBLIC = '/uploads/plant-definitions'
-
-function parseImageSlots(formData: FormData): ImageSlotInput[] {
-    return [0, 1, 2].map((index) => {
-        const existingIdValue = formData.get(`imageSlots[${index}][existingId]`)?.toString() ?? ''
-        const existingId = existingIdValue.length > 0 ? Number(existingIdValue) : null
-        const removed = formData.get(`imageSlots[${index}][removed]`)?.toString() === 'true'
-        const maybeFile = formData.get(`imageSlots[${index}][file]`)
-        const file = maybeFile instanceof File && maybeFile.size > 0 ? maybeFile : null
-
-        return {
-            index,
-            existingId: Number.isNaN(existingId) ? null : existingId,
-            removed,
-            file,
-        }
-    })
-}
 
 function validateImageFile(file: File): string {
     const mimeType = file.type.toLowerCase()
@@ -148,7 +125,6 @@ export async function upsertPlantDefinition(formData: FormData): Promise<ActionR
     let plantDefinitionId = 0
 
     try {
-        const imageSlots = parseImageSlots(formData)
         const existingImages: ExistingPlantDefinitionImageInput[] = []
         const newImages: NewPlantDefinitionImageInput[] = []
         const removedImageIds: number[] = []
@@ -163,24 +139,32 @@ export async function upsertPlantDefinition(formData: FormData): Promise<ActionR
 
         const currentImagesById = new Map((currentDefinition?.images ?? []).map((image) => [image.id, image]))
 
-        for (const slot of imageSlots) {
-            if (slot.existingId !== null) {
-                const existingImage = currentImagesById.get(slot.existingId)
+        const ids = formData.getAll('imagesExistingId')
+        const removeds = formData.getAll('imagesIsRemoved')
+        const files = formData.getAll("imagesFile")
+
+        for (let i = 0; i < MAX_IMAGE_COUNT; i++) {
+            const existingId = ids[i]?.toString() ?? ''
+                const file = files[i]
+                const isFileValid = file instanceof File && file.size > 0
+
+            if (existingId) {
+                const existingImage = currentImagesById.get(Number(existingId))
 
                 if (!existingImage) {
                     throw new ValidationError('Imagen existente invalida para este tipo de planta', 'images')
                 }
 
-                if (slot.file) {
-                    const filepath = await uploadPlantDefinitionImage(slot.file)
+                if (isFileValid) {
+                    const filepath = await uploadPlantDefinitionImage(file)
                     uploadedFilepaths.push(filepath)
                     removedImageIds.push(existingImage.id!)
                     removedFilepaths.push(existingImage.filepath)
-                    newImages.push({ filepath, position: slot.index })
+                    newImages.push({ filepath, position: i })
                     continue
                 }
 
-                if (slot.removed) {
+                if (removeds[i] === 'true') {
                     removedImageIds.push(existingImage.id!)
                     removedFilepaths.push(existingImage.filepath)
                     continue
@@ -189,20 +173,20 @@ export async function upsertPlantDefinition(formData: FormData): Promise<ActionR
                 existingImages.push({
                     id: existingImage.id!,
                     filepath: existingImage.filepath,
-                    position: slot.index,
+                    position: i,
                 })
 
                 continue
             }
 
-            if (slot.file) {
-                const filepath = await uploadPlantDefinitionImage(slot.file)
+            if (isFileValid) {
+                const filepath = await uploadPlantDefinitionImage(file)
                 uploadedFilepaths.push(filepath)
-                newImages.push({ filepath, position: slot.index })
+                newImages.push({ filepath, position: i })
             }
         }
 
-        if ((existingImages.length + newImages.length) > 3) {
+        if ((existingImages.length + newImages.length) > MAX_IMAGE_COUNT) {
             throw new ValidationError('No se pueden guardar mas de 3 imagenes', 'images')
         }
 

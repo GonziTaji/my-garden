@@ -8,7 +8,7 @@ import { petToxicity } from "@/domain/plants/toxicity/pet-toxicity"
 import { waterProfile } from "@/domain/plants/water/water-profile"
 import styles from './styles.module.css'
 import { useRouter } from "next/navigation"
-import { FC, SubmitEvent, useEffect, useRef, useState, useTransition } from "react"
+import { ChangeEventHandler, FC, SubmitEvent, useEffect, useState, useTransition } from "react"
 import { deletePlantDefinition, upsertPlantDefinition } from "../../actions"
 import { cn } from "@sglara/cn"
 import { cva } from "class-variance-authority"
@@ -35,7 +35,7 @@ const checkboxLabelVariants = cva("px-1 content-center block w-full min-w-24 min
     }]
 })
 
-const buttonVariants = cva(["h-8 w-24", "px-3", "py-1", "rounded-md", "cursor-pointer"], {
+const buttonVariants = cva(["h-8 min-w-24", "px-3", "py-1", "rounded-md", "cursor-pointer"], {
     variants: {
         variant: {
             primary: 'bg-rose-200',
@@ -101,73 +101,87 @@ export interface PlantDefinitionDetailsProps {
     definition: PlantDefinition
 }
 
-const getRandomKey = () => Math.random().toString(36).substring(2);
-
-type ImageSlot = {
-    key: string
-    existingId?: number
-    existingFilepath?: string
-    file?: File
-    previewUrl: string
-    removed: boolean
+interface ImageSelectorProps {
+    image?: PlantDefinition['images'][number]
 }
 
-const toImageSlot = (image: PlantDefinition['images'][number] | undefined): ImageSlot => ({
-    key: getRandomKey(),
-    existingId: image?.id ?? undefined,
-    existingFilepath: image?.filepath ?? undefined,
-    file: undefined,
-    previewUrl: image?.filepath ?? '',
-    removed: false,
-})
+const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
+    const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? '')
 
-const buildInitialSlots = (images: PlantDefinition['images']): [ImageSlot, ImageSlot, ImageSlot] => {
-    const byPosition = new Map(images.map((image) => [image.position, image]))
+    useEffect(() => {
+        return () => URL.revokeObjectURL(previewUrl)
+    }, [])
 
-    return [
-        toImageSlot(byPosition.get(0)),
-        toImageSlot(byPosition.get(1)),
-        toImageSlot(byPosition.get(2)),
-    ]
+    const handleRemoveImage = () => {
+        URL.revokeObjectURL(previewUrl)
+        setPreviewUrl('')
+    }
+
+    const handleOnChangeImage: ChangeEventHandler<HTMLInputElement> = (ev) => {
+        URL.revokeObjectURL(previewUrl)
+
+        const maybeFile = ev.currentTarget.files?.item(0)
+        if (maybeFile) {
+            setPreviewUrl(URL.createObjectURL(maybeFile))
+        } else {
+            setPreviewUrl('')
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-2 p-2 rounded-sm">
+            <input
+                type="hidden"
+                name="imagesExistingId"
+                value={image?.id ?? ''}
+                readOnly
+            />
+            <input
+                type="hidden"
+                name="imagesIsRemoved"
+                value={previewUrl ? 'false' : 'true'}
+                readOnly
+            />
+
+            <label
+                role="button"
+                className="relative h-36 cursor-pointer"
+            >
+                <input
+                    name="imagesFile"
+                    className="hidden"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleOnChangeImage}
+                />
+
+                {previewUrl ? (
+                    <>
+                        <img className="h-full w-full object-cover" src={previewUrl} />
+
+                        <button
+                            className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-slate-900/60 text-white"
+                            type="button"
+                            onClick={handleRemoveImage}
+                        >
+                            Quitar
+                        </button>
+                    </>
+                ) : (
+                    <div className="h-full w-full border border-dashed border-olive-300 grid place-content-center text-sm text-slate-500">
+                        Agregar imagen
+                    </div>
+                )}
+            </label>
+
+        </div>
+    )
 }
 
 export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefinitionDetailsProps) {
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
-
-    const [imageSlots, setImageSlots] = useState<[ImageSlot, ImageSlot, ImageSlot]>(() => buildInitialSlots(definition.images))
-    const imageSlotsRef = useRef(imageSlots)
-    const previousIsEditRef = useRef(isEdit)
-
-    useEffect(() => {
-        imageSlotsRef.current = imageSlots
-    }, [imageSlots])
-
-    useEffect(() => {
-        return () => {
-            for (const slot of imageSlotsRef.current) {
-                if (slot.file && slot.previewUrl) {
-                    URL.revokeObjectURL(slot.previewUrl)
-                }
-            }
-        }
-    }, [])
-
-    useEffect(() => {
-        if (previousIsEditRef.current && !isEdit) {
-            setImageSlots((currentSlots) => {
-                for (const slot of currentSlots) {
-                    if (slot.file && slot.previewUrl) {
-                        URL.revokeObjectURL(slot.previewUrl)
-                    }
-                }
-
-                return buildInitialSlots(definition.images)
-            })
-        }
-
-        previousIsEditRef.current = isEdit
-    }, [definition.images, isEdit])
 
     const changeEditMode = (editMode: boolean) => {
         const url = new URL(location.href)
@@ -186,6 +200,7 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
     const handleSubmit = async (ev: SubmitEvent<HTMLFormElement>) => {
         ev.preventDefault()
         const fd = new FormData(ev.currentTarget.closest('form')!)
+        console.log(fd)
 
         startTransition(async () => {
             const { error } = await upsertPlantDefinition(fd)
@@ -208,81 +223,6 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
             if (!result.success) {
                 alert(result.error ?? 'Error al eliminar')
             }
-        })
-    }
-
-    const handleSelectImage = (slotIndex: number, file?: File | null) => {
-        if (!file) return
-
-        setImageSlots((currentSlots) => {
-            const nextSlots = [...currentSlots] as typeof currentSlots
-            const currentSlot = nextSlots[slotIndex]
-
-            if (currentSlot.file && currentSlot.previewUrl) {
-                URL.revokeObjectURL(currentSlot.previewUrl)
-            }
-
-            nextSlots[slotIndex] = {
-                ...currentSlot,
-                file,
-                previewUrl: URL.createObjectURL(file),
-                removed: false,
-            }
-
-            return nextSlots
-        })
-    }
-
-    const handleRemoveImage = (slotIndex: number) => {
-        setImageSlots((currentSlots) => {
-            const nextSlots = [...currentSlots] as typeof currentSlots
-            const slot = nextSlots[slotIndex]
-
-            if (slot.file && slot.previewUrl) {
-                URL.revokeObjectURL(slot.previewUrl)
-            }
-
-            if (slot.file && slot.existingFilepath) {
-                nextSlots[slotIndex] = {
-                    ...slot,
-                    file: undefined,
-                    previewUrl: slot.existingFilepath,
-                    removed: false,
-                }
-
-                return nextSlots
-            }
-
-            if (slot.existingId && !slot.removed) {
-                nextSlots[slotIndex] = {
-                    ...slot,
-                    file: undefined,
-                    previewUrl: '',
-                    removed: true,
-                }
-
-                return nextSlots
-            }
-
-            if (slot.removed && slot.existingFilepath) {
-                nextSlots[slotIndex] = {
-                    ...slot,
-                    file: undefined,
-                    previewUrl: slot.existingFilepath,
-                    removed: false,
-                }
-
-                return nextSlots
-            }
-
-            nextSlots[slotIndex] = {
-                ...slot,
-                file: undefined,
-                previewUrl: '',
-                removed: false,
-            }
-
-            return nextSlots
         })
     }
 
@@ -370,59 +310,9 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
             <div>
                 {isEdit ? (
                     <div className="grid gap-2 grid-cols-3">
-                        {imageSlots.map((slot, index) => (
-                            <div key={slot.key} className="flex min-h-44 flex-col gap-2 border border-olive-300 p-2 rounded-sm">
-                                <input
-                                    type="hidden"
-                                    name={`imageSlots[${index}][existingId]`}
-                                    value={slot.existingId ?? ''}
-                                    readOnly
-                                />
-                                <input
-                                    type="hidden"
-                                    name={`imageSlots[${index}][existingFilepath]`}
-                                    value={slot.existingFilepath ?? ''}
-                                    readOnly
-                                />
-                                <input
-                                    type="hidden"
-                                    name={`imageSlots[${index}][removed]`}
-                                    value={slot.removed ? 'true' : 'false'}
-                                    readOnly
-                                />
-
-                                {slot.previewUrl ? (
-                                    <img className="h-32 w-full object-cover" src={slot.previewUrl} alt={`Imagen ${index + 1}`} />
-                                ) : (
-                                    <div className="h-32 w-full border border-dashed border-olive-300 grid place-content-center text-sm text-slate-500">
-                                        Sin imagen
-                                    </div>
-                                )}
-
-                                <label
-                                    role="button"
-                                    className="cursor-pointer px-2 py-1 text-center font-bold border border-rose-200 text-red-950"
-                                >
-                                    {slot.previewUrl ? 'Reemplazar imagen' : 'Agregar imagen'}
-                                    <input
-                                        name={`imageSlots[${index}][file]`}
-                                        className="hidden"
-                                        type="file"
-                                        accept="image/*"
-                                        capture="environment"
-                                        onChange={({ currentTarget }) => handleSelectImage(index, currentTarget.files?.item(0))}
-                                    />
-                                </label>
-
-                                <button
-                                    className="text-sm px-2 py-1 border border-slate-300"
-                                    type="button"
-                                    onClick={() => handleRemoveImage(index)}
-                                >
-                                    Quitar
-                                </button>
-                            </div>
-                        ))}
+                        {[0, 1, 2].map((n) =>
+                            <ImageSelector image={definition.images[n]} key={n} />
+                        )}
                     </div>
                 ) : (
                     <div className="grid gap-2 grid-cols-3">
