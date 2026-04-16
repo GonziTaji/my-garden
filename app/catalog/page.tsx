@@ -1,13 +1,11 @@
 import { plantCategory } from "@/domain/plants/category/plant-category"
 import { lightLevel } from "@/domain/plants/light/light-level"
-import { PlantDefinition } from "@/domain/plants/plant-definition"
 import { soilType } from "@/domain/plants/soil/soil-type"
 import { waterProfile } from "@/domain/plants/water/water-profile"
 import plantDefinitionsService from "@/services/plant-definitions.service"
 import { cn } from "@sglara/cn"
 import Link from "next/link"
-
-const getPlantDefinitionUrl = (id: PlantDefinition['id']) => `/plant-definitions/${id}`
+import Image from "next/image"
 
 export default async function PlantDefinitionsPage() {
     const definitionsList = await plantDefinitionsService.list()
@@ -18,12 +16,12 @@ export default async function PlantDefinitionsPage() {
                 {definitionsList.map((d) => (
                     <Link
                         key={d.id}
-                        href={getPlantDefinitionUrl(d.id)}
+                        href={`/catalog/${d.id}`}
                         className="bg-olive-50"
                     >
                         <div className="p-12 pb-0">
                             {d.images[0] ? (
-                                <img src={d.images[0].filepath} className="aspect-square object-cover" />
+                                <Image src={d.images[0].filepath} className="aspect-square object-cover" alt={`Imagen de ${d.commonName}`} width={150} height={150} />
                             ) : (
                                 <div className="aspect-square text-center content-center border border-dashed border-olive-300 text-sm text-slate-500">
                                     Sin imagen

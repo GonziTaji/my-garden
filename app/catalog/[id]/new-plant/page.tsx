@@ -1,11 +1,11 @@
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
-import CreatePlantForm from '@/app/plant-definitions/components/CreatePlantForm'
+import CreatePlantForm from '@/app/catalog/components/CreatePlantForm'
 
 export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]
 }
 
-export default async function Page({ params }: PageProps<"/plant-definitions/[id]/new-plant">) {
+export default async function Page({ params }: PageProps<"/catalog/[id]/new-plant">) {
     const { id } = await params
 
     return (

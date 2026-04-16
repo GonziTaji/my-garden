@@ -1,6 +1,6 @@
 'use client'
 
-import { createPlant, ActionResult } from '@/app/plant-definitions/actions'
+import { createPlant, ActionResult } from '@/app/catalog/actions'
 import { useTransition, useState } from 'react'
 
 export interface CreatePlantFormProps {

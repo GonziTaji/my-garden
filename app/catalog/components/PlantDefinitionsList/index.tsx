@@ -8,7 +8,7 @@ export interface PlantDefinitionsListProps {
     definitionsList: PlantDefinition[]
 }
 
-const NEW_PLANT_DEF_FORM_URI = '/plant-definitions/new'
+const NEW_PLANT_DEF_FORM_URI = '/catalog/new'
 
 export default function PlantDefinitionsList({ definitionsList }: PlantDefinitionsListProps) {
     const { id } = useParams<{ id: string }>()
@@ -17,7 +17,7 @@ export default function PlantDefinitionsList({ definitionsList }: PlantDefinitio
     const nId = Number(id)
 
     const items = definitionsList.map((d) => ({
-        href: `/plant-definitions/${d.id}`,
+        href: `/catalog/${d.id}`,
         isCurrent: d.id === nId,
         label: d.commonName,
     }))

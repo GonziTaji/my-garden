@@ -145,8 +145,8 @@ export async function upsertPlantDefinition(formData: FormData): Promise<ActionR
 
         for (let i = 0; i < MAX_IMAGE_COUNT; i++) {
             const existingId = ids[i]?.toString() ?? ''
-                const file = files[i]
-                const isFileValid = file instanceof File && file.size > 0
+            const file = files[i]
+            const isFileValid = file instanceof File && file.size > 0
 
             if (existingId) {
                 const existingImage = currentImagesById.get(Number(existingId))
@@ -226,7 +226,7 @@ export async function upsertPlantDefinition(formData: FormData): Promise<ActionR
     }
 
     refresh()
-    redirect(`/plant-definitions/${plantDefinitionId}`)
+    redirect(`/catalog/${plantDefinitionId}`)
 }
 
 export const createPlantDefinition = upsertPlantDefinition
@@ -240,7 +240,7 @@ export async function deletePlantDefinition(id: number): Promise<ActionResult> {
     }
 
     refresh()
-    redirect('/plant-definitions')
+    redirect('/catalog')
 }
 
 export async function createPlant(formData: FormData): Promise<ActionResult> {

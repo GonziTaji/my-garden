@@ -155,7 +155,7 @@ const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
 
                 {previewUrl ? (
                     <>
-                        <img className="h-full w-full object-cover" src={previewUrl} />
+                        <img className="h-full w-full object-cover" src={previewUrl} alt="" width={150} height={150} />
 
                         <button
                             className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-slate-900/60 text-white"
@@ -257,7 +257,7 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
                 <div className="grow">
                     <Link
                         className={buttonVariants({ variant: 'secondary', className: 'h-full inline-block' })}
-                        href="/plant-definitions"
+                        href="/catalog"
                     >
                         Catalogo
                     </Link>
