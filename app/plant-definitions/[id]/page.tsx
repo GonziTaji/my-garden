@@ -24,7 +24,7 @@ export default async function Page({ params, searchParams }: PageProps<"/plant-d
 
 
     return (
-        <div>
+        <div className='mx-2'>
             <PlantDefinitionDetails definition={current} isEdit={e === 'T'} />
         </div>
     )

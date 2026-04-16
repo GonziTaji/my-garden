@@ -12,27 +12,24 @@ import { ChangeEventHandler, FC, SubmitEvent, useEffect, useState, useTransition
 import { deletePlantDefinition, upsertPlantDefinition } from "../../actions"
 import { cn } from "@sglara/cn"
 import { cva } from "class-variance-authority"
+import Link from "next/link"
 
-const checkboxLabelVariants = cva("px-1 content-center block w-full min-w-24 min-h-12", {
+const checkboxLabelVariants = cva([
+    "px-1",
+    "content-center",
+    "block",
+    "w-full",
+    "min-w-24",
+    "min-h-12",
+    "has-checked:border-rose-100",
+    "not-[:has(:checked)]:border-olive-200"
+], {
     variants: {
         disabled: {
-            true: "",
+            true: "has-checked:border-3",
             false: "cursor-pointer border-3",
         },
-        checked: {
-            true: "border-rose-100",
-            false: "",
-        }
     },
-    compoundVariants: [{
-        disabled: true,
-        checked: true,
-        className: "border-3",
-    }, {
-        disabled: false,
-        checked: false,
-        className: "border-olive-200"
-    }]
 })
 
 const buttonVariants = cva(["h-8 min-w-24", "px-3", "py-1", "rounded-md", "cursor-pointer"], {
@@ -80,7 +77,7 @@ const DetailCheckList: FC<{
     <ul className={cn("grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-4 justify-items-center items-center", className)}>
         {options.map((opt) => (
             <li key={opt.value}>
-                <label className={checkboxLabelVariants({ disabled, checked: opt.selected })}>
+                <label className={checkboxLabelVariants({ disabled })}>
                     <input
                         className="hidden"
                         name={name}
@@ -143,6 +140,7 @@ const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
                 readOnly
             />
 
+            {/* TODO: ask the user if it wants to select and image or take a picture */}
             <label
                 role="button"
                 className="relative h-36 cursor-pointer"
@@ -152,7 +150,6 @@ const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
                     className="hidden"
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={handleOnChangeImage}
                 />
 
@@ -174,7 +171,6 @@ const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
                     </div>
                 )}
             </label>
-
         </div>
     )
 }
@@ -254,39 +250,48 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
     const disabled = !isEdit || isPending
 
     return (
-        <form className="border p-4 mx-2 overflow-auto mb-12" onSubmit={handleSubmit}>
+        <form className="p-4 overflow-auto mb-12" onSubmit={handleSubmit}>
             <input name="id" type="hidden" defaultValue={definition.id || ''} />
 
-            <div className="flex flex-col gap-2">
-                <div className="flex justify-end gap-3">
-                    {isEdit ? (
-                        <>
-                            <button
-                                className={buttonVariants({ variant: 'primary' })}
-                                type="submit"
-                                disabled={isPending}
-                            >
-                                {isPending ? 'Guardando' : 'Guardar'}
-                            </button>
-                            <button
-                                className={buttonVariants({ variant: 'secondary' })}
-                                type="reset"
-                                onClick={handleCancel}
-                            >
-                                Cancelar
-                            </button>
-                        </>
-                    ) : (
-                        <button
-                            className={buttonVariants({ variant: 'primary' })}
-                            type="button"
-                            onClick={handleEdit}
-                        >
-                            Editar
-                        </button>
-                    )}
+            <div className="flex justify-end gap-3 p-4">
+                <div className="grow">
+                    <Link
+                        className={buttonVariants({ variant: 'secondary', className: 'h-full inline-block' })}
+                        href="/plant-definitions"
+                    >
+                        Catalogo
+                    </Link>
                 </div>
 
+                {isEdit ? (
+                    <>
+                        <button
+                            className={buttonVariants({ variant: 'primary' })}
+                            type="submit"
+                            disabled={isPending}
+                        >
+                            {isPending ? 'Guardando' : 'Guardar'}
+                        </button>
+                        <button
+                            className={buttonVariants({ variant: 'secondary' })}
+                            type="reset"
+                            onClick={handleCancel}
+                        >
+                            Cancelar
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        className={buttonVariants({ variant: 'primary' })}
+                        type="button"
+                        onClick={handleEdit}
+                    >
+                        Editar
+                    </button>
+                )}
+            </div>
+
+            <div className="border py-8 px-8">
                 <div className="flex flex-col min-w-0">
                     <input
                         className={namesInputVariants({ value: 'commonName', disabled })}
@@ -305,120 +310,120 @@ export default function PlantDefinitionDetails({ definition, isEdit }: PlantDefi
                         disabled={disabled}
                     />
                 </div>
-            </div>
 
-            <div>
-                {isEdit ? (
-                    <div className="grid gap-2 grid-cols-3">
-                        {[0, 1, 2].map((n) =>
-                            <ImageSelector image={definition.images[n]} key={n} />
-                        )}
-                    </div>
-                ) : (
-                    <div className="grid gap-2 grid-cols-3">
-                        {definition.images.map((image) => (
-                            <img
-                                key={image.id}
-                                className="h-32 w-full object-cover border border-olive-300 rounded-sm"
-                                src={image.filepath}
-                                alt="Imagen de planta"
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
+                <div>
+                    {isEdit ? (
+                        <div className="grid gap-2 grid-cols-3">
+                            {[0, 1, 2].map((n) =>
+                                <ImageSelector image={definition.images[n]} key={n} />
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid gap-2 grid-cols-3">
+                            {definition.images.map((image) => (
+                                <img
+                                    key={image.id}
+                                    className="h-32 w-full object-cover border border-olive-300 rounded-sm"
+                                    src={image.filepath}
+                                    alt="Imagen de planta"
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-            <dl className={styles.detailsList}>
-                <dt>Tipo de planta</dt>
-                <dd>
-                    <DetailCheckList
-                        options={categoriesOptions}
-                        disabled={disabled}
-                        type="checkbox"
-                        name="categories"
-                    />
-                </dd>
-
-                <dt>Ciclo de agua</dt>
-                <dd>
-                    <DetailCheckList
-                        options={waterProfileOptions}
-                        disabled={disabled}
-                        type="radio"
-                        name="waterProfile"
-                    />
-                </dd>
-
-                <dt>Nivel de luz</dt>
-                <dd>
-                    <DetailCheckList
-                        options={lightLevelOptions}
-                        disabled={disabled}
-                        type="radio"
-                        name="lightLevel"
-                    />
-                </dd>
-
-                <dt>Tipo de suelo</dt>
-                <dd>
-                    <DetailCheckList
-                        options={soilTypeOptions}
-                        disabled={disabled}
-                        type="radio"
-                        name="soilType"
-                    />
-                </dd>
-
-                <dt>Pet friendly?</dt>
-                {isEdit ? (
-                    <dd className="flex gap-4">
+                <dl className={styles.detailsList}>
+                    <dt>Tipo de planta</dt>
+                    <dd>
                         <DetailCheckList
-                            className="flex-col"
-                            options={petToxicityOptions}
+                            options={categoriesOptions}
+                            disabled={disabled}
+                            type="checkbox"
+                            name="categories"
+                        />
+                    </dd>
+
+                    <dt>Ciclo de agua</dt>
+                    <dd>
+                        <DetailCheckList
+                            options={waterProfileOptions}
                             disabled={disabled}
                             type="radio"
-                            name="petToxicity"
+                            name="waterProfile"
                         />
-
-                        <label className="grow text-start flex flex-col">
-                            <span className="block p-1">Notas:</span>
-                            <textarea
-                                className="border disabled:border-0 border-slate-300 rounded-sm not-disabled:w-full p-2 grow"
-                                name="symptoms"
-                                disabled={disabled}
-                                defaultValue={definition.petToxicityNotes}
-                                placeholder="Una nota sobre algo..."
-                            >
-                            </textarea>
-                        </label>
                     </dd>
-                ) : (
-                    <dd className="text-start!">
-                        <span>{petToxicity.meta[definition.petToxicity].label}.</span>
-                        <br />
-                        <span className="text-sm italic">{definition.petToxicityNotes}</span>
-                    </dd>
-                )}
 
-                {isEdit && definition.id && (
-                    <>
-                        <dt className="text-red-400 font-bold">DANGER ZONE</dt>
+                    <dt>Nivel de luz</dt>
+                    <dd>
+                        <DetailCheckList
+                            options={lightLevelOptions}
+                            disabled={disabled}
+                            type="radio"
+                            name="lightLevel"
+                        />
+                    </dd>
+
+                    <dt>Tipo de suelo</dt>
+                    <dd>
+                        <DetailCheckList
+                            options={soilTypeOptions}
+                            disabled={disabled}
+                            type="radio"
+                            name="soilType"
+                        />
+                    </dd>
+
+                    <dt>Pet friendly?</dt>
+                    {isEdit ? (
                         <dd className="flex gap-4">
-                            <div>
-                                <button
-                                    type="button"
-                                    className={cn(buttonVariants({ variant: 'danger' }))}
-                                    onClick={() => handleDelete(definition.id!, definition.commonName)}
-                                    disabled={isPending}
-                                >
-                                    {isPending ? 'Eliminando...' : 'Eliminar'}
-                                </button>
-                            </div>
-                        </dd>
-                    </>
-                )}
+                            <DetailCheckList
+                                className="flex-col"
+                                options={petToxicityOptions}
+                                disabled={disabled}
+                                type="radio"
+                                name="petToxicity"
+                            />
 
-            </dl>
+                            <label className="grow text-start flex flex-col">
+                                <span className="block p-1">Notas:</span>
+                                <textarea
+                                    className="border disabled:border-0 border-slate-300 rounded-sm not-disabled:w-full p-2 grow"
+                                    name="symptoms"
+                                    disabled={disabled}
+                                    defaultValue={definition.petToxicityNotes}
+                                    placeholder="Una nota sobre algo..."
+                                >
+                                </textarea>
+                            </label>
+                        </dd>
+                    ) : (
+                        <dd className="text-start!">
+                            <span>{petToxicity.meta[definition.petToxicity].label}.</span>
+                            <br />
+                            <span className="text-sm italic">{definition.petToxicityNotes}</span>
+                        </dd>
+                    )}
+
+                    {isEdit && definition.id && (
+                        <>
+                            <dt className="text-red-400 font-bold">DANGER ZONE</dt>
+                            <dd className="flex gap-4">
+                                <div>
+                                    <button
+                                        type="button"
+                                        className={cn(buttonVariants({ variant: 'danger' }))}
+                                        onClick={() => handleDelete(definition.id!, definition.commonName)}
+                                        disabled={isPending}
+                                    >
+                                        {isPending ? 'Eliminando...' : 'Eliminar'}
+                                    </button>
+                                </div>
+                            </dd>
+                        </>
+                    )}
+
+                </dl>
+            </div>
         </form>
     )
 }
