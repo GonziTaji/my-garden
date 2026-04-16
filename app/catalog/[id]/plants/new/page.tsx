@@ -1,5 +1,5 @@
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
-import CreatePlantForm from '@/app/catalog/components/CreatePlantForm'
+import PlantForm from '@/ui/components/PlantForm'
 
 export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]
@@ -9,6 +9,6 @@ export default async function Page({ params }: PageProps<"/catalog/[id]/new-plan
     const { id } = await params
 
     return (
-        <CreatePlantForm plantDefinitionId={Number(id)} />
+        <PlantForm plantDefinitionId={Number(id)} />
     )
 }

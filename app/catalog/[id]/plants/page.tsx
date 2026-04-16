@@ -1,7 +1,7 @@
 import plantsService from "@/services/plants.service"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { buttonVariants } from "../classVariants/button"
+import { buttonVariants } from "@/ui/classVariants/button"
 import { cn } from "@sglara/cn"
 
 export default async function Page({ params }: PageProps<"/catalog/[id]/plants">) {
@@ -13,8 +13,6 @@ export default async function Page({ params }: PageProps<"/catalog/[id]/plants">
     }
 
     const plants = await plantsService.list({ plantDefinitionId: Number(id) })
-
-    console.log(plants)
 
     const definition = plants[0].plantDefinition
 

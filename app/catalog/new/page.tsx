@@ -1,5 +1,5 @@
 import { PlantDefinition } from "@/domain/plants/plant-definition";
-import PlantDefinitionDetails from "../components/PlantDefinitionDetails";
+import DefinitionView from "../../../ui/components/DefinitionView";
 
 const newDefinition: PlantDefinition = {
     id: null,
@@ -17,7 +17,7 @@ const newDefinition: PlantDefinition = {
 export default function Page() {
     return (
         <div>
-            <PlantDefinitionDetails definition={{ ...newDefinition }} isEdit={true} />
+            <DefinitionView record={{ ...newDefinition }} editMode={true} />
         </div>
     )
 }

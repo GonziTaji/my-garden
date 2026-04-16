@@ -1,8 +1,8 @@
 'use client'
 
 import { useTransition } from "react";
-import { buttonVariants } from "../classVariants/button";
-import { upsertPlantDefinition } from "@/app/catalog/actions"
+import { buttonVariants } from "@/ui/classVariants/button"
+import { upsertPlantDefinition } from "@/ui/actions/actions"
 
 export default function SubmitButton() {
     const [isPending, startTransition] = useTransition()

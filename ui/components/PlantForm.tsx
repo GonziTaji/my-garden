@@ -1,14 +1,14 @@
 'use client'
 
-import { createPlant, ActionResult } from '@/app/catalog/actions'
+import { createPlant, ActionResult } from '@/ui/actions/actions'
 import { useTransition, useState } from 'react'
 
-export interface CreatePlantFormProps {
+export interface PlantFormProps {
     plantDefinitionId: number
     onCreated?: (newPlantId: number) => void
 }
 
-export default function CreatePlantForm({ plantDefinitionId, onCreated }: CreatePlantFormProps) {
+export default function PlantForm({ plantDefinitionId, onCreated }: PlantFormProps) {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [fieldError, setFieldError] = useState<string | null>(null)

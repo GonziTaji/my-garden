@@ -2,8 +2,8 @@
 
 import { PlantDefinition } from "@/domain/plants/plant-definition"
 import { cn } from "@sglara/cn"
-import { buttonVariants } from "../classVariants/button"
-import { deletePlantDefinition } from "@/app/catalog/actions"
+import { buttonVariants } from "@/ui/classVariants/button"
+import { deletePlantDefinition } from "@/ui/actions/actions"
 import { useTransition } from "react"
 
 export interface DeleteButtonProps {
@@ -29,17 +29,15 @@ export default function DeleteButton({ plantdef }: DeleteButtonProps) {
     }
 
     return (
-        <dd className="flex gap-4">
-            <div>
-                <button
-                    type="button"
-                    className={cn(buttonVariants({ variant: 'danger' }))}
-                    onClick={() => handleDelete(plantdef.id!, plantdef.commonName)}
-                    disabled={isPending}
-                >
-                    {isPending ? 'Eliminando...' : 'Eliminar'}
-                </button>
-            </div>
-        </dd>
+        <div>
+            <button
+                type="button"
+                className={cn(buttonVariants({ variant: 'danger' }))}
+                onClick={() => handleDelete(plantdef.id!, plantdef.commonName)}
+                disabled={isPending}
+            >
+                {isPending ? 'Eliminando...' : 'Eliminar'}
+            </button>
+        </div>
     )
 }

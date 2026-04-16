@@ -13,8 +13,6 @@ import plantsService from '@/services/plants.service'
 import { refresh } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-export type { PlantDefinition } from '@/domain/plants/plant-definition'
-
 export interface ActionResult {
     success: boolean
     id?: number
@@ -22,7 +20,7 @@ export interface ActionResult {
     field?: string
 }
 
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 const MAX_IMAGE_COUNT = 3
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp'])
@@ -46,7 +44,7 @@ function validateImageFile(file: File): string {
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-        throw new ValidationError('Cada imagen debe pesar maximo 5MB', 'images')
+        throw new ValidationError('Cada imagen debe pesar maximo 8MB', 'images')
     }
 
     return extension

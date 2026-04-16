@@ -72,7 +72,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
                         </button>
                     </>
                 ) : (
-                    <div className="h-full w-full border border-dashed border-olive-300 grid place-content-center text-sm text-slate-500">
+                    <div className="h-full text-center w-full border border-dashed border-olive-300 grid place-content-center text-sm text-slate-500">
                         Agregar imagen
                     </div>
                 )}

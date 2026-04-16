@@ -1,7 +1,7 @@
 import { cn } from "@sglara/cn"
 import { FC } from "react"
-import { PlantDefinition } from "../../actions"
 import { cva } from "class-variance-authority"
+import { PlantDefinition } from "@/domain/plants/plant-definition"
 
 const checkboxLabelVariants = cva([
     "px-1",

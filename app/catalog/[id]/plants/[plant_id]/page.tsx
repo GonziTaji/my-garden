@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { PlantDefinitionRow } from '@/db/stores/plant-definitions.store'
 import plantsService from '@/services/plants.service'
-import PlantDetails from '@/app/catalog/components/PlantDetails'
+import PlantDetails from '@/ui/components/PlantDetails'
 
 export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]
