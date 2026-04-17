@@ -5,7 +5,7 @@ export interface PlantDefinitionsClientProps {
     initialDefinitions: PlantDefinitionRow[]
 }
 
-export default async function Page({ params }: PageProps<"/catalog/[id]/new-plant">) {
+export default async function Page({ params }: PageProps<"/catalog/[id]/plants/new">) {
     const { id } = await params
 
     return (

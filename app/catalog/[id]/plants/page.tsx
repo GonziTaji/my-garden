@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { buttonVariants } from "@/ui/classVariants/button"
 import { cn } from "@sglara/cn"
+import plantDefinitionsService from "@/services/plant-definitions.service"
 
 export default async function Page({ params }: PageProps<"/catalog/[id]/plants">) {
     const { id } = await params
@@ -12,21 +13,16 @@ export default async function Page({ params }: PageProps<"/catalog/[id]/plants">
         notFound()
     }
 
-    const plants = await plantsService.list({ plantDefinitionId: Number(id) })
+    const definition = await plantDefinitionsService.get(plantDefinitionId)
 
-    const definition = plants[0].plantDefinition
+    if (!definition) {
+        notFound()
+    }
+
+    const plants = await plantsService.list({ plantDefinitionId })
 
     return (
-        <div className="px-12 grid gap-8">
-            <div>
-                <hr className="text-olive-600/40 my-4" />
-                <Link className="flex flex-col items-center" href={`/catalog/${id}`}>
-                    <span className="text-4xl">{definition.commonName}</span>
-                    <span className="text-2xl italic">{definition.scientificName}</span>
-                </Link>
-                <hr className="text-olive-600/40 my-4" />
-            </div>
-
+        <div>
             <div className="justify-self-end">
                 <Link href={`/catalog/${id}/plants/new`} className={buttonVariants({ variant: 'primary', className: 'inline-block' })}>
                     Nueva planta
@@ -35,7 +31,7 @@ export default async function Page({ params }: PageProps<"/catalog/[id]/plants">
 
             <nav>
                 <ul>
-                    {plants.map((p, i) => (
+                    {plants.map((p) => (
                         <li key={p.id} className=''>
                             <Link href={`/catalog/${id}/plants/${p.id}`} className={cn(
                                 'h-20 content-center'
@@ -48,6 +44,7 @@ export default async function Page({ params }: PageProps<"/catalog/[id]/plants">
                     }
                 </ul >
             </nav >
-        </div >
+        </div>
     )
+
 }

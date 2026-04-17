@@ -1,14 +1,5 @@
-import plantsStore, { CreatePlantInput, PlantListFilters, PlantWithDefinition } from '@/db/stores/plants.store'
+import plantsStore, { UpsertPlantInput, PlantListFilters, PlantWithDefinition } from '@/db/stores/plants.store'
 import plantDefinitionsStore from '@/db/stores/plant-definitions.store'
-
-export interface CreatePlantServiceInput {
-    nickname: string
-    plantDefinitionId: number
-    acquiredAt?: string
-    location?: string
-    notes?: string
-    overridesWaterProfile?: string
-}
 
 export class ValidationError extends Error {
     constructor(
@@ -28,7 +19,7 @@ function validateNickname(value: string): string {
     return trimmed
 }
 
-export async function createPlant(input: CreatePlantServiceInput): Promise<{ id: number }> {
+export async function upsertPlant(input: UpsertPlantInput): Promise<{ id: number }> {
     const validatedNickname = validateNickname(input.nickname)
 
     // Verificar que el plantDefinitionId existe
@@ -40,8 +31,9 @@ export async function createPlant(input: CreatePlantServiceInput): Promise<{ id:
         )
     }
 
-    const createInput: CreatePlantInput = {
+    const createInput: UpsertPlantInput = {
         nickname: validatedNickname,
+        source: input.source,
         plantDefinitionId: input.plantDefinitionId,
         acquiredAt: input.acquiredAt,
         location: input.location?.trim() || undefined,
@@ -65,7 +57,7 @@ export async function deletePlant(id: number): Promise<void> {
 }
 
 const plantsService = {
-    create: createPlant,
+    create: upsertPlant,
     list: listPlants,
     get: getPlant,
     delete: deletePlant,

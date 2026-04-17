@@ -1,7 +1,9 @@
 import { db } from '../connect'
 
-export interface CreatePlantInput {
+export interface UpsertPlantInput {
+    id?: string
     nickname: string
+    source: string
     plantDefinitionId: number
     acquiredAt?: string
     location?: string
@@ -15,6 +17,7 @@ export interface PlantListFilters {
 export interface PlantRow {
     id: number
     nickname: string
+    source: string | null
     plantDefinitionId: number
     acquiredAt: string | null
     location: string | null
@@ -23,14 +26,7 @@ export interface PlantRow {
     updatedAt: string
 }
 
-export interface PlantWithDefinition {
-    id: number
-    nickname: string
-    acquiredAt: string | null
-    location: string | null
-    notes: string | null
-    createdAt: string
-    updatedAt: string
+export interface PlantWithDefinition extends Omit<PlantRow, 'plantDefinitionId'> {
     plantDefinition: {
         id: number
         commonName: string
@@ -38,11 +34,12 @@ export interface PlantWithDefinition {
     }
 }
 
-async function create(input: CreatePlantInput) {
+async function upsert(input: UpsertPlantInput) {
     return db
         .insertInto('plants')
         .values({
             nickname: input.nickname,
+            source: input.source,
             plantDefinitionId: input.plantDefinitionId,
             acquiredAt: input.acquiredAt ?? null,
             location: input.location ?? null,
@@ -59,6 +56,7 @@ async function listAll(filters?: PlantListFilters): Promise<PlantWithDefinition[
         .select([
             'plants.id',
             'plants.nickname',
+            'plants.source',
             'plants.acquiredAt',
             'plants.location',
             'plants.notes',
@@ -80,6 +78,7 @@ async function listAll(filters?: PlantListFilters): Promise<PlantWithDefinition[
     return rows.map((row) => ({
         id: row.id,
         nickname: row.nickname,
+        source: row.source,
         acquiredAt: row.acquiredAt,
         location: row.location,
         notes: row.notes,
@@ -100,6 +99,7 @@ async function getById(id: number): Promise<PlantWithDefinition | undefined> {
         .select([
             'plants.id',
             'plants.nickname',
+            'plants.source',
             'plants.acquiredAt',
             'plants.location',
             'plants.notes',
@@ -117,6 +117,7 @@ async function getById(id: number): Promise<PlantWithDefinition | undefined> {
     return {
         id: row.id,
         nickname: row.nickname,
+        source: row.source,
         acquiredAt: row.acquiredAt,
         location: row.location,
         notes: row.notes,
@@ -138,7 +139,7 @@ async function deleteById(id: number) {
 }
 
 const plantsStore = {
-    create,
+    create: upsert,
     listAll,
     getById,
     deleteById,

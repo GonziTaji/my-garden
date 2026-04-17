@@ -241,7 +241,7 @@ export async function deletePlantDefinition(id: number): Promise<ActionResult> {
     redirect('/catalog')
 }
 
-export async function createPlant(formData: FormData): Promise<ActionResult> {
+export async function upsertPlant(formData: FormData): Promise<ActionResult> {
     const nickname = formData.get('nickname')?.toString() ?? ''
     const plantDefinitionIdRaw = formData.get('plantDefinitionId')?.toString()
     const plantDefinitionId = plantDefinitionIdRaw ? parseInt(plantDefinitionIdRaw, 10) : NaN
@@ -250,21 +250,24 @@ export async function createPlant(formData: FormData): Promise<ActionResult> {
         return { success: false, error: 'Debes seleccionar un tipo de planta', field: 'plantDefinitionId' }
     }
 
-    const acquiredAt = formData.get('acquiredAt')?.toString() || undefined
-    const location = formData.get('location')?.toString() || undefined
-    const notes = formData.get('notes')?.toString() || undefined
+    const acquiredAt = formData.get('acquiredAt')?.toString() || ''
+    let plantId = formData.get('id')?.toString()
+    const location = formData.get('location')?.toString() || ''
+    const notes = formData.get('notes')?.toString() || ''
+    const source = formData.get('source')?.toString() || ''
 
     try {
         const { id } = await plantsService.create({
+            id: plantId,
             nickname,
+            source,
             plantDefinitionId,
             acquiredAt,
             location,
             notes,
         })
 
-        refresh()
-        return { success: true, id }
+        plantId = String(id)
     } catch (error) {
         if (error instanceof ValidationError) {
             return { success: false, error: error.message, field: error.field }
@@ -272,6 +275,8 @@ export async function createPlant(formData: FormData): Promise<ActionResult> {
         console.error('Error creating plant:', error)
         return { success: false, error: 'Error inesperado al crear la planta' }
     }
+
+    redirect(`/catalog/${plantDefinitionId}/plants/${plantId}`)
 }
 
 export async function deletePlant(id: number): Promise<ActionResult> {
