@@ -6,18 +6,15 @@ import { buttonVariants } from '../classVariants/button'
 import { useRouter } from 'next/navigation'
 import { cva } from 'class-variance-authority'
 
-export interface PlantFormProps {
-    plantDefinitionId: number
-    onCreated?: (newPlantId: number) => void
-}
-
 const inputVariants = cva([
     "border", "border-rose-200 p-2 rounded-lg",
 ], {
     variants: {},
 })
 
-export default function PlantForm({ plantDefinitionId, onCreated }: PlantFormProps) {
+export interface PlantFormProps { }
+
+export default function PlantForm({ }: PlantFormProps) {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [fieldError, setFieldError] = useState<string | null>(null)
@@ -31,7 +28,7 @@ export default function PlantForm({ plantDefinitionId, onCreated }: PlantFormPro
             const result: ActionResult = await upsertPlant(fd)
 
             if (result.success && result.id) {
-                onCreated?.(result.id)
+                router.push(`/plants/${result.id}`)
             } else if (result.error) {
                 setError(result.error)
                 setFieldError(result.field ?? null)
@@ -40,15 +37,15 @@ export default function PlantForm({ plantDefinitionId, onCreated }: PlantFormPro
     }
 
     return (
-        <form action={submit} className="flex flex-col gap-8">
-            <div className="flex justify-between">
+        <form action={submit} className="mx-8 p-8 flex flex-col gap-8 border border-olive-200">
+            <div className="flex justify-end gap-4">
                 <button
                     className={buttonVariants({ variant: 'secondary' })}
                     type="reset"
                     disabled={isPending}
                     onClick={router.back}
                 >
-                    Volver
+                    Cancelar
                 </button>
 
                 <button
@@ -66,9 +63,9 @@ export default function PlantForm({ plantDefinitionId, onCreated }: PlantFormPro
                 </div>
             )}
 
-            <input type="hidden" name="plantDefinitionId" value={plantDefinitionId} />
+            {/*<input type="hidden" name="plantDefinitionId" value={plantDefinitionId} />*/}
 
-            <fieldset className="border border-olive-200 p-8 grid gap-8">
+            <fieldset className="grid gap-8">
                 <div className="flex flex-col gap-2">
                     <label htmlFor="nickname">Nombre (apodo)</label>
                     <input

@@ -1,3 +1,5 @@
+'use client'
+
 import { plantCategory } from '@/domain/plants/category/plant-category'
 import { lightLevel } from '@/domain/plants/light/light-level'
 import { soilType } from '@/domain/plants/soil/soil-type'
@@ -6,13 +8,14 @@ import { waterProfile } from '@/domain/plants/water/water-profile'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cva } from 'class-variance-authority'
-import SubmitButton from './PlantDefinitionSubmitButton'
 import { buttonVariants } from "@/ui/classVariants/button"
 import { ImageSelector } from './ImageSelector'
 import { DetailChecklist } from './DetailChecklist'
 import DeleteButton from './DeleteButton'
 import { PlantDefinition } from '@/domain/plants/plant-definition'
 import DetailListItem from './DetailLstItem'
+import { useTransition } from 'react'
+import { upsertPlantDefinition } from '../actions/actions'
 
 const namesInputVariants = cva(["transition-all", "border", "outline-rose-400", "p-1"], {
     variants: {
@@ -32,7 +35,9 @@ interface DefinitionViewProps {
     editMode: boolean
 }
 
-export default async function DefinitionView({ record, editMode }: DefinitionViewProps) {
+export default function DefinitionView({ record, editMode }: DefinitionViewProps) {
+    const [isPending, startTransition] = useTransition()
+
     // @review: this can be generalized. But should it be generalized?
     const categoriesOptions = plantCategory.options.map((opt) => ({
         ...opt, selected: record.categories.includes(opt.value)
@@ -58,49 +63,52 @@ export default async function DefinitionView({ record, editMode }: DefinitionVie
         selected: record.petToxicity === opt.value
     }))
 
+    const submitAction = async (fd: FormData) => {
+        startTransition(async () => {
+            const { error } = await upsertPlantDefinition(fd)
+
+            if (error) {
+                alert(error)
+            }
+        })
+    }
+
     return (
         <div className='mx-2'>
             <form className="p-4 overflow-auto mb-12">
                 <input name="id" type="hidden" defaultValue={record.id || ''} />
 
-                <div className="flex justify-end gap-3 p-4">
-                    <div className="grow flex gap-3">
-                        <Link
-                            className={buttonVariants({ variant: 'secondary', className: 'inline-block' })}
-                            href="/catalog"
-                        >
-                            Catalogo
-                        </Link>
-
-                        <Link
-                            className={buttonVariants({ variant: 'secondary', className: 'h-full inline-block' })}
-                            href={`/catalog/${record.id}/plants`}
-                        >
-                            Plantas
-                        </Link>
-                    </div>
-
-                    {editMode ? (
-                        <>
-                            <SubmitButton />
-                            <Link
-                                href={`/catalog/${record.id}`}
-                                className={buttonVariants({ variant: 'secondary' })}
-                            >
-                                Cancelar
-                            </Link>
-                        </>
-                    ) : (
-                        <Link
-                            href={{ pathname: `/catalog/${record.id}`, query: { e: 'T' } }}
-                            className={buttonVariants({ variant: 'primary' })}
-                        >
-                            Editar
-                        </Link>
-                    )}
-                </div>
 
                 <div className="border py-8 px-8">
+                    <div className='flex gap-4 justify-end'>
+                        {editMode ? (
+                            <>
+                                <button
+                                    className={buttonVariants({ variant: 'primary' })}
+                                    formAction={submitAction}
+                                    type="submit"
+                                    disabled={isPending}
+                                >
+                                    {isPending ? 'Guardando' : 'Guardar'}
+                                </button>
+
+                                <Link
+                                    href={`/catalog/${record.id}`}
+                                    className={buttonVariants({ variant: 'secondary' })}
+                                >
+                                    Cancelar
+                                </Link>
+                            </>
+                        ) : (
+                            <Link
+                                href={{ pathname: `/catalog/${record.id}`, query: { e: 'T' } }}
+                                className={buttonVariants({ variant: 'primary' })}
+                            >
+                                Editar
+                            </Link>
+                        )}
+                    </div>
+
                     <div className="flex flex-col min-w-0">
                         <input
                             className={namesInputVariants({ value: 'commonName', disabled: !editMode })}
