@@ -10,6 +10,7 @@ import plantDefinitionsService, {
     ValidationError,
 } from '@/services/plant-definitions.service'
 import plantsService from '@/services/plants.service'
+import journalService, { ValidationError as JournalValidationError } from '@/services/journal.service'
 import { refresh } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -287,5 +288,41 @@ export async function deletePlant(id: number): Promise<ActionResult> {
     } catch (error) {
         console.error('Error deleting plant:', error)
         return { success: false, error: 'Error inesperado al eliminar la planta' }
+    }
+}
+
+export async function waterPlants(formData: FormData): Promise<void> {
+    const plantIdsJson = formData.get('plantIds')?.toString() ?? '[]'
+
+    let plantIds: number[]
+    try {
+        plantIds = JSON.parse(plantIdsJson) as number[]
+    } catch {
+        return
+    }
+
+    if (plantIds.length === 0) {
+        return
+    }
+
+    try {
+        await journalService.waterPlants(plantIds)
+        refresh()
+    } catch (error) {
+        console.error('Error watering plants:', error)
+    }
+}
+
+export async function toggleWatering(
+    plantId: number,
+    date: string
+): Promise<{ success: boolean; watered: boolean }> {
+    try {
+        const result = await journalService.toggleWateringForPlant(plantId, date)
+        refresh()
+        return { success: true, watered: result.watered }
+    } catch (error) {
+        console.error('Error toggling watering:', error)
+        return { success: false, watered: false }
     }
 }
