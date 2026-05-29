@@ -1,0 +1,68 @@
+import { plantCategory } from "@/domain/plants/category/plant-category"
+import { lightLevel } from "@/domain/plants/light/light-level"
+import type { PlantDefinition } from "@/domain/plants/plant-definition"
+import { soilType } from "@/domain/plants/soil/soil-type"
+import { waterProfile } from "@/domain/plants/water/water-profile"
+import { cn } from "@sglara/cn"
+import { Link } from "@tanstack/react-router"
+
+export interface DefinitionsCatalogProps {
+  list: PlantDefinition[]
+}
+
+export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
+  return (
+    <nav className="grid grid-cols-2 bg-olive-50">
+      {list.map((d) => (
+        <Link
+          key={d.id}
+          to="/catalog/$plantdefid"
+          params={{ plantdefid: String(d.id) }}
+        >
+          <div className="p-12 pb-0">
+            {d.images[0] ? (
+              <img src={d.images[0].filepath} className="aspect-square object-cover" alt={`Imagen de ${d.commonName}`} width={150} height={150} />
+            ) : (
+              <div className="aspect-square text-center content-center border border-dashed border-olive-300 text-sm text-slate-500">
+                Sin imagen
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="font-semibold text-xl">{d.commonName}</span>
+            <span className="italic text-xl">{d.scientificName}</span>
+
+            <div className="text-sm">
+              {d.categories.map((c) => <span key={c.toString()}>{plantCategory.meta[c].label}</span>)}
+            </div>
+
+            <div>
+              {waterProfile.values.map((w, i) => (
+                <span key={w} className={cn(waterProfile.values.indexOf(d.waterProfile) < i && 'grayscale')}>
+                  💧
+                </span>
+              ))}
+            </div>
+
+            <div>
+              {lightLevel.values.map((l, i) => (
+                <span key={l} className={cn(lightLevel.values.indexOf(d.lightLevel) < i && 'grayscale')}>
+                  ☀️
+                </span>
+              ))}
+            </div>
+
+            <div>
+              {soilType.values.toReversed().map((s, i) => (
+                <span key={s} className={cn(soilType.values.indexOf(d.soilType) < i && 'grayscale')}>
+                  🤿
+                </span>
+              ))}
+            </div>
+          </div>
+        </Link>
+      ))}
+    </nav>
+  )
+}
