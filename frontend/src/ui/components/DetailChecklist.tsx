@@ -40,7 +40,7 @@ export const DetailChecklist: FC<{
   options: DetailOption[],
   disabled?: boolean
 }> = ({ name, type, options, disabled, className }) => (
-  <ul className={cn("grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-4 justify-items-center items-center", className)}>
+  <ul className={cn("flex flex-wrap gap-2 justify-center", className)}>
     {options.map((opt) => (
       <li key={opt.value}>
         <label className={checkboxLabelVariants({ disabled })}>

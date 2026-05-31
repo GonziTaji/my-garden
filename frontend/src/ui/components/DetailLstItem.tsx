@@ -15,7 +15,7 @@ export default function DetailListItem({ title, children }: PropsWithChildren<De
       )}>
         {title}
       </dt>
-      <dd className='text-center mx-4 my-2 pb-4'>
+      <dd className='text-center my-2 pb-4'>
         {children}
       </dd>
     </>

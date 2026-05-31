@@ -1,20 +1,35 @@
-'use client'
-
 import type { PlantWithDefinition } from '@/domain/plants/plant'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useLastWateredDates } from '@/api/watering'
 
 interface GroupData {
   plants: PlantWithDefinition[]
   definition: PlantWithDefinition['plantDefinition']
 }
 
-interface WateringListProps {
+export interface WateringListProps {
   groups: Record<string, GroupData>
-  lastWateredDates?: Map<number, string>
 }
 
-export default function WateringList({ groups, lastWateredDates = new Map() }: WateringListProps) {
+export default function WateringList({ groups }: WateringListProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set())
+
+  const plantIds = useMemo(
+    () => Object.values(groups).flatMap((g) => g.plants.map((p) => p.id)),
+    [groups],
+  )
+
+  const { data: lastWateredRaw } = useLastWateredDates(plantIds)
+
+  const lastWateredDates = useMemo(() => {
+    const m = new Map<number, string>()
+    if (lastWateredRaw) {
+      for (const [id, date] of Object.entries(lastWateredRaw)) {
+        if (date) m.set(Number(id), date)
+      }
+    }
+    return m
+  }, [lastWateredRaw])
 
   const toggle = (plantId: number) => {
     const next = new Set(selected)

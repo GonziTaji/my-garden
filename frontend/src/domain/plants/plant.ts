@@ -15,6 +15,6 @@ export interface Plant {
 }
 
 export type PlantWithDefinition = Plant & {
-  plantDefinition: PlantDefinition
+  definition: PlantDefinition
 }
 

@@ -1,24 +1,27 @@
-import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { routeTree } from './routeTree.gen'
+import ReactDOM from "react-dom/client"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { RouterProvider } from "./router/provider"
+import Layout from "./pages/Layout"
+import { routerPaths } from "./router/routes"
+import "./main.css"
 
-// Set up a Router instance
-const router = createRouter({
-  routeTree,
-  defaultPreload: 'intent',
-  scrollRestoration: true,
-})
+const queryClient = new QueryClient()
 
-// Register things for typesafety
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router
-  }
+function NotFound() {
+  return (
+    <div className="p-8 text-center">
+      <h2 className="text-2xl font-bold text-olive-700">404</h2>
+      <p className="text-olive-500 mt-2">Página no encontrada</p>
+    </div>
+  )
 }
 
-const rootElement = document.getElementById('app')!
-
+const rootElement = document.getElementById("app")!
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
-  root.render(<RouterProvider router={router} />)
+  root.render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider routes={routerPaths} layout={Layout} notFound={NotFound} />
+    </QueryClientProvider>,
+  )
 }

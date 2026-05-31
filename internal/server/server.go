@@ -1,89 +1,66 @@
 package server
 
 import (
-	"context"
-	"errors"
+	"embed"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
+
+	"my-garden/internal/database"
+)
+
+var webappFS embed.FS
+
+type EnvType int
+
+const (
+	ENV_PROD EnvType = iota
+	ENV_DEV
 )
 
 type ServerConfig struct {
-	Addr         string
-	FrontendRoot string
-
-	// timeout due CWE-400 - Potential Slowloris Attack
-	ReadHeaderTimeout time.Duration
-
-	RouterConfig
+	Env        EnvType
+	ServerAddr string
 }
 
 func DefaultConfig() ServerConfig {
 	return ServerConfig{
-		Addr:              ":8080",
-		FrontendRoot:      "frontend",
-		ReadHeaderTimeout: 5 * time.Second,
-
-		RouterConfig: RouterConfig{
-			WebappFolder:  "dist",
-			StaticFolder:  "public",
-			SsrScriptPath: "ssr/render-ssr.mjs",
-		},
+		Env:        ENV_DEV,
+		ServerAddr: ":8080",
 	}
 }
 
-// Server holds the HTTP server plus any resources that must stay alive
-// while it is serving (e.g. an os.Root used to build an fs.FS).
 type Server struct {
-	HTTP *http.Server
-	root *os.Root
 }
 
-func NewWebServer(cfg ServerConfig) (*Server, error) {
-	root, err := os.OpenRoot(cfg.FrontendRoot)
+func StartWebServer(cfg ServerConfig) error {
+	db, err := database.GetDatabase()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("get database for server: %w", err)
 	}
 
-	fsys := root.FS()
-	cfg.RouterConfig.FrontendRoot = cfg.FrontendRoot
-	r := GetNewRouter(cfg.RouterConfig, fsys)
+	r := GetNewRouter(RouterConfig{
+		WebappFolder: "frontent/dist",
+		DB:           db,
+	}, os.DirFS("."))
 
-	httpSrv := &http.Server{
-		Addr:              cfg.Addr,
+	// Caso ENV_DEV -> se usa el dev server de vite
+	if cfg.Env == ENV_PROD {
+		r.StaticFS("*", http.FS(webappFS))
+	}
+
+	s := &http.Server{
+		Addr:              cfg.ServerAddr,
 		Handler:           r,
-		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	return &Server{HTTP: httpSrv, root: root}, nil
-}
+	defer s.Close()
 
-func (s *Server) Shutdown(ctx context.Context) error {
-	// Close the root after the HTTP server is done using it.
-	err := s.HTTP.Shutdown(ctx)
-	closeErr := s.root.Close()
-	if err != nil {
-		return err
-	}
-	return closeErr
-}
-
-func StartServer(cfg ServerConfig) error {
-	s, err := NewWebServer(cfg)
-	if err != nil {
+	if err := s.ListenAndServe(); err != nil {
 		return err
 	}
 
-	err = s.HTTP.ListenAndServe()
-	if errors.Is(err, http.ErrServerClosed) {
-		// If the caller never called Shutdown, make sure we still free the root.
-		return s.root.Close()
-	}
-
-	if err != nil {
-		_ = s.root.Close()
-		return err
-	}
-
-	return s.root.Close()
+	return nil
 }

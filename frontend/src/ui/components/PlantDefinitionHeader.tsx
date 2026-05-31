@@ -1,6 +1,4 @@
-'use client'
-
-import { Link } from "@tanstack/react-router"
+import { Link } from "@/router/components/Link"
 
 interface PlantDefinitionHeaderProps {
   mode: 'form' | 'link'
@@ -12,7 +10,7 @@ interface PlantDefinitionHeaderProps {
 export default function PlantDefinitionHeader({ defid, commonName, scientificName }: PlantDefinitionHeaderProps) {
   return <div className="pb-4">
     <hr className="text-olive-600/40 my-4" />
-    <Link className="flex flex-col items-center" to="/catalog/$plantdefid" params={{ plantdefid: defid }}>
+    <Link className="flex flex-col items-center" to="/catalog/:plantdefid" params={{ plantdefid: defid }}>
       <span className="text-4xl">
         {commonName}
       </span>

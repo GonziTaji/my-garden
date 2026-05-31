@@ -1,10 +1,8 @@
-'use client'
-
 import { useTransition, useState } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
-import { useNavigate } from '@tanstack/react-router'
-import { upsertPlant } from '@/actions/plant.actions'
+import { useNavigate } from '@/router/provider'
+import { useCreatePlant } from '@/api/plants'
 
 const inputVariants = cva([
   "border", "border-rose-200 p-2 rounded-lg",
@@ -18,26 +16,31 @@ export default function PlantForm({ }: PlantFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [fieldError, setFieldError] = useState<string | null>(null)
-
-  const navigate = useNavigate({ from: '/plants/$plantid/edit' })
+  const navigate = useNavigate()
+  const createPlant = useCreatePlant()
 
   function submit(fd: FormData) {
     setError(null)
     setFieldError(null)
 
     startTransition(async () => {
-      const result = await upsertPlant(fd)
+      try {
+        const result = await createPlant.mutateAsync({
+          nickname: fd.get("nickname"),
+          source: fd.get("source"),
+          location: fd.get("location") || undefined,
+          acquired_at: fd.get("acquiredAt") || undefined,
+          notes: fd.get("notes") || undefined,
+          plant_definition_id: Number(fd.get("plantDefinitionId")) || undefined,
+        })
 
-      if (result.success && result.id) {
-        navigate({ to: "/plants/$plantid", params: { plantid: String(result.id) } })
-      } else {
-        // TODO: handle error
-        if (result.error) {
-          setError(result.error)
-        } else {
-          setError("unexpexted error")
+        if (result?.id) {
+          navigate("/plants/:plantid", { params: { plantid: String(result.id) } })
         }
-      })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error inesperado")
+      }
+    })
   }
 
   return (
@@ -47,7 +50,7 @@ export default function PlantForm({ }: PlantFormProps) {
           className={buttonVariants({ variant: 'secondary' })}
           type="reset"
           disabled={isPending}
-          onClick={() => navigate("/plants/${}")}
+          onClick={() => navigate("/plants")}
         >
           Cancelar
         </button>

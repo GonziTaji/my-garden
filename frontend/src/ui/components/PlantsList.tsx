@@ -1,9 +1,9 @@
 import type { PlantWithDefinition } from "@/domain/plants/plant"
-import { Link } from "@tanstack/react-router"
+import { Link } from "@/router/components/Link"
 
 interface GroupData {
   plants: PlantWithDefinition[]
-  definition: PlantWithDefinition['plantDefinition']
+  definition: PlantWithDefinition['definition']
 }
 
 
@@ -26,7 +26,7 @@ export default function PlantsList({ groups }: PlantsListProps) {
               {plants.map((p) => (
                 <li key={p.id}>
                   <Link
-                    to="/plants/$plantid"
+                    to="/plants/:plantid"
                     params={{ plantid: String(p.id) }}
                     className="py-2 flex items-center">
                     {'>'} <span className="ps-4 text-2xl">{p.nickname}</span>

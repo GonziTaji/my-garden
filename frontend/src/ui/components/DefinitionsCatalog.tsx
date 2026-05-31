@@ -4,7 +4,7 @@ import type { PlantDefinition } from "@/domain/plants/plant-definition"
 import { soilType } from "@/domain/plants/soil/soil-type"
 import { waterProfile } from "@/domain/plants/water/water-profile"
 import { cn } from "@sglara/cn"
-import { Link } from "@tanstack/react-router"
+import { Link } from "@/router/components/Link"
 
 export interface DefinitionsCatalogProps {
   list: PlantDefinition[]
@@ -16,7 +16,7 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
       {list.map((d) => (
         <Link
           key={d.id}
-          to="/catalog/$plantdefid"
+          to="/catalog/:plantdefid"
           params={{ plantdefid: String(d.id) }}
         >
           <div className="p-12 pb-0">

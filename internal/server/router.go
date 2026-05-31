@@ -1,45 +1,29 @@
 package server
 
 import (
-	"context"
-	"encoding/json"
-	"html/template"
-	"io"
+	"database/sql"
 	"io/fs"
 	"log"
 	"net/http"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"my-garden/domain/plant"
 )
 
 type RouterConfig struct {
-	WebappFolder  string
-	StaticFolder  string
-	FrontendRoot  string
-	SsrScriptPath string
+	WebappFolder string
+	DB           *sql.DB
 }
 
 type AppRouter struct {
 	cfg       RouterConfig
 	webapp_fs fs.FS
-	static_fs fs.FS
 	router    *gin.Engine
 }
 
-var webappEntryPages []PageFileDescriptor
-
 func GetNewRouter(cfg RouterConfig, fsys fs.FS) *gin.Engine {
 	webapp_fs, err := fs.Sub(fsys, cfg.WebappFolder)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	static_fs, err := fs.Sub(fsys, cfg.StaticFolder)
 
 	if err != nil {
 		log.Fatal(err)
@@ -49,143 +33,54 @@ func GetNewRouter(cfg RouterConfig, fsys fs.FS) *gin.Engine {
 		cfg:       cfg,
 		router:    gin.Default(),
 		webapp_fs: webapp_fs,
-		static_fs: static_fs,
 	}
 
-	// always at the start
-	app_router.registerSecutiryHeaders()
+	app_router.mountMiddleware()
+	app_router.mountApiRoutes()
+	app_router.mountStaticFiles()
 
-	app_router.registerApiRoutes()
-	app_router.registerWebappAssets()
-	app_router.registerWebappTemplates()
-	app_router.registerStaticFiles()
+	app_router.router.GET("checkhealth", func(ctx *gin.Context) {
+		ctx.String(200, "OK")
+	})
 
 	return app_router.router
 }
 
-func (g *AppRouter) registerApiRoutes() {
-	// TODO: register router when api exists
-	// g:=router.Group("/api")
+func (g *AppRouter) mountMiddleware() {
+	securityHeaders(g.router)
+	corsMiddleware(g.router)
 }
 
-type ManifestEntry struct {
-	IsEntry bool   `json:"isEntry"`
-	Name    string `json:"name"`
-	Src     string `json:"src"`
+func (g *AppRouter) mountApiRoutes() {
+	api := g.router.Group("/api")
+
+	store := plant.NewStore(g.cfg.DB)
+	service := plant.NewService(store)
+	handler := plant.NewHandler(service)
+	plant.RegisterRoutes(api, handler)
 }
 
-type PageFileDescriptor struct {
-	Name string
-	Src  string
+func (g *AppRouter) mountStaticFiles() {
+	g.router.Static("/uploads", "public/uploads")
 }
 
-func (g *AppRouter) registerWebappTemplates() {
-	manifest, err := g.webapp_fs.Open(".vite/manifest.json")
-	if err != nil {
-		log.Fatal(err)
-	}
+func corsMiddleware(g *gin.Engine) {
+	g.Use(func(ctx *gin.Context) {
+		ctx.Header("Access-Control-Allow-Origin", "http://localhost:5173")
+		ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		ctx.Header("Access-Control-Allow-Headers", "Content-Type")
 
-	// how do we handle newly created pages? listen to manifest changes? at least in dev
-	// => idea: spawn a process that
-	// 1) checks the last time it ran to exit if needed
-	// 2) gets the manifest id/hash/timestamp/etc from the disk
-	// 3) if different from the one in memory, then do something to register differences
-	files, err := getHTMLFilesFromManifest(manifest)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("[REGISTER_TEMPLATES] files count: %d\n", len(files))
-
-	var template_paths []string
-	for _, file := range files {
-		file := file
-		uri := "/" + file.Name
-
-		template_paths = append(template_paths, file.Src)
-
-		log.Printf("[REGISTER_TEMPLATES] page name: %s\n", file.Name)
-		log.Printf("[REGISTER_TEMPLATES] uri:       %s\n", uri)
-		log.Printf("[REGISTER_TEMPLATES] filepath:  %s\n", file.Src)
-
-		if uri == "/home" {
-			uri = "/"
-			log.Printf("[REGISTER_TEMPLATES] home detected, using uri:  %s\n", uri)
-		}
-
-		g.router.GET(uri, func(ctx *gin.Context) {
-			log.Printf("[GET /%s]\n", file.Name)
-
-			// TODO: each domain should route the templates they use
-			data := gin.H{}
-			if file.Name == "plants/ssrtest" {
-				data["SSR"] = g.renderSSRHTML(ctx)
-			}
-
-			ctx.HTML(200, file.Name, data)
-		})
-	}
-
-	g.router.LoadHTMLFS(http.FS(g.webapp_fs), template_paths...)
-}
-
-func (g *AppRouter) registerWebappAssets() {
-	g.router.NoRoute(func(ctx *gin.Context) {
-		request_path := ctx.Request.URL.Path
-		asset_filepath := strings.TrimPrefix(request_path, "/")
-
-		// log.Printf("[NO_ROUTE_HANDLER] request_path: %s\n", request_path)
-
-		if strings.HasPrefix(asset_filepath, "src") {
-			// log.Println("[NO_ROUTE_HANDLER] has prefix /src. Skipping")
-			// don't serve from /src since the pages are there
+		if ctx.Request.Method == http.MethodOptions {
+			ctx.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
-		asset_file, err := fs.Stat(g.webapp_fs, asset_filepath)
-		if err != nil {
-			// log.Printf("[NO_ROUTE_HANDLER] Error stating route as asset file: %s", err.Error())
-			return
-		}
-
-		// log.Printf("[NO_ROUTE_HANDLER] Checking if file in route is directory: %s", asset_file.Name())
-
-		if asset_file.IsDir() {
-			// log.Println("[NO_ROUTE_HANDLER] Is dir, skipping")
-			return
-		}
-
-		// log.Printf("[NO_ROUTE_HANDLER] serving file at %s", trimmed_request_path)
-
-		ctx.FileFromFS(asset_filepath, http.FS(g.webapp_fs))
+		ctx.Next()
 	})
 }
 
-func (g *AppRouter) registerStaticFiles() {
-	g.router.StaticFS("/static", http.FS(g.static_fs))
-}
-
-func (g *AppRouter) renderSSRHTML(ctx *gin.Context) template.HTML {
-	if g.cfg.FrontendRoot == "" || g.cfg.SsrScriptPath == "" {
-		return template.HTML("")
-	}
-
-	scriptPath := filepath.Join(g.cfg.FrontendRoot, g.cfg.SsrScriptPath)
-	ctxWithTimeout, cancel := context.WithTimeout(ctx.Request.Context(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctxWithTimeout, "node", scriptPath, ctx.Request.URL.Path)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("[SSR] error: %v | output: %s", err, strings.TrimSpace(string(output)))
-		return template.HTML("")
-	}
-
-	return template.HTML(string(output))
-}
-
 // Based on https://github.com/gin-gonic/examples/blob/master/secure-web-app/main.go
-func (g *AppRouter) registerSecutiryHeaders() {
+func securityHeaders(g *gin.Engine) {
 	cspPolicy := "default-src 'self'; connect-src *; font-src *; " +
 		"script-src-elem * 'unsafe-inline'; img-src * data: blob:; style-src * 'unsafe-inline';"
 
@@ -202,7 +97,7 @@ func (g *AppRouter) registerSecutiryHeaders() {
 		{"X-Content-Type-Options", "nosniff"},
 	}
 
-	g.router.Use(func(ctx *gin.Context) {
+	g.Use(func(ctx *gin.Context) {
 		for _, pair := range header_value_pairs {
 			var (
 				key   = pair[0]
@@ -214,29 +109,4 @@ func (g *AppRouter) registerSecutiryHeaders() {
 
 		ctx.Next()
 	})
-}
-
-func getHTMLFilesFromManifest(r io.Reader) ([]PageFileDescriptor, error) {
-	var manifest map[string]ManifestEntry
-	if err := json.NewDecoder(r).Decode(&manifest); err != nil {
-		return nil, err
-	}
-
-	var result []PageFileDescriptor
-
-	for _, entry := range manifest {
-		log.Printf("[GET_HTML_FILE_FROM_MANIFEST] %#v\n", entry)
-
-		if !entry.IsEntry {
-			log.Println("skipped")
-			continue
-		}
-
-		result = append(result, PageFileDescriptor{
-			Name: entry.Name,
-			Src:  entry.Src,
-		})
-	}
-
-	return result, nil
 }

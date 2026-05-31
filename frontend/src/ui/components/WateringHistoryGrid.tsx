@@ -1,6 +1,6 @@
 import { buttonVariants } from '@/ui/classVariants/button'
 import WateringGridRow from './WateringGridRow'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/router/components/Link'
 
 interface PlantWithDefinition {
   id: number
@@ -17,25 +17,20 @@ interface WateringHistoryGridProps {
 }
 
 function formatDateHeader(dateStr: string): string {
-  const date = new Date(dateStr)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // undefined = client's locale
+  const f = (d: Date) => d.toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "2-digit"
+  })
 
-  const dateOnly = new Date(dateStr)
-  dateOnly.setHours(0, 0, 0, 0)
+  const newDate = f(new Date(dateStr))
+  const now = f(new Date())
 
-  if (dateOnly.getTime() === today.getTime()) {
-    return 'HOY'
+  if (newDate === now) {
+    return "Hoy"
   }
 
-  const diffDays = Math.round((dateOnly.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffDays === -1) return 'AYER'
-  if (diffDays === 1) return 'MAÑANA'
-  if (diffDays < 0) return `${Math.abs(diffDays)}D`
-  if (diffDays > 0) return `+${diffDays}D`
-
-  return date.toLocaleDateString('es-ES', { weekday: 'short' })
+  return newDate
 }
 
 export default function WateringHistoryGrid({ plants, dates, wateredMap }: WateringHistoryGridProps) {
@@ -59,7 +54,7 @@ export default function WateringHistoryGrid({ plants, dates, wateredMap }: Water
         <table className="border-collapse">
           <thead>
             <tr>
-              <th className="p-2 text-left border-b min-w-[120px]">Planta</th>
+              <th className="p-2 text-left border-b min-w-30">Planta</th>
               {dates.map((date) => (
                 <th
                   key={date}

@@ -1,14 +1,13 @@
-"use client"
-
 import type { PlantDefinition } from "@/domain/plants/plant-definition"
 import { type ChangeEventHandler, type FC, useEffect, useState } from "react"
 
 export interface ImageSelectorProps {
-  image?: PlantDefinition['images'][number]
+  image?: PlantDefinition["images"][number]
+  position: number
 }
 
-export const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
-  const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? '')
+export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
+  const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? "")
 
   useEffect(() => {
     return () => URL.revokeObjectURL(previewUrl)
@@ -16,7 +15,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
 
   const handleRemoveImage = () => {
     URL.revokeObjectURL(previewUrl)
-    setPreviewUrl('')
+    setPreviewUrl("")
   }
 
   const handleOnChangeImage: ChangeEventHandler<HTMLInputElement> = (ev) => {
@@ -26,7 +25,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
     if (maybeFile) {
       setPreviewUrl(URL.createObjectURL(maybeFile))
     } else {
-      setPreviewUrl('')
+      setPreviewUrl("")
     }
   }
 
@@ -34,24 +33,20 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
     <div className="flex flex-col gap-2 p-2 rounded-sm">
       <input
         type="hidden"
-        name="imagesExistingId"
-        value={image?.id ?? ''}
+        name={`imagesExistingId_${position}`}
+        value={image?.id ?? ""}
         readOnly
       />
       <input
         type="hidden"
-        name="imagesIsRemoved"
-        value={previewUrl ? 'false' : 'true'}
+        name={`imagesIsRemoved_${position}`}
+        value={previewUrl ? "false" : "true"}
         readOnly
       />
 
-      {/* TODO: ask the user if it wants to select and image or take a picture */}
-      <label
-        role="button"
-        className="relative h-36 cursor-pointer"
-      >
+      <label role="button" className="relative h-36 cursor-pointer">
         <input
-          name="imagesFile"
+          name={`imagesFile_${position}`}
           className="hidden"
           type="file"
           accept="image/*"
@@ -60,7 +55,13 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image }) => {
 
         {previewUrl ? (
           <>
-            <img className="h-full w-full object-cover" src={previewUrl} alt="" width={150} height={150} />
+            <img
+              className="h-full w-full object-cover"
+              src={previewUrl}
+              alt=""
+              width={150}
+              height={150}
+            />
 
             <button
               className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-slate-900/60 text-white"

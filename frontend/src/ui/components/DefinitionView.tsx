@@ -1,33 +1,20 @@
-'use client'
-
-import { cva } from 'class-variance-authority'
-import { ImageSelector } from './ImageSelector'
-import { DetailChecklist } from './DetailChecklist'
-import DeleteButton from './DeleteButton'
-import DetailListItem from './DetailLstItem'
-import { useTransition } from 'react'
-import { Link } from '@tanstack/react-router'
-import { plantCategory } from '@/domain/plants/category/plant-category'
-import { lightLevel } from '@/domain/plants/light/light-level'
-import type { PlantDefinition } from '@/domain/plants/plant-definition'
-import { soilType } from '@/domain/plants/soil/soil-type'
-import { petToxicity } from '@/domain/plants/toxicity/pet-toxicity'
-import { waterProfile } from '@/domain/plants/water/water-profile'
-import { buttonVariants } from '@/ui/classVariants/button'
-import { upsertPlantDefinition } from '@/actions/plant-definition.actions'
-
-const namesInputVariants = cva(["transition-all", "border", "outline-rose-400", "p-1"], {
-  variants: {
-    value: {
-      commonName: ["text-3xl", "rounded-t-sm", "border-b-0"],
-      scientificName: ["italic", "text-lg", "rounded-b-sm", "border-t-0"],
-    },
-    disabled: {
-      true: ["border-transparent"],
-      false: ["border-rose-200", "ps-3"],
-    }
-  }
-})
+import { cva } from "class-variance-authority"
+import { ImageSelector } from "./ImageSelector"
+import { DetailChecklist } from "./DetailChecklist"
+import DeleteButton from "./DeleteButton"
+import DetailListItem from "./DetailLstItem"
+import { useTransition } from "react"
+import { Link } from "@/router/components/Link"
+import { useNavigate } from "@/router/provider"
+import { plantCategory } from "@/domain/plants/category/plant-category"
+import { lightLevel } from "@/domain/plants/light/light-level"
+import type { PlantDefinition } from "@/domain/plants/plant-definition"
+import { soilType } from "@/domain/plants/soil/soil-type"
+import { petToxicity } from "@/domain/plants/toxicity/pet-toxicity"
+import { waterProfile } from "@/domain/plants/water/water-profile"
+import { buttonVariants } from "@/ui/classVariants/button"
+import { useCreateDefinition, useUpdateDefinition, uploadDefinitionImage } from "@/api/definitions"
+import { inputVariants } from "../classVariants/input"
 
 interface DefinitionViewProps {
   record: PlantDefinition
@@ -36,75 +23,119 @@ interface DefinitionViewProps {
 
 export default function DefinitionView({ record, editMode }: DefinitionViewProps) {
   const [isPending, startTransition] = useTransition()
+  const navigate = useNavigate()
+  const createDefinition = useCreateDefinition()
+  const updateDefinition = useUpdateDefinition()
 
-  // @review: this can be generalized. But should it be generalized?
   const categoriesOptions = plantCategory.options.map((opt) => ({
-    ...opt, selected: record.categories.includes(opt.value)
+    ...opt,
+    selected: record.categories.includes(opt.value),
   }))
 
   const waterProfileOptions = waterProfile.options.map((opt) => ({
     ...opt,
-    selected: record.waterProfile === opt.value
+    selected: record.waterProfile === opt.value,
   }))
 
   const lightLevelOptions = lightLevel.options.map((opt) => ({
     ...opt,
-    selected: record.lightLevel === opt.value
+    selected: record.lightLevel === opt.value,
   }))
 
   const soilTypeOptions = soilType.options.map((opt) => ({
     ...opt,
-    selected: record.soilType === opt.value
+    selected: record.soilType === opt.value,
   }))
 
   const petToxicityOptions = petToxicity.options.map((opt) => ({
     ...opt,
-    selected: record.petToxicity === opt.value
+    selected: record.petToxicity === opt.value,
   }))
 
   const submitAction = async (fd: FormData) => {
     startTransition(async () => {
-      const { error } = await upsertPlantDefinition(fd)
+      try {
+        const images: { filepath: string; position: number }[] = []
 
-      if (error) {
-        alert(error)
+        for (let pos = 0; pos < 3; pos++) {
+          const fileInput = fd.get(`imagesFile_${pos}`)
+          if (fileInput instanceof File && fileInput.size > 0) {
+            const filepath = await uploadDefinitionImage(fileInput)
+            images.push({ filepath, position: pos })
+          } else {
+            const existingPath = fd.get(`imagesExistingId_${pos}`)
+            if (existingPath) {
+              images.push({ filepath: String(existingPath), position: pos })
+            }
+          }
+        }
+
+        const categories = fd.getAll("categories") as string[]
+
+        const payload = {
+          common_name: fd.get("commonName"),
+          scientific_name: fd.get("scientificName"),
+          water_profile: fd.get("waterProfile"),
+          light_level: fd.get("lightLevel"),
+          soil_type: fd.get("soilType"),
+          pet_toxicity: fd.get("petToxicity"),
+          pet_toxicity_notes: fd.get("petToxicityNotes") || "",
+          categories,
+          images,
+        }
+
+        let result: { id: number }
+        if (record.id) {
+          result = await updateDefinition.mutateAsync({ id: record.id, ...payload })
+        } else {
+          result = await createDefinition.mutateAsync(payload)
+        }
+
+        navigate("/catalog/:plantdefid", { params: { plantdefid: String(result.id) } })
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Error al guardar")
       }
     })
   }
 
   return (
-    <div className='mx-2'>
+    <div className="mx-2">
       <form className="p-4 overflow-auto mb-12">
-        <input name="id" type="hidden" defaultValue={record.id || ''} />
-
+        <input name="id" type="hidden" defaultValue={record.id || ""} />
 
         <div className="border py-8 px-8">
-          <div className='flex gap-4 justify-end'>
+          <div className="flex gap-4 justify-end">
             {editMode ? (
               <>
                 <button
-                  className={buttonVariants({ variant: 'primary' })}
+                  className={buttonVariants({ variant: "primary" })}
                   formAction={submitAction}
                   type="submit"
                   disabled={isPending}
                 >
-                  {isPending ? 'Guardando' : 'Guardar'}
+                  {isPending ? "Guardando" : "Guardar"}
                 </button>
 
-                <Link
-                  to="/catalog/$plantdefid"
-                  params={{ plantdefid: String(record.id) }}
-                  className={buttonVariants({ variant: 'secondary' })}
-                >
-                  Cancelar
-                </Link>
+                {record.id ? (
+                  <Link
+                    to="/catalog/:plantdefid"
+                    params={{ plantdefid: String(record.id) }}
+                    className={buttonVariants({ variant: "secondary" })}
+                  >
+                    Cancelar
+                  </Link>
+                ) : (
+                  <Link to="/catalog" className={buttonVariants({ variant: "secondary" })}>
+                    Cancelar
+                  </Link>
+                )}
               </>
             ) : (
               <Link
-                to="/catalog/$plantdefid"
+                to="/catalog/:plantdefid"
                 params={{ plantdefid: String(record.id) }}
-                search={{ e: 'T' }}
-                className={buttonVariants({ variant: 'primary' })}
+                search={{ e: "T" }}
+                className={buttonVariants({ variant: "primary" })}
               >
                 Editar
               </Link>
@@ -113,7 +144,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
 
           <div className="flex flex-col min-w-0">
             <input
-              className={namesInputVariants({ value: 'commonName', disabled: !editMode })}
+              className={inputVariants({ field: "commonName", disabled: !editMode })}
               type="text"
               name="commonName"
               placeholder="Nombre común"
@@ -121,7 +152,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
               disabled={!editMode}
             />
             <input
-              className={namesInputVariants({ value: 'scientificName', disabled: !editMode })}
+              className={inputVariants({ field: "scientificName", disabled: !editMode })}
               type="text"
               name="scientificName"
               placeholder="Nombre scientifico"
@@ -133,9 +164,9 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
           <div>
             {editMode ? (
               <div className="grid gap-2 grid-cols-3">
-                {[0, 1, 2].map((n) =>
-                  <ImageSelector image={record.images[n]} key={n} />
-                )}
+                {[0, 1, 2].map((n) => (
+                  <ImageSelector image={record.images[n]} key={n} position={n} />
+                ))}
               </div>
             ) : (
               <div className="grid gap-2 grid-cols-3">
@@ -192,7 +223,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
 
             <DetailListItem title="Pet friendly?">
               {editMode ? (
-                <div className="flex gap-4">
+                <div className="grid grid-cols-[max-content_1fr] justify-between">
                   <DetailChecklist
                     className="flex-col"
                     options={petToxicityOptions}
@@ -202,15 +233,14 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
                   />
 
                   <label className="grow text-start flex flex-col">
-                    <span className="block p-1">Notas:</span>
+                    <span className="block p-1 text-center">Notas:</span>
                     <textarea
                       className="border disabled:border-0 border-slate-300 rounded-sm not-disabled:w-full p-2 grow"
-                      name="symptoms"
+                      name="petToxicityNotes"
                       disabled={!editMode}
                       defaultValue={record.petToxicityNotes}
-                      placeholder="Una nota sobre algo..."
-                    >
-                    </textarea>
+                      placeholder="Genera vómitos leves"
+                    ></textarea>
                   </label>
                 </div>
               ) : (
@@ -228,9 +258,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
                   <DeleteButton plantdef={record} />
                 </DetailListItem>
               </div>
-
             )}
-
           </dl>
         </div>
       </form>
