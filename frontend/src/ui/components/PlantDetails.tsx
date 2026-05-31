@@ -1,23 +1,26 @@
 import { useCreateLocationChange, useUpdatePlant, type CreateLocationChangeInput } from "@/api/plants"
 import type { PlantWithDefinition } from "@/domain/plants/plant"
 import { toISODateString } from "@/utils/format-date"
-import type { SyntheticEvent } from "react"
+import { useState, type FocusEvent, type SyntheticEvent } from "react"
 import { buttonVariants } from "../classVariants/button"
 import { cn } from "@sglara/cn"
 import { inputVariants } from "../classVariants/input"
 
 interface PlantDetailProps {
   plant: PlantWithDefinition
-  editMode: boolean
 }
 
 const locationChangeActionTypes = { cancel: "cancel", submit: "submit" } as const
 
 type LocationChangeActionType = keyof typeof locationChangeActionTypes
 
+type FormField = "" | "nickname" | "acquiredAt" | "notes"
+
 export default function PlantDetails({ plant }: PlantDetailProps) {
   const updatePlant = useUpdatePlant(plant.id)
   const createLocationChange = useCreateLocationChange()
+
+  const [editingField, setEditingField] = useState<"" | "nickname" | "acquiredAt" | "notes">("")
 
   //native dialog to change the location
   //dialog should ask for the new location name, the date of the change (default current date) and any notes.
@@ -71,32 +74,48 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       default:
         break;
     }
-
-    console.log()
-
   }
 
   return (
-    <section className="plant-detail">
-      <input type="text" name="nickname" defaultValue={plant.nickname} disabled />
+    <section className="plant-detail mx-3">
+      <input
+        type="text"
+        name="nickname"
+        defaultValue={plant.nickname}
+        className={inputVariants({ className: "text-3xl", disabled: editingField !== 'nickname' })}
+        onBlur={() => setEditingField("")}
+      />
 
-      <div>
-        <span>{plant.definition.commonName}</span>
-        <span>{plant.definition.scientificName}</span>
+      <div className="flex gap-2 items-baseline opacity-80 ms-4">
+        <span className="text-xl">{plant.definition.commonName}</span>
+        <span className="italic text-xs">{plant.definition.scientificName}</span>
       </div>
 
-      <div>
-        <span>
-          Ubicacion: {plant.location}
-        </span>
-        <button className={buttonVariants({ variant: "tertiary" })} command="show-modal" commandfor="create-location-change-dialog">Cambiar</button>
+      <div className="py-2">
+        <hr />
       </div>
 
-      <span>Fecha de adquisicion</span>
-      <span>{plant.acquiredAt?.toLocaleDateString() || "-"}</span>
+      <div className="text-xl grid grid-cols-[auto_1fr] gap-x-3 gap-y-6 items-center mx-auto">
+        <div className="grid grid-cols-subgrid col-span-2">
+          <span>Ubicacion: </span>
+          <span className="flex gap-3">
+            {plant.location}
+            <button className={buttonVariants({ variant: "clean", size: "sm" })} command="show-modal" commandfor="create-location-change-dialog">Cambiar</button>
+          </span>
+        </div>
 
-      <span>Notas: </span>
-      <span>{plant.notes || "-"}</span>
+        <div className="grid grid-cols-subgrid col-span-2">
+          <span>Adquirida en:</span>
+          <span>{plant.acquiredAt?.toLocaleDateString() || "-"}</span>
+        </div>
+
+        <div className="grid grid-cols-subgrid col-span-2">
+          <span>Notas: </span>
+          <span>{plant.notes || "-"}</span>
+        </div>
+
+      </div>
+
 
       <dialog closedby="any" popover="auto" className={cn(
         "mt-20 mx-auto p-4 shadow-lg rounded-md",
