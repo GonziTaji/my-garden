@@ -132,6 +132,69 @@ func (h *Handler) DeletePlantDefinition(c *gin.Context) {
 
 // Image Upload
 
+func (h *Handler) DeletePlantImage(c *gin.Context) {
+	imageID, err := strconv.ParseInt(c.Param("imageId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de imagen invalido"})
+		return
+	}
+
+	if err := h.service.DeletePlantImage(imageID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar imagen"})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}
+
+func (h *Handler) AddPlantImage(c *gin.Context) {
+	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Archivo no encontrado en la solicitud"})
+		return
+	}
+
+	result, err := h.service.AddPlantImage(plantID, file)
+	if err != nil {
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al subir imagen"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
+}
+
+func (h *Handler) UploadPlantImage(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Archivo no encontrado en la solicitud"})
+		return
+	}
+
+	result, err := h.service.UploadPlantImage(file)
+	if err != nil {
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al subir imagen"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
+}
+
 func (h *Handler) UploadPlantDefinitionImage(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {

@@ -1,42 +1,82 @@
-import type { PlantWithDefinition } from "@/domain/plants/plant"
+import { usePlants } from "@/api/plants"
+import { fullsearchPlants, type PlantWithDefinition } from "@/domain/plants/plant"
 import { Link } from "@/router/components/Link"
+import { useState, type ChangeEvent } from "react"
 
-interface GroupData {
-  plants: PlantWithDefinition[]
-  definition: PlantWithDefinition['definition']
-}
-
+type PlantsColumnsData = [PlantWithDefinition[], PlantWithDefinition[]]
 
 export interface PlantsListProps {
-  groups: Record<string, GroupData>
 }
 
-export default function PlantsList({ groups }: PlantsListProps) {
-  return (
-    <nav className="p-4 h-full">
-      <ul className="grid gap-12 border-2 rounded-md border-amber-200/20 bg-amber-100/20">
-        {Object.values(groups).map(({ definition, plants }) => (
-          <li key={definition.id} className="grid gap-4 px-8 py-4">
-            <div className="grid items-center border-olive-600/20 border-b pb-2">
-              <span className="text-xl inline-block">{definition.commonName}</span>
-              <span className="text-sm italic inline-block">{definition.scientificName}</span>
-            </div>
+export default function PlantsList({ }: PlantsListProps) {
+  const { data: plants, isLoading, error } = usePlants()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedDefinitionId, setSelectedDefinitionId] = useState('')
 
-            <ul>
-              {plants.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    to="/plants/:plantid"
-                    params={{ plantid: String(p.id) }}
-                    className="py-2 flex items-center">
-                    {'>'} <span className="ps-4 text-2xl">{p.nickname}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </li>
+  const plantsColumns: PlantsColumnsData =
+    fullsearchPlants(searchTerm, plants || [])
+      .filter((plant) => {
+        console.log(selectedDefinitionId)
+        if (!selectedDefinitionId) return true
+
+        return String(plant.definition.id) === selectedDefinitionId
+      })
+      .reduce((cols, plant, i) => {
+        cols[i % 2].push(plant)
+        return cols
+      }, [[], []] as PlantsColumnsData) || [[], []]
+
+  const allDefinitions = (plants || [])
+    .flatMap((p) => p.definition)
+    .filter((p, i, arr) => arr.indexOf(p) === i)
+
+  if (isLoading) return "Obteniendo plantas..."
+  if (error) return "Error obteniendo plantas: " + error.toString()
+
+  function handleSearchChange(ev: ChangeEvent<HTMLInputElement>) {
+    setSearchTerm(ev.currentTarget.value)
+  }
+
+  function handleDefinitionFilterChange(ev: ChangeEvent<HTMLSelectElement>) {
+    setSelectedDefinitionId(ev.currentTarget.value)
+  }
+
+  return (
+    <div className="bg-cyan-800">
+      <div className="grid grid-cols-2 p-2 gap-4">
+        <input type="search" onChange={handleSearchChange} placeholder="Buscar" className="border-b text-teal-50" />
+
+        <select onChange={handleDefinitionFilterChange} className="border-b text-teal-50">
+          <option value="" className="bg-cyan-900">Todas</option>
+          {allDefinitions.map((def) => (
+            <option key={def.id} value={def.id!} className="bg-cyan-900">{def.commonName} - {def.scientificName}</option>
+          ))}
+        </select>
+      </div>
+
+      <nav className="p-4 h-full grid grid-cols-2 gap-4 ">
+        {plantsColumns?.map((col, i) => (
+          <div key={i}>
+            {col.map((p) => <Link
+              key={p.id}
+              to="/plants/:plantid"
+              params={{ plantid: String(p.id) }}
+              className="flex flex-col justify-end rounded bg-rose-200 p-px"
+            >
+              <div className="w-full overflow-hidden">
+                <img src={p.images[0]?.filepath} />
+              </div>
+
+              <div className="p-2 flex flex-wrap gap-2 items-baseline">
+                <span className="">{p.nickname}</span>
+                <span className="text-xs">{p.definition.scientificName}</span>
+              </div>
+
+            </Link>
+            )}
+          </div>
         ))}
-      </ul >
-    </nav >
+      </nav >
+    </div>
   )
 }

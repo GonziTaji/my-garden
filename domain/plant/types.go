@@ -129,6 +129,13 @@ type PlantDefinitionBrief struct {
 	ScientificName string `json:"scientific_name"`
 }
 
+type PlantImage struct {
+	ID        int64  `json:"id"`
+	PlantID   int64  `json:"plant_id"`
+	Filepath  string `json:"filepath"`
+	CreatedAt string `json:"created_at"`
+}
+
 type PlantWithDefinition struct {
 	ID              int64                `json:"id"`
 	Nickname        string               `json:"nickname"`
@@ -137,6 +144,7 @@ type PlantWithDefinition struct {
 	Location        NullString           `json:"location"`
 	Notes           NullString           `json:"notes"`
 	PlantDefinition PlantDefinitionBrief `json:"plant_definition"`
+	Images          []PlantImage         `json:"images"`
 	CreatedAt       string               `json:"created_at"`
 	UpdatedAt       string               `json:"updated_at"`
 }

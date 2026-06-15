@@ -14,6 +14,7 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler) {
 
 	// Image Upload
 	rg.POST("/upload/plant-definition-image", handler.UploadPlantDefinitionImage)
+	rg.POST("/upload/plant-image", handler.UploadPlantImage)
 
 	// Plants
 	rg.GET("/plants", handler.ListPlants)
@@ -24,6 +25,10 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler) {
 
 	// Location History
 	rg.POST("/plants/:id/location", handler.CreateLocationChange)
+
+	// Plant Images
+	rg.POST("/plants/:id/images", handler.AddPlantImage)
+	rg.DELETE("/plants/:id/images/:imageId", handler.DeletePlantImage)
 
 	// Journal entries for a plant
 	rg.GET("/plants/:id/journal", handler.GetJournalEntries)

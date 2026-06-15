@@ -13,14 +13,14 @@ import (
 var schemaSQL string
 
 type ConnectionConfig struct {
-	db_name string
+	DBName string
 }
 
 var open_db *sql.DB = nil
 
 func DefaultConfig() ConnectionConfig {
 	return ConnectionConfig{
-		db_name: "internal/database/databases/main.db",
+		DBName: "internal/database/databases/main.db",
 	}
 }
 
@@ -30,7 +30,7 @@ func OpenDatabase(cfg ConnectionConfig) error {
 	}
 
 	var err error
-	open_db, err = sql.Open("sqlite", cfg.db_name)
+	open_db, err = sql.Open("sqlite", cfg.DBName)
 	if err != nil {
 		return err
 	}

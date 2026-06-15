@@ -44,6 +44,7 @@ func (e *UniqueConstraintError) Error() string {
 }
 
 const uploadsDir = "public/uploads/plant-definitions"
+const plantUploadsDir = "public/uploads/plants"
 const maxImageSize = 8 * 1024 * 1024
 
 var allowedMIMETypes = map[string]bool{
@@ -178,6 +179,95 @@ func (s *Service) DeleteDefinition(id int64) error {
 
 type UploadResult struct {
 	Filepath string `json:"filepath"`
+}
+
+func (s *Service) AddPlantImage(plantID int64, file *multipart.FileHeader) (*PlantImage, error) {
+	result, err := s.UploadPlantImage(file)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := s.store.CreatePlantImage(plantID, result.Filepath)
+	if err != nil {
+		return nil, fmt.Errorf("create plant image: %w", err)
+	}
+
+	images, err := s.store.GetPlantImages(plantID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range images {
+		if images[i].ID == id {
+			return &images[i], nil
+		}
+	}
+	return nil, fmt.Errorf("plant image not found after creation")
+}
+
+func (s *Service) DeletePlantImage(imageID int64) error {
+	return s.store.DeletePlantImage(imageID)
+}
+
+func (s *Service) UploadPlantImage(file *multipart.FileHeader) (*UploadResult, error) {
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if !allowedExtensions[ext] {
+		return nil, &ValidationError{
+			Field:   "file",
+			Message: "Extension de imagen no permitida (usar .jpg, .jpeg, .png o .webp)",
+		}
+	}
+
+	if file.Size > maxImageSize {
+		return nil, &ValidationError{
+			Field:   "file",
+			Message: "Cada imagen debe pesar maximo 8MB",
+		}
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("open uploaded file: %w", err)
+	}
+	defer src.Close()
+
+	buf := make([]byte, 512)
+	n, _ := io.ReadFull(src, buf)
+	mimeType := http.DetectContentType(buf[:n])
+
+	if !strings.HasPrefix(mimeType, "image/") {
+		return nil, &ValidationError{
+			Field:   "file",
+			Message: "Solo se permiten archivos de imagen",
+		}
+	}
+	if !allowedMIMETypes[mimeType] {
+		return nil, &ValidationError{
+			Field:   "file",
+			Message: "Formato de imagen no permitido (usar JPG, PNG o WEBP)",
+		}
+	}
+
+	if err := os.MkdirAll(plantUploadsDir, 0755); err != nil {
+		return nil, fmt.Errorf("create uploads dir: %w", err)
+	}
+
+	filename := fmt.Sprintf("%d-%s%s", time.Now().UnixMilli(), uuid.New().String(), ext)
+	targetPath := filepath.Join(plantUploadsDir, filename)
+
+	out, err := os.Create(targetPath)
+	if err != nil {
+		return nil, fmt.Errorf("create file: %w", err)
+	}
+	defer out.Close()
+
+	src.Seek(0, io.SeekStart)
+	if _, err := io.Copy(out, src); err != nil {
+		return nil, fmt.Errorf("write file: %w", err)
+	}
+
+	publicPath := path.Join("/uploads/plants", filename)
+	return &UploadResult{Filepath: publicPath}, nil
 }
 
 func (s *Service) UploadImage(file *multipart.FileHeader) (*UploadResult, error) {

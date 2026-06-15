@@ -1,7 +1,6 @@
 package server
 
 import (
-	"embed"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,8 +8,6 @@ import (
 
 	"my-garden/internal/database"
 )
-
-var webappFS embed.FS
 
 type EnvType int
 
@@ -20,14 +17,16 @@ const (
 )
 
 type ServerConfig struct {
-	Env        EnvType
-	ServerAddr string
+	Env            EnvType
+	ServerAddr     string
+	FrontendFolder string
 }
 
 func DefaultConfig() ServerConfig {
 	return ServerConfig{
-		Env:        ENV_DEV,
-		ServerAddr: ":8080",
+		Env:            ENV_DEV,
+		ServerAddr:     ":8080",
+		FrontendFolder: "frontend/dist",
 	}
 }
 
@@ -41,14 +40,10 @@ func StartWebServer(cfg ServerConfig) error {
 	}
 
 	r := GetNewRouter(RouterConfig{
-		WebappFolder: "frontent/dist",
+		WebappFolder: cfg.FrontendFolder,
 		DB:           db,
+		Env:          cfg.Env,
 	}, os.DirFS("."))
-
-	// Caso ENV_DEV -> se usa el dev server de vite
-	if cfg.Env == ENV_PROD {
-		r.StaticFS("*", http.FS(webappFS))
-	}
 
 	s := &http.Server{
 		Addr:              cfg.ServerAddr,

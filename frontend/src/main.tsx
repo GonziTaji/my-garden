@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { RouterProvider } from "./router/provider"
 import Layout from "./pages/Layout"
 import { routerPaths } from "./router/routes"
-import "./main.css"
 
 const queryClient = new QueryClient()
 

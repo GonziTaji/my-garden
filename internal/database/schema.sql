@@ -54,6 +54,14 @@ create table if not exists plant_journal_entry_images (
   foreign key (plant_journal_entry_id) references plant_journal_entries(id) on delete cascade
 );
 
+create table if not exists plant_images (
+  id integer primary key autoincrement not null,
+  plant_id integer not null,
+  filepath text not null,
+  created_at text default (datetime('now', 'localtime')) not null,
+  foreign key (plant_id) references plants(id) on delete cascade
+);
+
 create table if not exists plant_location_history (
   id integer primary key autoincrement not null,
   plant_id integer not null,

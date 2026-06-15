@@ -19,6 +19,12 @@ type StoreInterface interface {
 	GetPlantWithDefinition(int64) (*PlantWithDefinition, error)
 	ListPlantsWithDefinition(*int64) ([]PlantWithDefinition, error)
 
+	// Plant Images
+	CreatePlantImage(int64, string) (int64, error)
+	GetPlantImages(int64) ([]PlantImage, error)
+	DeletePlantImage(int64) error
+	CountPlantImageReferences(string) (int, error)
+
 	// Location History
 	CreatePlantLocationHistory(*PlantLocationHistoryEntry) (int64, error)
 

@@ -6,5 +6,11 @@ dev-backend:
 
 dev-frontend:
 	pnpm -C frontend run dev
-	mv frontend/dist/pages/* frontend/dist/
+
+build:
+	pnpm -C frontend run build
+	MY_GARDEN_ENV=prod go build -o my-garden .
+
+prod:
+	MY_GARDEN_ENV=prod go run .
 

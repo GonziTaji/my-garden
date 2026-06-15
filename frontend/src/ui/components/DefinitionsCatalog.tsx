@@ -29,7 +29,7 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
             )}
           </div>
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center text-center">
             <span className="font-semibold text-xl">{d.commonName}</span>
             <span className="italic text-xl">{d.scientificName}</span>
 

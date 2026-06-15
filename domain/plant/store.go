@@ -458,8 +458,43 @@ func (s *Store) ListPlantsWithDefinition(definitionID *int64) ([]PlantWithDefini
 		if err != nil {
 			return nil, fmt.Errorf("scan plant with definition: %w", err)
 		}
+		p.Images = []PlantImage{}
 		plants = append(plants, p)
 	}
+
+	if len(plants) == 0 {
+		return plants, nil
+	}
+
+	plantIDs := make([]int64, len(plants))
+	plantIDIndex := make(map[int64]int, len(plants))
+	for i, p := range plants {
+		plantIDs[i] = p.ID
+		plantIDIndex[p.ID] = i
+	}
+
+	imgRows, err := s.db.Query(`
+		select id, plant_id, filepath, created_at
+		from plant_images
+		where plant_id in (`+placeholders(len(plantIDs))+`)
+		order by plant_id asc, created_at asc
+	`, int64sToAny(plantIDs)...)
+	if err != nil {
+		return nil, fmt.Errorf("list plant images: %w", err)
+	}
+	defer imgRows.Close()
+
+	for imgRows.Next() {
+		var img PlantImage
+		err := imgRows.Scan(&img.ID, &img.PlantID, &img.Filepath, &img.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("scan plant image: %w", err)
+		}
+		if idx, ok := plantIDIndex[img.PlantID]; ok {
+			plants[idx].Images = append(plants[idx].Images, img)
+		}
+	}
+
 	return plants, nil
 }
 
@@ -491,7 +526,69 @@ func (s *Store) GetPlantWithDefinition(id int64) (*PlantWithDefinition, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get plant with definition: %w", err)
 	}
+
+	p.Images, err = s.GetPlantImages(id)
+	if err != nil {
+		return nil, fmt.Errorf("get plant images: %w", err)
+	}
+
 	return &p, nil
+}
+
+// Plant Images
+
+func (s *Store) CreatePlantImage(plantID int64, filepath string) (int64, error) {
+	result, err := s.db.Exec(`
+		insert into plant_images (plant_id, filepath)
+		values (?, ?)
+	`, plantID, filepath)
+	if err != nil {
+		return 0, fmt.Errorf("create plant image: %w", err)
+	}
+	return result.LastInsertId()
+}
+
+func (s *Store) GetPlantImages(plantID int64) ([]PlantImage, error) {
+	rows, err := s.db.Query(`
+		select id, plant_id, filepath, created_at
+		from plant_images
+		where plant_id = ?
+		order by created_at asc
+	`, plantID)
+	if err != nil {
+		return nil, fmt.Errorf("get plant images: %w", err)
+	}
+	defer rows.Close()
+
+	images := make([]PlantImage, 0)
+	for rows.Next() {
+		var img PlantImage
+		err := rows.Scan(&img.ID, &img.PlantID, &img.Filepath, &img.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("scan plant image: %w", err)
+		}
+		images = append(images, img)
+	}
+	return images, nil
+}
+
+func (s *Store) DeletePlantImage(id int64) error {
+	_, err := s.db.Exec("delete from plant_images where id = ?", id)
+	if err != nil {
+		return fmt.Errorf("delete plant image: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) CountPlantImageReferences(filepath string) (int, error) {
+	var count int
+	err := s.db.QueryRow(`
+		select count(*) from plant_images where filepath = ?
+	`, filepath).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count plant image refs: %w", err)
+	}
+	return count, nil
 }
 
 // Location History

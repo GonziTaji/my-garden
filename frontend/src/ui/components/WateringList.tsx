@@ -1,25 +1,19 @@
-import type { PlantWithDefinition } from '@/domain/plants/plant'
-import { useState, useMemo } from 'react'
-import { useLastWateredDates } from '@/api/watering'
-
-interface GroupData {
-  plants: PlantWithDefinition[]
-  definition: PlantWithDefinition['plantDefinition']
-}
+import { type Plant } from '@/domain/plants/plant'
+import { useMemo, useTransition } from 'react'
+import { useLastWateredDates, useToggleWatering } from '@/api/watering'
+import { usePlants } from '@/api/plants'
+import { buttonVariants } from '../classVariants/button'
+import { useRouter } from '@/router/provider'
 
 export interface WateringListProps {
-  groups: Record<string, GroupData>
 }
 
-export default function WateringList({ groups }: WateringListProps) {
-  const [selected, setSelected] = useState<Set<number>>(new Set())
-
-  const plantIds = useMemo(
-    () => Object.values(groups).flatMap((g) => g.plants.map((p) => p.id)),
-    [groups],
-  )
-
-  const { data: lastWateredRaw } = useLastWateredDates(plantIds)
+export default function WateringList({ }: WateringListProps) {
+  const toggleWatering = useToggleWatering()
+  const { data: plants } = usePlants()
+  const { data: lastWateredRaw } = useLastWateredDates(plants?.map(p => p.id) || [])
+  const [_, startTransition] = useTransition()
+  const router = useRouter()
 
   const lastWateredDates = useMemo(() => {
     const m = new Map<number, string>()
@@ -31,33 +25,14 @@ export default function WateringList({ groups }: WateringListProps) {
     return m
   }, [lastWateredRaw])
 
-  const toggle = (plantId: number) => {
-    const next = new Set(selected)
-    if (next.has(plantId)) {
-      next.delete(plantId)
-    } else {
-      next.add(plantId)
-    }
-    setSelected(next)
+  const handleToggleWaterPlant = async (plantid: Plant['id']) => {
+
+    startTransition(() => {
+      toggleWatering.mutateAsync({ plant_id: plantid, date: new Date().toLocaleDateString() })
+    })
   }
 
-  const toggleAllInGroup = (groupPlants: PlantWithDefinition[]) => {
-    const allSelected = groupPlants.every((p) => selected.has(p.id))
-    const next = new Set(selected)
-
-    if (allSelected) {
-      for (const p of groupPlants) {
-        next.delete(p.id)
-      }
-    } else {
-      for (const p of groupPlants) {
-        next.add(p.id)
-      }
-    }
-    setSelected(next)
-  }
-
-  const formatDate = (dateStr: string) => {
+  const formatWateredDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
@@ -66,63 +41,52 @@ export default function WateringList({ groups }: WateringListProps) {
     if (diffDays === 0) return 'Hoy'
     if (diffDays === 1) return 'Ayer'
     if (diffDays < 7) return `Hace ${diffDays} días`
-    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+
+    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  }
+
+  const handlePlantImageClick = (plantid: Plant['id']) => {
+    router.navigate('/plants/:plantid', { params: { plantid: plantid.toString() } })
   }
 
   return (
-    <div className="grid gap-4">
-      <input type="hidden" name="plantIds" value={JSON.stringify([...selected])} />
+    <div>
+      <ul className="grid gap-2 py-4 px-2">
+        {(plants || [])
+          .map((p) => ({
+            ...p,
+            lastWatered: lastWateredDates.get(p.id),
+            isWateredToday: new Date(lastWateredDates.get(p.id) ?? '').toLocaleDateString() === new Date().toLocaleDateString()
+          }))
+          .map((p) => (
+            <li key={p.id} className="h-28 flex items-center gap-3 border-2 rounded-md border-amber-200/20 bg-amber-100 p-2">
+              <button className="h-full" type="button" onClick={() => handlePlantImageClick(p.id)}>
+                <img className="h-full aspect-square object-cover rounded-md" src={p.images[0].filepath} />
+              </button>
 
-      {Object.values(groups).map(({ definition, plants }) => {
-        const allSelected = plants.every((p) => selected.has(p.id))
-        const someSelected = plants.some((p) => selected.has(p.id))
+              <div className='grow flex flex-col justify-between h-full p-2'>
+                <div className="flex justify-between">
+                  <span className="text-xl font-semibold ">{p.nickname}</span>
 
-        return (
-          <div key={definition.id} className="border-2 rounded-md border-amber-200/20 bg-amber-100/20 p-4">
-            <div className="flex items-center gap-3 border-b border-olive-600/20 pb-2 mb-2">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                ref={(el) => {
-                  if (el) el.indeterminate = someSelected && !allSelected
-                }}
-                onChange={() => toggleAllInGroup(plants)}
-                className="w-5 h-5"
-              />
-              <div>
-                <span className="text-xl block">{definition.commonName}</span>
-                <span className="text-sm italic block opacity-70">{definition.scientificName}</span>
+                  <span className="text-sm italic">
+                    Ultimo riego:{' '}
+                    {p.lastWatered ? formatWateredDate(p.lastWatered) : "-"}
+                  </span>
+                </div>
+
+                <div className='flex justify-end gap-2'>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleWaterPlant(p.id)}
+                    className={buttonVariants({ variant: p.isWateredToday ? "secondary" : "tertiary" })}
+                  >
+                    {p.isWateredToday ? 'Revertir' : 'Regar'}
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <ul className="grid gap-2 ps-8">
-              {plants.map((p) => {
-                const lastWatered = lastWateredDates.get(p.id)
-                const isSelected = selected.has(p.id)
-
-                return (
-                  <li key={p.id} className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggle(p.id)}
-                      className="w-4 h-4"
-                    />
-                    <label className="flex-1 flex items-center justify-between cursor-pointer">
-                      <span>{p.nickname}</span>
-                      {lastWatered && (
-                        <span className="text-sm opacity-50">
-                          {formatDate(lastWatered)}
-                        </span>
-                      )}
-                    </label>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )
-      })}
+            </li>
+          ))}
+      </ul>
     </div>
   )
 }

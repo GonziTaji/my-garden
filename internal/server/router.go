@@ -14,6 +14,7 @@ import (
 type RouterConfig struct {
 	WebappFolder string
 	DB           *sql.DB
+	Env          EnvType
 }
 
 type AppRouter struct {
@@ -38,6 +39,7 @@ func GetNewRouter(cfg RouterConfig, fsys fs.FS) *gin.Engine {
 	app_router.mountMiddleware()
 	app_router.mountApiRoutes()
 	app_router.mountStaticFiles()
+	app_router.mountFrontend()
 
 	app_router.router.GET("checkhealth", func(ctx *gin.Context) {
 		ctx.String(200, "OK")
@@ -48,7 +50,9 @@ func GetNewRouter(cfg RouterConfig, fsys fs.FS) *gin.Engine {
 
 func (g *AppRouter) mountMiddleware() {
 	securityHeaders(g.router)
-	corsMiddleware(g.router)
+	if g.cfg.Env == ENV_DEV {
+		corsMiddleware(g.router)
+	}
 }
 
 func (g *AppRouter) mountApiRoutes() {
@@ -62,6 +66,25 @@ func (g *AppRouter) mountApiRoutes() {
 
 func (g *AppRouter) mountStaticFiles() {
 	g.router.Static("/uploads", "public/uploads")
+}
+
+func (g *AppRouter) mountFrontend() {
+	assetsFs, err := fs.Sub(g.webapp_fs, "assets")
+	if err != nil {
+		log.Fatal(err)
+	}
+	g.router.StaticFS("/assets", http.FS(assetsFs))
+	g.router.StaticFileFS("/favicon.svg", "favicon.svg", http.FS(g.webapp_fs))
+	g.router.StaticFileFS("/icons.svg", "icons.svg", http.FS(g.webapp_fs))
+
+	g.router.NoRoute(func(ctx *gin.Context) {
+		data, err := fs.ReadFile(g.webapp_fs, "index.html")
+		if err != nil {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+		ctx.Data(http.StatusOK, "text/html; charset=utf-8", data)
+	})
 }
 
 func corsMiddleware(g *gin.Engine) {

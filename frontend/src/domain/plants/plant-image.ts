@@ -4,3 +4,10 @@ export interface PlantDefinitionImage {
     plantDefinitionId: number
     position: number
 }
+
+export interface PlantImage {
+    id: number | null
+    plantId: number
+    filepath: string
+    createdAt: string
+}
