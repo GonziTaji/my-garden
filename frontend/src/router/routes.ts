@@ -1,10 +1,10 @@
-import CatalogDetail from "@/pages/CatalogDetail";
-import CatalogList from "@/pages/CatalogList";
-import CatalogNew from "@/pages/CatalogNew";
-import Home from "@/pages/Home";
-import PlantDetailPage from "@/pages/PlantDetail";
-import PlantNew from "@/pages/PlantNew";
-import PlantsList from "@/pages/PlantsList";
+import CatalogDetail from "@/ui/pages/CatalogDetail";
+import CatalogList from "@/ui/pages/CatalogList";
+import CatalogNew from "@/ui/pages/CatalogNew";
+import Home from "@/ui/pages/Home";
+import PlantDetailPage from "@/ui/pages/PlantDetail";
+import PlantNew from "@/ui/pages/PlantNew";
+import PlantsList from "@/ui/pages/PlantsList";
 
 export type RouterPath = typeof routerPaths[number]["path"]
 

@@ -16,7 +16,7 @@ export default function PlantsList() {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-cyan-800">
+    <div className="h-full w-full flex flex-col">
       <div className="grow">
         {tab === "water" && <WateringList />}
         {tab === "history" && <WateringHistoryGrid />}
@@ -31,7 +31,7 @@ export default function PlantsList() {
             className={cn("px-4 py-1 rounded-sm text-sm",
               tab === t
                 ? "bg-rose-100 text-rose-700 border border-rose-200 border-b-white"
-                : "text-white hover:text-olive-700"
+                : "hover:text-olive-700"
             )}
           >
             {t === "list" && "Mi Jardín"}
@@ -40,7 +40,6 @@ export default function PlantsList() {
           </button>
         ))}
       </div>
-
     </div>
   )
 }

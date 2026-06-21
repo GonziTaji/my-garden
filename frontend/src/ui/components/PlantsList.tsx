@@ -42,14 +42,14 @@ export default function PlantsList({ }: PlantsListProps) {
   }
 
   return (
-    <div className="bg-cyan-800">
+    <div className="">
       <div className="grid grid-cols-2 p-2 gap-4">
-        <input type="search" onChange={handleSearchChange} placeholder="Buscar" className="border-b text-teal-50" />
+        <input type="search" onChange={handleSearchChange} placeholder="Buscar" className="border-b" />
 
-        <select onChange={handleDefinitionFilterChange} className="border-b text-teal-50">
-          <option value="" className="bg-cyan-900">Todas</option>
+        <select onChange={handleDefinitionFilterChange} className="border-b">
+          <option value="" className="">Todas</option>
           {allDefinitions.map((def) => (
-            <option key={def.id} value={def.id!} className="bg-cyan-900">{def.commonName} - {def.scientificName}</option>
+            <option key={def.id} value={def.id!} className="">{def.commonName} - {def.scientificName}</option>
           ))}
         </select>
       </div>
@@ -61,9 +61,9 @@ export default function PlantsList({ }: PlantsListProps) {
               key={p.id}
               to="/plants/:plantid"
               params={{ plantid: String(p.id) }}
-              className="flex flex-col justify-end rounded bg-rose-200 p-px"
+              className="flex flex-col justify-end rounded p-px"
             >
-              <div className="w-full overflow-hidden">
+              <div className="w-full overflow-hidden rounded-lg">
                 <img src={p.images[0]?.filepath} />
               </div>
 
