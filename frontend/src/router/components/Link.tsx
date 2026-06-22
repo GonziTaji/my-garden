@@ -1,6 +1,7 @@
 import { type MouseEvent, type ReactNode } from "react"
 import { useNavigate } from "../provider"
 import type { RouterPath } from "../routes"
+import { cn } from "@sglara/cn"
 
 export function Link({
   to,
@@ -8,12 +9,14 @@ export function Link({
   search,
   children,
   className,
+  activeClassname,
 }: {
   to: RouterPath
   params?: Record<string, string>
   search?: Record<string, string>
   children: ReactNode
   className?: string
+  activeClassname?: string
 }) {
   const navigate = useNavigate()
   const auxNavigate = () => navigate(to, { params, search })
@@ -42,8 +45,11 @@ export function Link({
     auxNavigate()
   }
 
+  const currentPathname = new URL(location.href).pathname
+  const isActive = currentPathname === href
+
   return (
-    <a href={href} onClick={handleClick} className={className}>
+    <a href={href} onClick={handleClick} className={cn(className, isActive && activeClassname)}>
       {children}
     </a>
   )

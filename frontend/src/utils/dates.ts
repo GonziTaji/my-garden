@@ -32,7 +32,6 @@ function getDateRange(marginLeft: number, marginRight: number): string[] {
     const d = new Date(today)
 
     d.setDate(d.getDate() + i)
-    console.log(d)
 
     dates.push(d.toLocaleDateString())
   }

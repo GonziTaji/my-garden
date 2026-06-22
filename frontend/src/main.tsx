@@ -1,7 +1,7 @@
 import ReactDOM from "react-dom/client"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { RouterProvider } from "./router/provider"
-import Layout from "./pages/Layout"
+import Layout from "./ui/pages/Layout"
 import { routerPaths } from "./router/routes"
 
 const queryClient = new QueryClient()
