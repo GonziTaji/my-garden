@@ -1,5 +1,6 @@
 import ReactDOM from "react-dom/client"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { AuthProvider } from "./auth/AuthContext"
 import { RouterProvider } from "./router/provider"
 import Layout from "./ui/pages/Layout"
 import { routerPaths } from "./router/routes"
@@ -20,7 +21,9 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider routes={routerPaths} layout={Layout} notFound={NotFound} />
+      <AuthProvider>
+        <RouterProvider routes={routerPaths} layout={Layout} notFound={NotFound} />
+      </AuthProvider>
     </QueryClientProvider>,
   )
 }

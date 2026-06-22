@@ -117,6 +117,29 @@ func ApplyMigrations() error {
 		return fmt.Errorf("create watering unique index: %w", err)
 	}
 
+	// add user_id column to existing tables
+	for _, alterSQL := range []string{
+		"alter table plant_definitions add column user_id integer references users(id)",
+		"alter table plant_definitions add column visibility text not null default 'private'",
+		"alter table plants add column user_id integer references users(id)",
+		"alter table plant_journal_entries add column user_id integer references users(id)",
+		"alter table plant_images add column user_id integer references users(id)",
+		"alter table plant_location_history add column user_id integer references users(id)",
+	} {
+		_, err = open_db.Exec(alterSQL)
+		if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+			return fmt.Errorf("add user_id column: %w", err)
+		}
+	}
+
+	// backfill existing rows with user_id = 1 (first admin user)
+	for _, table := range []string{"plant_definitions", "plants", "plant_journal_entries", "plant_images", "plant_location_history"} {
+		_, err = open_db.Exec(fmt.Sprintf("update %s set user_id = 1 where user_id is null", table))
+		if err != nil {
+			return fmt.Errorf("backfill %s user_id: %w", table, err)
+		}
+	}
+
 	// backfill plants.location into plant_location_history
 	_, err = open_db.Exec(`
 		insert or ignore into plant_location_history (plant_id, location, registered_at, notes)

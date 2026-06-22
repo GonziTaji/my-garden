@@ -16,13 +16,21 @@ func NewStore(db *sql.DB) *Store {
 
 // Plant Definitions
 
-func (s *Store) ListPlantDefinitions() ([]PlantDefinition, error) {
-	rows, err := s.db.Query(`
-		select id, common_name, scientific_name, water_profile, light_level, soil_type,
-			pet_toxicity, pet_toxicity_notes, categories_json, created_at, updated_at
-		from plant_definitions
-		order by common_name asc
-	`)
+func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
+	query := `select id, common_name, scientific_name, water_profile, light_level, soil_type,
+		pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility,
+		created_at, updated_at
+	from plant_definitions
+	where visibility = 'public'`
+
+	args := []any{}
+	if userID > 0 {
+		query += ` or user_id = ?`
+		args = append(args, userID)
+	}
+	query += ` order by common_name asc`
+
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list definitions: %w", err)
 	}
@@ -33,7 +41,8 @@ func (s *Store) ListPlantDefinitions() ([]PlantDefinition, error) {
 		var d PlantDefinition
 		err := rows.Scan(&d.ID, &d.CommonName, &d.ScientificName, &d.WaterProfile,
 			&d.LightLevel, &d.SoilType, &d.PetToxicity, &d.PetToxicityNotes,
-			&d.CategoriesJSON, &d.CreatedAt, &d.UpdatedAt)
+			&d.CategoriesJSON, &d.UserID, &d.Visibility,
+			&d.CreatedAt, &d.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("scan definition: %w", err)
 		}
@@ -86,18 +95,26 @@ func (s *Store) ListPlantDefinitions() ([]PlantDefinition, error) {
 	return defs, nil
 }
 
-func (s *Store) GetPlantDefinition(id int64) (*PlantDefinition, error) {
-	row := s.db.QueryRow(`
-		select id, common_name, scientific_name, water_profile, light_level, soil_type,
-			pet_toxicity, pet_toxicity_notes, categories_json, created_at, updated_at
-		from plant_definitions
-		where id = ?
-	`, id)
+func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, error) {
+	query := `select id, common_name, scientific_name, water_profile, light_level, soil_type,
+		pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility,
+		created_at, updated_at
+	from plant_definitions
+	where id = ? and (visibility = 'public'`
+	args := []any{id}
+	if userID > 0 {
+		query += ` or user_id = ?`
+		args = append(args, userID)
+	}
+	query += `)`
+
+	row := s.db.QueryRow(query, args...)
 
 	var d PlantDefinition
 	err := row.Scan(&d.ID, &d.CommonName, &d.ScientificName, &d.WaterProfile,
 		&d.LightLevel, &d.SoilType, &d.PetToxicity, &d.PetToxicityNotes,
-		&d.CategoriesJSON, &d.CreatedAt, &d.UpdatedAt)
+		&d.CategoriesJSON, &d.UserID, &d.Visibility,
+		&d.CreatedAt, &d.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -133,10 +150,11 @@ func (s *Store) CreatePlantDefinition(d *PlantDefinition) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_definitions
 			(common_name, scientific_name, water_profile, light_level, soil_type,
-			 pet_toxicity, pet_toxicity_notes, categories_json)
-		values (?, ?, ?, ?, ?, ?, ?, ?)
+			 pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.CommonName, d.ScientificName, d.WaterProfile, d.LightLevel,
-		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON)
+		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON,
+		d.UserID, d.Visibility)
 	if err != nil {
 		return 0, fmt.Errorf("create definition: %w", err)
 	}
@@ -162,10 +180,12 @@ func (s *Store) UpdatePlantDefinition(d *PlantDefinition) error {
 		update plant_definitions
 		set common_name = ?, scientific_name = ?, water_profile = ?, light_level = ?,
 			soil_type = ?, pet_toxicity = ?, pet_toxicity_notes = ?,
-			categories_json = ?, updated_at = datetime('now', 'localtime')
-		where id = ?
+			categories_json = ?, visibility = ?,
+			updated_at = datetime('now', 'localtime')
+		where id = ? and user_id = ?
 	`, d.CommonName, d.ScientificName, d.WaterProfile, d.LightLevel,
-		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON, d.ID)
+		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON,
+		d.Visibility, d.ID, d.UserID)
 	if err != nil {
 		return fmt.Errorf("update definition: %w", err)
 	}
@@ -173,8 +193,8 @@ func (s *Store) UpdatePlantDefinition(d *PlantDefinition) error {
 	return s.syncDefinitionImages(d.ID, d.Images)
 }
 
-func (s *Store) DeletePlantDefinition(id int64) error {
-	_, err := s.db.Exec("delete from plant_definitions where id = ?", id)
+func (s *Store) DeletePlantDefinition(id int64, userID int64) error {
+	_, err := s.db.Exec("delete from plant_definitions where id = ? and user_id = ?", id, userID)
 	if err != nil {
 		return fmt.Errorf("delete definition: %w", err)
 	}
@@ -202,6 +222,74 @@ func (s *Store) CountImageReferences(filepath string) (int, error) {
 		return 0, fmt.Errorf("count image refs: %w", err)
 	}
 	return count, nil
+}
+
+func (s *Store) ClonePlantDefinition(defID int64, userID int64) (int64, error) {
+	def, err := s.GetPlantDefinition(defID, userID)
+	if err != nil {
+		return 0, err
+	}
+	if def == nil {
+		return 0, fmt.Errorf("definition not found")
+	}
+
+	result, err := s.db.Exec(`
+		insert into plant_definitions
+			(common_name, scientific_name, water_profile, light_level, soil_type,
+			 pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, 'private')
+	`, def.CommonName, def.ScientificName, def.WaterProfile, def.LightLevel,
+		def.SoilType, def.PetToxicity, def.PetToxicityNotes, def.CategoriesJSON, userID)
+	if err != nil {
+		return 0, fmt.Errorf("clone definition: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("get last insert id: %w", err)
+	}
+
+	for _, img := range def.Images {
+		_, err := s.db.Exec(`
+			insert into plant_definition_images (plant_definition_id, filepath, position)
+			values (?, ?, ?)
+		`, id, img.Filepath, img.Position)
+		if err != nil {
+			return 0, fmt.Errorf("clone definition image: %w", err)
+		}
+	}
+
+	return id, nil
+}
+
+func (s *Store) ToggleFavorite(userID int64, defID int64) (bool, error) {
+	var exists int
+	err := s.db.QueryRow(`
+		select 1 from plant_definition_favorites
+		where user_id = ? and plant_definition_id = ?
+	`, userID, defID).Scan(&exists)
+	if err == nil {
+		_, err = s.db.Exec(`
+			delete from plant_definition_favorites
+			where user_id = ? and plant_definition_id = ?
+		`, userID, defID)
+		if err != nil {
+			return false, fmt.Errorf("remove favorite: %w", err)
+		}
+		return false, nil
+	}
+	if err != sql.ErrNoRows {
+		return false, fmt.Errorf("check favorite: %w", err)
+	}
+
+	_, err = s.db.Exec(`
+		insert into plant_definition_favorites (user_id, plant_definition_id)
+		values (?, ?)
+	`, userID, defID)
+	if err != nil {
+		return false, fmt.Errorf("add favorite: %w", err)
+	}
+	return true, nil
 }
 
 // Plant Definition Images
@@ -317,7 +405,7 @@ func (s *Store) GetOrphanedFilepaths(keep []string) ([]string, error) {
 
 // Plants
 
-func (s *Store) ListPlants(definitionID *int64) ([]Plant, error) {
+func (s *Store) ListPlants(definitionID *int64, userID int64) ([]Plant, error) {
 	var (
 		rows *sql.Rows
 		err  error
@@ -325,18 +413,19 @@ func (s *Store) ListPlants(definitionID *int64) ([]Plant, error) {
 	if definitionID != nil {
 		rows, err = s.db.Query(`
 			select id, nickname, source, plant_definition_id, acquired_at,
-				location, notes, created_at, updated_at
+				location, notes, user_id, created_at, updated_at
 			from plants
-			where plant_definition_id = ?
+			where plant_definition_id = ? and user_id = ?
 			order by nickname asc
-		`, *definitionID)
+		`, *definitionID, userID)
 	} else {
 		rows, err = s.db.Query(`
 			select id, nickname, source, plant_definition_id, acquired_at,
-				location, notes, created_at, updated_at
+				location, notes, user_id, created_at, updated_at
 			from plants
+			where user_id = ?
 			order by nickname asc
-		`)
+		`, userID)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("list plants: %w", err)
@@ -347,7 +436,7 @@ func (s *Store) ListPlants(definitionID *int64) ([]Plant, error) {
 	for rows.Next() {
 		var p Plant
 		err := rows.Scan(&p.ID, &p.Nickname, &p.Source, &p.PlantDefinitionID,
-			&p.AcquiredAt, &p.Location, &p.Notes, &p.CreatedAt, &p.UpdatedAt)
+			&p.AcquiredAt, &p.Location, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("scan plant: %w", err)
 		}
@@ -356,17 +445,17 @@ func (s *Store) ListPlants(definitionID *int64) ([]Plant, error) {
 	return plants, nil
 }
 
-func (s *Store) GetPlant(id int64) (*Plant, error) {
+func (s *Store) GetPlant(id int64, userID int64) (*Plant, error) {
 	row := s.db.QueryRow(`
 		select id, nickname, source, plant_definition_id, acquired_at,
-			location, notes, created_at, updated_at
+			location, notes, user_id, created_at, updated_at
 		from plants
-		where id = ?
-	`, id)
+		where id = ? and user_id = ?
+	`, id, userID)
 
 	var p Plant
 	err := row.Scan(&p.ID, &p.Nickname, &p.Source, &p.PlantDefinitionID,
-		&p.AcquiredAt, &p.Location, &p.Notes, &p.CreatedAt, &p.UpdatedAt)
+		&p.AcquiredAt, &p.Location, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -379,9 +468,9 @@ func (s *Store) GetPlant(id int64) (*Plant, error) {
 func (s *Store) CreatePlant(p *Plant) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plants
-			(nickname, source, plant_definition_id, acquired_at, location, notes)
-		values (?, ?, ?, ?, ?, ?)
-	`, p.Nickname, p.Source, p.PlantDefinitionID, p.AcquiredAt, p.Location, p.Notes)
+			(nickname, source, plant_definition_id, acquired_at, location, notes, user_id)
+		values (?, ?, ?, ?, ?, ?, ?)
+	`, p.Nickname, p.Source, p.PlantDefinitionID, p.AcquiredAt, p.Location, p.Notes, p.UserID)
 	if err != nil {
 		return 0, fmt.Errorf("create plant: %w", err)
 	}
@@ -398,16 +487,16 @@ func (s *Store) UpdatePlant(p *Plant) error {
 		update plants
 		set nickname = ?, source = ?, acquired_at = ?, notes = ?,
 			updated_at = datetime('now', 'localtime')
-		where id = ?
-	`, p.Nickname, p.Source, p.AcquiredAt, p.Notes, p.ID)
+		where id = ? and user_id = ?
+	`, p.Nickname, p.Source, p.AcquiredAt, p.Notes, p.ID, p.UserID)
 	if err != nil {
 		return fmt.Errorf("update plant: %w", err)
 	}
 	return nil
 }
 
-func (s *Store) DeletePlant(id int64) error {
-	_, err := s.db.Exec("delete from plants where id = ?", id)
+func (s *Store) DeletePlant(id int64, userID int64) error {
+	_, err := s.db.Exec("delete from plants where id = ? and user_id = ?", id, userID)
 	if err != nil {
 		return fmt.Errorf("delete plant: %w", err)
 	}
@@ -416,7 +505,7 @@ func (s *Store) DeletePlant(id int64) error {
 
 // Plants with Definition (joined)
 
-func (s *Store) ListPlantsWithDefinition(definitionID *int64) ([]PlantWithDefinition, error) {
+func (s *Store) ListPlantsWithDefinition(definitionID *int64, userID int64) ([]PlantWithDefinition, error) {
 	var (
 		rows *sql.Rows
 		err  error
@@ -424,7 +513,7 @@ func (s *Store) ListPlantsWithDefinition(definitionID *int64) ([]PlantWithDefini
 
 	query := `select p.id, p.nickname, p.source, p.acquired_at, p.notes,
 		p.created_at, p.updated_at,
-		d.id as def_id, d.common_name, d.scientific_name,
+		d.id as def_id, d.common_name, d.scientific_name, d.user_id, d.visibility,
 		coalesce(
 			(select location from plant_location_history
 			 where plant_id = p.id
@@ -433,15 +522,16 @@ func (s *Store) ListPlantsWithDefinition(definitionID *int64) ([]PlantWithDefini
 			p.location
 		) as location
 	from plants p
-	inner join plant_definitions d on d.id = p.plant_definition_id`
+	inner join plant_definitions d on d.id = p.plant_definition_id
+	where p.user_id = ?`
 
 	if definitionID != nil {
-		query += ` where p.plant_definition_id = ?`
+		query += ` and p.plant_definition_id = ?`
 		query += ` order by p.nickname asc`
-		rows, err = s.db.Query(query, *definitionID)
+		rows, err = s.db.Query(query, userID, *definitionID)
 	} else {
 		query += ` order by p.nickname asc`
-		rows, err = s.db.Query(query)
+		rows, err = s.db.Query(query, userID)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("list plants with definition: %w", err)
@@ -454,6 +544,7 @@ func (s *Store) ListPlantsWithDefinition(definitionID *int64) ([]PlantWithDefini
 		err := rows.Scan(&p.ID, &p.Nickname, &p.Source, &p.AcquiredAt,
 			&p.Notes, &p.CreatedAt, &p.UpdatedAt,
 			&p.PlantDefinition.ID, &p.PlantDefinition.CommonName, &p.PlantDefinition.ScientificName,
+			&p.PlantDefinition.UserID, &p.PlantDefinition.Visibility,
 			&p.Location)
 		if err != nil {
 			return nil, fmt.Errorf("scan plant with definition: %w", err)
@@ -498,11 +589,11 @@ func (s *Store) ListPlantsWithDefinition(definitionID *int64) ([]PlantWithDefini
 	return plants, nil
 }
 
-func (s *Store) GetPlantWithDefinition(id int64) (*PlantWithDefinition, error) {
+func (s *Store) GetPlantWithDefinition(id int64, userID int64) (*PlantWithDefinition, error) {
 	row := s.db.QueryRow(`
 		select p.id, p.nickname, p.source, p.acquired_at, p.notes,
 			p.created_at, p.updated_at,
-			d.id as def_id, d.common_name, d.scientific_name,
+			d.id as def_id, d.common_name, d.scientific_name, d.user_id, d.visibility,
 			coalesce(
 				(select location from plant_location_history
 				 where plant_id = p.id
@@ -512,13 +603,14 @@ func (s *Store) GetPlantWithDefinition(id int64) (*PlantWithDefinition, error) {
 			) as location
 		from plants p
 		inner join plant_definitions d on d.id = p.plant_definition_id
-		where p.id = ?
-	`, id)
+		where p.id = ? and p.user_id = ?
+	`, id, userID)
 
 	var p PlantWithDefinition
 	err := row.Scan(&p.ID, &p.Nickname, &p.Source, &p.AcquiredAt,
 		&p.Notes, &p.CreatedAt, &p.UpdatedAt,
 		&p.PlantDefinition.ID, &p.PlantDefinition.CommonName, &p.PlantDefinition.ScientificName,
+		&p.PlantDefinition.UserID, &p.PlantDefinition.Visibility,
 		&p.Location)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -596,9 +688,9 @@ func (s *Store) CountPlantImageReferences(filepath string) (int, error) {
 func (s *Store) CreatePlantLocationHistory(e *PlantLocationHistoryEntry) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_location_history
-			(plant_id, location, registered_at, notes)
-		values (?, ?, ?, ?)
-	`, e.PlantID, e.Location, e.RegisteredAt, e.Notes)
+			(plant_id, location, registered_at, notes, user_id)
+		values (?, ?, ?, ?, ?)
+	`, e.PlantID, e.Location, e.RegisteredAt, e.Notes, e.UserID)
 	if err != nil {
 		return 0, fmt.Errorf("create location history: %w", err)
 	}
@@ -614,9 +706,9 @@ func (s *Store) CreatePlantLocationHistory(e *PlantLocationHistoryEntry) (int64,
 func (s *Store) CreateJournalEntry(e *PlantJournalEntry) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_journal_entries
-			(plant_id, journal_entry_type, notes, watering_date)
-		values (?, ?, ?, ?)
-	`, e.PlantID, e.JournalEntryType, e.Notes, e.WateringDate)
+			(plant_id, journal_entry_type, notes, watering_date, user_id)
+		values (?, ?, ?, ?, ?)
+	`, e.PlantID, e.JournalEntryType, e.Notes, e.WateringDate, e.UserID)
 	if err != nil {
 		return 0, fmt.Errorf("create journal entry: %w", err)
 	}

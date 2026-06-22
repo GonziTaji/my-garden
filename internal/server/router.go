@@ -5,16 +5,26 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
 	"my-garden/domain/plant"
+	"my-garden/domain/user"
+	"my-garden/internal/auth"
+	"my-garden/internal/email"
 )
 
 type RouterConfig struct {
-	WebappFolder string
-	DB           *sql.DB
-	Env          EnvType
+	WebappFolder  string
+	DB            *sql.DB
+	Env           EnvType
+	SessionSecret string
+	SMTPHost      string
+	SMTPPort      string
+	SMTPUser      string
+	SMTPPass      string
+	SMTPFrom      string
 }
 
 type AppRouter struct {
@@ -58,10 +68,86 @@ func (g *AppRouter) mountMiddleware() {
 func (g *AppRouter) mountApiRoutes() {
 	api := g.router.Group("/api")
 
-	store := plant.NewStore(g.cfg.DB)
-	service := plant.NewService(store)
-	handler := plant.NewHandler(service)
-	plant.RegisterRoutes(api, handler)
+	origin := os.Getenv("MY_GARDEN_ORIGIN")
+	if origin == "" {
+		if g.cfg.Env == ENV_DEV {
+			origin = "http://localhost:8080"
+		} else {
+			log.Fatal("MY_GARDEN_ORIGIN environment variable is required")
+		}
+	}
+
+	// Initialize domains
+	userStore := user.NewStore(g.cfg.DB)
+
+	var mailer email.Mailer
+	if g.cfg.SMTPHost != "" {
+		mailer = &email.SMTPMailer{
+			Host: g.cfg.SMTPHost,
+			Port: g.cfg.SMTPPort,
+			User: g.cfg.SMTPUser,
+			Pass: g.cfg.SMTPPass,
+			From: g.cfg.SMTPFrom,
+		}
+	} else {
+		mailer = &email.ConsoleMailer{}
+	}
+
+	userService := user.NewService(userStore, origin, mailer)
+	userHandler := user.NewHandler(userService, userStore)
+
+	plantStore := plant.NewStore(g.cfg.DB)
+	plantService := plant.NewService(plantStore)
+	plantHandler := plant.NewHandler(plantService)
+
+	// Fully public auth endpoints (no middleware)
+	api.POST("/auth/send-link", userHandler.SendLink)
+	api.GET("/auth/verify", userHandler.Verify)
+	api.POST("/auth/logout", userHandler.Logout)
+
+	// Public group with OptionalAuth (sets userID if session present, never rejects)
+	public := api.Group("")
+	public.Use(auth.OptionalAuth())
+	{
+		public.GET("/auth/me", userHandler.Me)
+		public.GET("/plant-definitions", plantHandler.ListPlantDefinitions)
+		public.GET("/plant-definitions/:id", plantHandler.GetPlantDefinition)
+		public.GET("/enums", plantHandler.GetEnums)
+	}
+
+	// Protected group (rejects with 401 if no valid session)
+	protected := api.Group("")
+	protected.Use(auth.RequireAuth())
+	{
+		protected.POST("/plant-definitions", plantHandler.CreatePlantDefinition)
+		protected.PUT("/plant-definitions/:id", plantHandler.UpdatePlantDefinition)
+		protected.DELETE("/plant-definitions/:id", plantHandler.DeletePlantDefinition)
+		protected.POST("/plant-definitions/:id/clone", plantHandler.ClonePlantDefinition)
+		protected.POST("/plant-definitions/:id/favorite", plantHandler.ToggleFavorite)
+
+		protected.POST("/upload/plant-definition-image", plantHandler.UploadPlantDefinitionImage)
+		protected.POST("/upload/plant-image", plantHandler.UploadPlantImage)
+
+		protected.GET("/plants", plantHandler.ListPlants)
+		protected.GET("/plants/:id", plantHandler.GetPlant)
+		protected.POST("/plants", plantHandler.CreatePlant)
+		protected.PUT("/plants/:id", plantHandler.UpdatePlant)
+		protected.DELETE("/plants/:id", plantHandler.DeletePlant)
+
+		protected.POST("/plants/:id/location", plantHandler.CreateLocationChange)
+
+		protected.POST("/plants/:id/images", plantHandler.AddPlantImage)
+		protected.DELETE("/plants/:id/images/:imageId", plantHandler.DeletePlantImage)
+
+		protected.GET("/plants/:id/journal", plantHandler.GetJournalEntries)
+
+		protected.POST("/journal/watering", plantHandler.WaterPlant)
+		protected.DELETE("/journal/watering", plantHandler.DeleteWatering)
+		protected.POST("/journal/watering/toggle", plantHandler.ToggleWatering)
+		protected.POST("/journal/watering/bulk", plantHandler.BulkWaterPlants)
+		protected.POST("/journal/last-watered", plantHandler.GetLastWateredDates)
+		protected.POST("/journal/watering/range", plantHandler.GetWateringHistoryByDateRange)
+	}
 }
 
 func (g *AppRouter) mountStaticFiles() {

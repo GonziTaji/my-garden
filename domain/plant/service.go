@@ -81,11 +81,14 @@ type DefinitionImageInput struct {
 
 // Validate and create
 
-func (s *Service) CreateDefinition(input UpsertDefinitionInput) (*PlantDefinition, error) {
+func (s *Service) CreateDefinition(input UpsertDefinitionInput, userID int64) (*PlantDefinition, error) {
 	validated, err := validateUpsert(input)
 	if err != nil {
 		return nil, err
 	}
+
+	validated.UserID = userID
+	validated.Visibility = "public"
 
 	id, err := s.store.CreatePlantDefinition(validated)
 	if err != nil {
@@ -99,16 +102,19 @@ func (s *Service) CreateDefinition(input UpsertDefinitionInput) (*PlantDefinitio
 	}
 
 	validated.ID = id
-	return s.store.GetPlantDefinition(id)
+	return s.store.GetPlantDefinition(id, userID)
 }
 
-func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput) (*PlantDefinition, error) {
-	exists, err := s.store.ExistsPlantDefinition(id)
+func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput, userID int64) (*PlantDefinition, error) {
+	existing, err := s.store.GetPlantDefinition(id, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
+	if existing == nil {
 		return nil, &ValidationError{Field: "id", Message: "Tipo de planta no encontrado"}
+	}
+	if existing.UserID != userID {
+		return nil, &ValidationError{Field: "id", Message: "No tienes permiso para editar este tipo de planta"}
 	}
 
 	validated, err := validateUpsert(input)
@@ -122,6 +128,8 @@ func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput) (*Plan
 	}
 
 	validated.ID = id
+	validated.UserID = userID
+	validated.Visibility = existing.Visibility
 	if err := s.store.UpdatePlantDefinition(validated); err != nil {
 		if isUniqueConstraintErr(err) {
 			return nil, &UniqueConstraintError{
@@ -134,11 +142,11 @@ func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput) (*Plan
 
 	go cleanupOrphanedFiles(s.store, oldFilepaths)
 
-	return s.store.GetPlantDefinition(id)
+	return s.store.GetPlantDefinition(id, userID)
 }
 
-func (s *Service) GetDefinition(id int64) (*PlantDefinition, error) {
-	def, err := s.store.GetPlantDefinition(id)
+func (s *Service) GetDefinition(id int64, userID int64) (*PlantDefinition, error) {
+	def, err := s.store.GetPlantDefinition(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,17 +156,20 @@ func (s *Service) GetDefinition(id int64) (*PlantDefinition, error) {
 	return def, nil
 }
 
-func (s *Service) ListDefinitions() ([]PlantDefinition, error) {
-	return s.store.ListPlantDefinitions()
+func (s *Service) ListDefinitions(userID int64) ([]PlantDefinition, error) {
+	return s.store.ListPlantDefinitions(userID)
 }
 
-func (s *Service) DeleteDefinition(id int64) error {
-	exists, err := s.store.ExistsPlantDefinition(id)
+func (s *Service) DeleteDefinition(id int64, userID int64) error {
+	existing, err := s.store.GetPlantDefinition(id, userID)
 	if err != nil {
 		return err
 	}
-	if !exists {
+	if existing == nil {
 		return &ValidationError{Field: "id", Message: "Tipo de planta no encontrado"}
+	}
+	if existing.UserID != userID {
+		return &ValidationError{Field: "id", Message: "No tienes permiso para eliminar este tipo de planta"}
 	}
 
 	oldFilepaths, err := s.store.GetDefinitionImageFilepaths(id)
@@ -166,7 +177,7 @@ func (s *Service) DeleteDefinition(id int64) error {
 		return err
 	}
 
-	if err := s.store.DeletePlantDefinition(id); err != nil {
+	if err := s.store.DeletePlantDefinition(id, userID); err != nil {
 		return err
 	}
 
@@ -175,13 +186,25 @@ func (s *Service) DeleteDefinition(id int64) error {
 	return nil
 }
 
+func (s *Service) CloneDefinition(defID int64, userID int64) (*PlantDefinition, error) {
+	id, err := s.store.ClonePlantDefinition(defID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.store.GetPlantDefinition(id, userID)
+}
+
+func (s *Service) ToggleFavorite(defID int64, userID int64) (bool, error) {
+	return s.store.ToggleFavorite(userID, defID)
+}
+
 // Image upload
 
 type UploadResult struct {
 	Filepath string `json:"filepath"`
 }
 
-func (s *Service) AddPlantImage(plantID int64, file *multipart.FileHeader) (*PlantImage, error) {
+func (s *Service) AddPlantImage(plantID int64, file *multipart.FileHeader, userID int64) (*PlantImage, error) {
 	result, err := s.UploadPlantImage(file)
 	if err != nil {
 		return nil, err
@@ -199,6 +222,7 @@ func (s *Service) AddPlantImage(plantID int64, file *multipart.FileHeader) (*Pla
 
 	for i := range images {
 		if images[i].ID == id {
+			images[i].UserID = userID
 			return &images[i], nil
 		}
 	}
@@ -341,10 +365,11 @@ type CreateLocationChangeInput struct {
 	Notes        *string `json:"notes"`
 }
 
-func (s *Service) CreateLocationChange(input CreateLocationChangeInput) (*PlantLocationHistoryEntry, error) {
+func (s *Service) CreateLocationChange(input CreateLocationChangeInput, userID int64) (*PlantLocationHistoryEntry, error) {
 	entry := &PlantLocationHistoryEntry{
 		PlantID:  input.PlantID,
 		Location: input.Location,
+		UserID:   userID,
 	}
 
 	if input.RegisteredAt != nil {
@@ -376,7 +401,7 @@ type CreatePlantInput struct {
 	Notes             *string `json:"notes"`
 }
 
-func (s *Service) CreatePlant(input CreatePlantInput) (*PlantWithDefinition, error) {
+func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithDefinition, error) {
 	nickname := strings.TrimSpace(input.Nickname)
 	if nickname == "" {
 		return nil, &ValidationError{Field: "nickname", Message: "El nombre de la planta es requerido"}
@@ -393,6 +418,7 @@ func (s *Service) CreatePlant(input CreatePlantInput) (*PlantWithDefinition, err
 	plant := &Plant{
 		Nickname:          nickname,
 		PlantDefinitionID: input.PlantDefinitionID,
+		UserID:            userID,
 	}
 	if input.Source != nil {
 		plant.Source = NullString{sql.NullString{String: *input.Source, Valid: true}}
@@ -424,17 +450,18 @@ func (s *Service) CreatePlant(input CreatePlantInput) (*PlantWithDefinition, err
 			Location:     *input.Location,
 			RegisteredAt: regAt,
 			Notes:        "Initial location",
+			UserID:       userID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("create initial location history: %w", err)
 		}
 	}
 
-	return s.store.GetPlantWithDefinition(id)
+	return s.store.GetPlantWithDefinition(id, userID)
 }
 
-func (s *Service) GetPlant(id int64) (*PlantWithDefinition, error) {
-	p, err := s.store.GetPlantWithDefinition(id)
+func (s *Service) GetPlant(id int64, userID int64) (*PlantWithDefinition, error) {
+	p, err := s.store.GetPlantWithDefinition(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -444,8 +471,8 @@ func (s *Service) GetPlant(id int64) (*PlantWithDefinition, error) {
 	return p, nil
 }
 
-func (s *Service) ListPlants(definitionID *int64) ([]PlantWithDefinition, error) {
-	return s.store.ListPlantsWithDefinition(definitionID)
+func (s *Service) ListPlants(definitionID *int64, userID int64) ([]PlantWithDefinition, error) {
+	return s.store.ListPlantsWithDefinition(definitionID, userID)
 }
 
 type UpdatePlantInput struct {
@@ -455,8 +482,8 @@ type UpdatePlantInput struct {
 	Notes      *string `json:"notes"`
 }
 
-func (s *Service) UpdatePlant(id int64, input UpdatePlantInput) (*PlantWithDefinition, error) {
-	existing, err := s.store.GetPlant(id)
+func (s *Service) UpdatePlant(id int64, input UpdatePlantInput, userID int64) (*PlantWithDefinition, error) {
+	existing, err := s.store.GetPlant(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -485,18 +512,18 @@ func (s *Service) UpdatePlant(id int64, input UpdatePlantInput) (*PlantWithDefin
 		return nil, fmt.Errorf("update plant: %w", err)
 	}
 
-	return s.store.GetPlantWithDefinition(id)
+	return s.store.GetPlantWithDefinition(id, userID)
 }
 
-func (s *Service) DeletePlant(id int64) error {
-	exists, err := s.store.GetPlant(id)
+func (s *Service) DeletePlant(id int64, userID int64) error {
+	exists, err := s.store.GetPlant(id, userID)
 	if err != nil {
 		return err
 	}
 	if exists == nil {
 		return &ValidationError{Field: "id", Message: "Planta no encontrada"}
 	}
-	return s.store.DeletePlant(id)
+	return s.store.DeletePlant(id, userID)
 }
 
 // Journal / Watering
@@ -505,7 +532,7 @@ type WateringToggleResult struct {
 	Watered bool `json:"watered"`
 }
 
-func (s *Service) ToggleWatering(plantID int64, date string) (*WateringToggleResult, error) {
+func (s *Service) ToggleWatering(plantID int64, date string, userID int64) (*WateringToggleResult, error) {
 	existing, err := s.store.GetWateringEntry(plantID, date)
 	if err != nil {
 		return nil, err
@@ -522,6 +549,7 @@ func (s *Service) ToggleWatering(plantID int64, date string) (*WateringToggleRes
 		PlantID:          plantID,
 		JournalEntryType: JournalEntryTypeWatering,
 		WateringDate:     date,
+		UserID:           userID,
 	})
 	if err != nil {
 		if isUniqueConstraintErr(err) {
@@ -537,7 +565,7 @@ type WaterEntryInput struct {
 	Date    *string `json:"date"`
 }
 
-func (s *Service) WaterPlant(input WaterEntryInput) (*PlantJournalEntry, error) {
+func (s *Service) WaterPlant(input WaterEntryInput, userID int64) (*PlantJournalEntry, error) {
 	date := input.Date
 
 	if date == nil || *date == "" {
@@ -560,6 +588,7 @@ func (s *Service) WaterPlant(input WaterEntryInput) (*PlantJournalEntry, error) 
 		PlantID:          input.PlantID,
 		JournalEntryType: JournalEntryTypeWatering,
 		WateringDate:     *date,
+		UserID:           userID,
 	})
 	if err != nil {
 		if isUniqueConstraintErr(err) {
@@ -584,7 +613,7 @@ type BulkWaterInput struct {
 	PlantIDs []int64 `json:"plant_ids"`
 }
 
-func (s *Service) BulkWaterPlants(input BulkWaterInput) error {
+func (s *Service) BulkWaterPlants(input BulkWaterInput, userID int64) error {
 	today := time.Now().Format("2006-01-02")
 	for _, plantID := range input.PlantIDs {
 		existing, err := s.store.GetWateringEntry(plantID, today)
@@ -599,6 +628,7 @@ func (s *Service) BulkWaterPlants(input BulkWaterInput) error {
 			PlantID:          plantID,
 			JournalEntryType: JournalEntryTypeWatering,
 			WateringDate:     today,
+			UserID:           userID,
 		})
 		if err != nil {
 			if isUniqueConstraintErr(err) {

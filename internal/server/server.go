@@ -20,6 +20,12 @@ type ServerConfig struct {
 	Env            EnvType
 	ServerAddr     string
 	FrontendFolder string
+	SessionSecret  string
+	SMTPHost       string
+	SMTPPort       string
+	SMTPUser       string
+	SMTPPass       string
+	SMTPFrom       string
 }
 
 func DefaultConfig() ServerConfig {
@@ -40,9 +46,15 @@ func StartWebServer(cfg ServerConfig) error {
 	}
 
 	r := GetNewRouter(RouterConfig{
-		WebappFolder: cfg.FrontendFolder,
-		DB:           db,
-		Env:          cfg.Env,
+		WebappFolder:  cfg.FrontendFolder,
+		DB:            db,
+		Env:           cfg.Env,
+		SessionSecret: cfg.SessionSecret,
+		SMTPHost:      cfg.SMTPHost,
+		SMTPPort:      cfg.SMTPPort,
+		SMTPUser:      cfg.SMTPUser,
+		SMTPPass:      cfg.SMTPPass,
+		SMTPFrom:      cfg.SMTPFrom,
 	}, os.DirFS("."))
 
 	s := &http.Server{

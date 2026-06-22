@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "./client"
+import { useNavigate } from "@/router/provider"
 import type { PlantDefinition } from "@/domain/plants/plant-definition"
 import type { PlantDefinitionImage } from "@/domain/plants/plant-image"
 
@@ -32,6 +33,8 @@ interface ApiDefinition {
   pet_toxicity: string
   pet_toxicity_notes: string
   categories_json: string
+  user_id: number
+  visibility: string
   images: ApiDefinitionImage[]
   created_at: string
   updated_at: string
@@ -53,6 +56,8 @@ function toDomain(d: ApiDefinition): PlantDefinition {
       filepath: img.filepath,
       position: img.position,
     })),
+    userId: d.user_id,
+    visibility: d.visibility,
     createdAt: d.created_at,
     updatedAt: d.updated_at,
   }
@@ -104,6 +109,26 @@ export function useDeleteDefinition() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["definitions"] })
     },
+  })
+}
+
+export function useCloneDefinition() {
+  const qc = useQueryClient()
+  const navigate = useNavigate()
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.post<ApiDefinition>(`/api/plant-definitions/${id}/clone`),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["definitions"] })
+      navigate("/catalog/:plantdefid", { params: { plantdefid: String(data.id) } })
+    },
+  })
+}
+
+export function useToggleFavorite() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.post<{ favorited: boolean }>(`/api/plant-definitions/${id}/favorite`),
   })
 }
 

@@ -3,7 +3,7 @@ import { ImageSelector } from "./ImageSelector"
 import { DetailChecklist } from "./DetailChecklist"
 import DeleteButton from "./DeleteButton"
 import DetailListItem from "./DetailLstItem"
-import { useTransition } from "react"
+import { useTransition, useState } from "react"
 import { Link } from "@/router/components/Link"
 import { useNavigate } from "@/router/provider"
 import { plantCategory } from "@/domain/plants/category/plant-category"
@@ -13,8 +13,9 @@ import { soilType } from "@/domain/plants/soil/soil-type"
 import { petToxicity } from "@/domain/plants/toxicity/pet-toxicity"
 import { waterProfile } from "@/domain/plants/water/water-profile"
 import { buttonVariants } from "@/ui/classVariants/button"
-import { useCreateDefinition, useUpdateDefinition, uploadDefinitionImage } from "@/api/definitions"
+import { useCreateDefinition, useUpdateDefinition, useCloneDefinition, useToggleFavorite, uploadDefinitionImage } from "@/api/definitions"
 import { inputVariants } from "../classVariants/input"
+import { useAuth } from "@/auth/AuthContext"
 
 interface DefinitionViewProps {
   record: PlantDefinition
@@ -22,10 +23,14 @@ interface DefinitionViewProps {
 }
 
 export default function DefinitionView({ record, editMode }: DefinitionViewProps) {
+  const { user } = useAuth()
   const [isPending, startTransition] = useTransition()
   const navigate = useNavigate()
   const createDefinition = useCreateDefinition()
   const updateDefinition = useUpdateDefinition()
+  const cloneDefinition = useCloneDefinition()
+  const toggleFavorite = useToggleFavorite()
+  const [favorited, setFavorited] = useState(false)
 
   const categoriesOptions = plantCategory.options.map((opt) => ({
     ...opt,
@@ -130,16 +135,40 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
                   </Link>
                 )}
               </>
-            ) : (
-              <Link
-                to="/catalog/:plantdefid"
-                params={{ plantdefid: String(record.id) }}
-                search={{ e: "T" }}
-                className={buttonVariants({ variant: "primary" })}
-              >
-                Editar
-              </Link>
-            )}
+            ) : user ? (
+              <>
+                {user.id !== record.userId && (
+                  <>
+                    <button
+                      onClick={() => cloneDefinition.mutate(record.id!)}
+                      className={buttonVariants({ variant: "secondary" })}
+                      disabled={cloneDefinition.isPending}
+                    >
+                      {cloneDefinition.isPending ? "Clonando..." : "Clonar"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const result = await toggleFavorite.mutateAsync(record.id!)
+                        setFavorited(result.favorited)
+                      }}
+                      className={buttonVariants({ variant: "clean" })}
+                    >
+                      {favorited ? "♥" : "♡"}
+                    </button>
+                  </>
+                )}
+                {user.id === record.userId && (
+                  <Link
+                    to="/catalog/:plantdefid"
+                    params={{ plantdefid: String(record.id) }}
+                    search={{ e: "T" }}
+                    className={buttonVariants({ variant: "primary" })}
+                  >
+                    Editar
+                  </Link>
+                )}
+              </>
+            ) : null}
           </div>
 
           <div className="flex flex-col min-w-0">
@@ -252,7 +281,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
               )}
             </DetailListItem>
 
-            {editMode && record.id && (
+            {editMode && record.id && user && (
               <div className="text-red-400">
                 <DetailListItem title="DANGER ZONE">
                   <DeleteButton plantdef={record} />

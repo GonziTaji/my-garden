@@ -1,8 +1,20 @@
+SMTP_PASS := $(shell cat ~/.secrets/mygarden-google-secret | tr -d ' \n')
+SESSION_SECRET := $(shell cat ~/.secrets/mygarden-google-secret | tr -d ' \n')
+
+export MY_GARDEN_SMTP_HOST := smtp.gmail.com
+export MY_GARDEN_SMTP_PORT := 587
+export MY_GARDEN_SMTP_USER := gonzalo.tajmuch@gmail.com
+export MY_GARDEN_SMTP_PASS := $(SMTP_PASS)
+export MY_GARDEN_SMTP_FROM := gonzalo.tajmuch@gmail.com
+
+export MY_GARDEN_SESSION_SECRET := $(SESSION_SECRET)
+
 dev:
+	MY_GARDEN_ORIGIN=http://localhost:8080 \
 	parallel -u make ::: dev-frontend dev-backend
 
 dev-backend:
-	go run .
+	MY_GARDEN_ORIGIN=http://localhost:8080 go run .
 
 dev-frontend:
 	pnpm -C frontend run dev
@@ -12,5 +24,4 @@ build:
 	MY_GARDEN_ENV=prod go build -o my-garden .
 
 prod:
-	MY_GARDEN_ENV=prod go run .
-
+	MY_GARDEN_ENV=prod MY_GARDEN_ORIGIN=http://localhost:8080 go run .

@@ -29,6 +29,22 @@ func main() {
 		frontendFolder = "frontend/dist"
 	}
 
+	sessionSecret := os.Getenv("MY_GARDEN_SESSION_SECRET")
+	if sessionSecret == "" {
+		log.Fatal("MY_GARDEN_SESSION_SECRET environment variable is required")
+	}
+
+	origin := os.Getenv("MY_GARDEN_ORIGIN")
+	if origin == "" && env == "prod" {
+		log.Fatal("MY_GARDEN_ORIGIN environment variable is required in production")
+	}
+
+	smtpHost := os.Getenv("MY_GARDEN_SMTP_HOST")
+	smtpPort := os.Getenv("MY_GARDEN_SMTP_PORT")
+	smtpUser := os.Getenv("MY_GARDEN_SMTP_USER")
+	smtpPass := os.Getenv("MY_GARDEN_SMTP_PASS")
+	smtpFrom := os.Getenv("MY_GARDEN_SMTP_FROM")
+
 	var envType server.EnvType
 	if env == "prod" {
 		envType = server.ENV_PROD
@@ -41,6 +57,12 @@ func main() {
 		Env:            envType,
 		ServerAddr:     serverAddr,
 		FrontendFolder: frontendFolder,
+		SessionSecret:  sessionSecret,
+		SMTPHost:       smtpHost,
+		SMTPPort:       smtpPort,
+		SMTPUser:       smtpUser,
+		SMTPPass:       smtpPass,
+		SMTPFrom:       smtpFrom,
 	}
 
 	log.Println("----------------------------------------------")

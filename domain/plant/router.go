@@ -11,6 +11,8 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler) {
 	rg.POST("/plant-definitions", handler.CreatePlantDefinition)
 	rg.PUT("/plant-definitions/:id", handler.UpdatePlantDefinition)
 	rg.DELETE("/plant-definitions/:id", handler.DeletePlantDefinition)
+	rg.POST("/plant-definitions/:id/clone", handler.ClonePlantDefinition)
+	rg.POST("/plant-definitions/:id/favorite", handler.ToggleFavorite)
 
 	// Image Upload
 	rg.POST("/upload/plant-definition-image", handler.UploadPlantDefinitionImage)

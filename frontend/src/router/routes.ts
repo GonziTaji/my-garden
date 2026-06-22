@@ -2,6 +2,7 @@ import CatalogDetail from "@/ui/pages/CatalogDetail";
 import CatalogList from "@/ui/pages/CatalogList";
 import CatalogNew from "@/ui/pages/CatalogNew";
 import Home from "@/ui/pages/Explore";
+import Login from "@/ui/pages/Login";
 import PlantDetailPage from "@/ui/pages/PlantDetail";
 import PlantNew from "@/ui/pages/PlantNew";
 import PlantsList from "@/ui/pages/PlantsList";
@@ -16,5 +17,6 @@ export const routerPaths = [
   { path: "/catalog", component: CatalogList },
   { path: "/catalog/new", component: CatalogNew },
   { path: "/catalog/:plantdefid", component: CatalogDetail },
+  { path: "/login", component: Login },
 ] as const
 

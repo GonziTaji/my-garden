@@ -16,6 +16,18 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+func userIDFromContext(c *gin.Context) int64 {
+	uid, exists := c.Get("user_id")
+	if !exists {
+		return 0
+	}
+	id, ok := uid.(int64)
+	if !ok {
+		return 0
+	}
+	return id
+}
+
 func (h *Handler) GetEnums(c *gin.Context) {
 	c.JSON(http.StatusOK, AllEnums())
 }
@@ -23,7 +35,8 @@ func (h *Handler) GetEnums(c *gin.Context) {
 // Plant Definitions
 
 func (h *Handler) ListPlantDefinitions(c *gin.Context) {
-	defs, err := h.service.ListDefinitions()
+	userID := userIDFromContext(c)
+	defs, err := h.service.ListDefinitions(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})
 		return
@@ -38,7 +51,8 @@ func (h *Handler) GetPlantDefinition(c *gin.Context) {
 		return
 	}
 
-	def, err := h.service.GetDefinition(id)
+	userID := userIDFromContext(c)
+	def, err := h.service.GetDefinition(id, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -59,7 +73,8 @@ func (h *Handler) CreatePlantDefinition(c *gin.Context) {
 		return
 	}
 
-	def, err := h.service.CreateDefinition(input)
+	userID := userIDFromContext(c)
+	def, err := h.service.CreateDefinition(input, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -91,7 +106,8 @@ func (h *Handler) UpdatePlantDefinition(c *gin.Context) {
 		return
 	}
 
-	def, err := h.service.UpdateDefinition(id, input)
+	userID := userIDFromContext(c)
+	def, err := h.service.UpdateDefinition(id, input, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -117,7 +133,8 @@ func (h *Handler) DeletePlantDefinition(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteDefinition(id); err != nil {
+	userID := userIDFromContext(c)
+	if err := h.service.DeleteDefinition(id, userID); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
@@ -128,6 +145,45 @@ func (h *Handler) DeletePlantDefinition(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+func (h *Handler) ClonePlantDefinition(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	userID := userIDFromContext(c)
+	def, err := h.service.CloneDefinition(id, userID)
+	if err != nil {
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al clonar tipo de planta"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, def)
+}
+
+func (h *Handler) ToggleFavorite(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	userID := userIDFromContext(c)
+	favorited, err := h.service.ToggleFavorite(id, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al cambiar favorito"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": favorited})
 }
 
 // Image Upload
@@ -160,7 +216,8 @@ func (h *Handler) AddPlantImage(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.AddPlantImage(plantID, file)
+	userID := userIDFromContext(c)
+	result, err := h.service.AddPlantImage(plantID, file, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -229,7 +286,8 @@ func (h *Handler) ListPlants(c *gin.Context) {
 		defID = &id
 	}
 
-	plants, err := h.service.ListPlants(defID)
+	userID := userIDFromContext(c)
+	plants, err := h.service.ListPlants(defID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar plantas"})
 		return
@@ -245,7 +303,8 @@ func (h *Handler) GetPlant(c *gin.Context) {
 		return
 	}
 
-	plant, err := h.service.GetPlant(id)
+	userID := userIDFromContext(c)
+	plant, err := h.service.GetPlant(id, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -266,7 +325,8 @@ func (h *Handler) CreatePlant(c *gin.Context) {
 		return
 	}
 
-	plant, err := h.service.CreatePlant(input)
+	userID := userIDFromContext(c)
+	plant, err := h.service.CreatePlant(input, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -293,7 +353,8 @@ func (h *Handler) UpdatePlant(c *gin.Context) {
 		return
 	}
 
-	plant, err := h.service.UpdatePlant(id, input)
+	userID := userIDFromContext(c)
+	plant, err := h.service.UpdatePlant(id, input, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -314,7 +375,8 @@ func (h *Handler) DeletePlant(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeletePlant(id); err != nil {
+	userID := userIDFromContext(c)
+	if err := h.service.DeletePlant(id, userID); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
@@ -336,7 +398,8 @@ func (h *Handler) CreateLocationChange(c *gin.Context) {
 		return
 	}
 
-	entry, err := h.service.CreateLocationChange(input)
+	userID := userIDFromContext(c)
+	entry, err := h.service.CreateLocationChange(input, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar cambio de ubicacion"})
 		return
@@ -370,7 +433,8 @@ func (h *Handler) WaterPlant(c *gin.Context) {
 		return
 	}
 
-	entry, err := h.service.WaterPlant(input)
+	userID := userIDFromContext(c)
+	entry, err := h.service.WaterPlant(input, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar riego"})
 		return
@@ -404,7 +468,8 @@ func (h *Handler) ToggleWatering(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.ToggleWatering(input.PlantID, input.Date)
+	userID := userIDFromContext(c)
+	result, err := h.service.ToggleWatering(input.PlantID, input.Date, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al cambiar riego"})
 		return
@@ -420,7 +485,8 @@ func (h *Handler) BulkWaterPlants(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.BulkWaterPlants(input); err != nil {
+	userID := userIDFromContext(c)
+	if err := h.service.BulkWaterPlants(input, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al regar plantas"})
 		return
 	}

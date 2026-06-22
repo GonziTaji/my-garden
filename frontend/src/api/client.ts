@@ -11,6 +11,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const opts: RequestInit = {
     method,
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
   }
   if (body !== undefined) {
     opts.body = JSON.stringify(body)
@@ -28,7 +29,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 async function upload(path: string, formData: FormData): Promise<Response> {
-  const res = await fetch(path, { method: "POST", body: formData })
+  const res = await fetch(path, { method: "POST", body: formData, credentials: "include" })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new ApiError(res.status, data.error || res.statusText)

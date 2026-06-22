@@ -20,6 +20,9 @@ export interface PlantDefinition {
   categories: PlantCategory[]
   images: Omit<PlantDefinitionImage, 'plantDefinitionId'>[]
 
+  userId?: number
+  visibility?: string
+
   createdAt?: string
   updatedAt?: string
 }
