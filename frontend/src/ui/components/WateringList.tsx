@@ -28,7 +28,7 @@ export default function WateringList({ }: WateringListProps) {
   const handleToggleWaterPlant = async (plantid: Plant['id']) => {
 
     startTransition(() => {
-      toggleWatering.mutateAsync({ plant_id: plantid, date: new Date().toLocaleDateString() })
+      toggleWatering.mutateAsync({ plantId: plantid, date: new Date().toLocaleDateString() })
     })
   }
 

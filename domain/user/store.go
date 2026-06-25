@@ -77,6 +77,30 @@ func (s *Store) CreateAuthToken(email, tokenHash, expiresAt string) (int64, erro
 	return id, nil
 }
 
+func (s *Store) GetRecentAuthTokenByEmail(email string) (*AuthToken, error) {
+	row := s.db.QueryRow(`
+		select id, email, token_hash, expires_at, used_at, created_at
+		from auth_tokens
+		where email = ?
+		and datetime(created_at) > datetime('now', '-2 minutes', 'localtime')
+		order by created_at desc
+		limit 1
+	`, email)
+	var t AuthToken
+	var usedAt sql.NullString
+	err := row.Scan(&t.ID, &t.Email, &t.TokenHash, &t.ExpiresAt, &usedAt, &t.CreatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get recent auth token: %w", err)
+	}
+	if usedAt.Valid {
+		t.UsedAt = &usedAt.String
+	}
+	return &t, nil
+}
+
 func (s *Store) GetAuthTokenByHash(tokenHash string) (*AuthToken, error) {
 	row := s.db.QueryRow(`
 		select id, email, token_hash, expires_at, used_at, created_at

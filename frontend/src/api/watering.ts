@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "./client"
+import type { Plant } from "@/domain/plants/plant"
+import type { PlantJournalEntryType } from "@/domain/plants/plant-journal"
 
 interface ToggleResult {
   watered: boolean
@@ -8,9 +10,22 @@ interface ToggleResult {
 export function useToggleWatering() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ plant_id, date }: { plant_id: number; date: string }) =>
-      api.post<ToggleResult>("/api/journal/watering/toggle", { plant_id, date }),
-    onSuccess: () => {
+    mutationFn: ({ plantId, date }: { plantId: number; date: string }) =>
+      api.post<ToggleResult>(`/api/plants/${plantId}/watering/toggle`, { date }),
+    onSuccess: (_data, { plantId }) => {
+      qc.invalidateQueries({ queryKey: ["plant", "watering", plantId] })
+      qc.invalidateQueries({ queryKey: ["watering"] })
+    },
+  })
+}
+
+export function useQuickWater() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ plantId, date }: { plantId: number; date: string }) =>
+      api.post(`/api/plants/${plantId}/watering/${date}`),
+    onSuccess: (_data, { plantId }) => {
+      qc.invalidateQueries({ queryKey: ["plant", "watering", plantId] })
       qc.invalidateQueries({ queryKey: ["watering"] })
     },
   })
@@ -40,6 +55,23 @@ export function useLastWateredDates(plantIds: number[]) {
 interface WateringEntry {
   plant_id: number
   watering_date: string
+}
+
+interface PlantCalendarEntry {
+  id: string,
+  date: string,
+  eventType: PlantJournalEntryType
+}
+
+export function usePlantCalendar(plantId: Plant['id'], startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ["plant", "watering", plantId],
+    queryFn: () =>
+      api.get<PlantCalendarEntry[]>(`/api/plants/${plantId}/journal/calendar/${startDate}/${endDate}`)
+    ,
+    enabled: Boolean(plantId && startDate && endDate),
+    staleTime: 30_000
+  })
 }
 
 export function useWateringHistoryRange(plantIds: number[], startDate: string, endDate: string) {

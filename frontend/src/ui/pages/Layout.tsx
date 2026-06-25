@@ -8,7 +8,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-full w-full grid grid-rows-[auto_1fr]">
-      <nav className="p-2 flex gap-2 text-lg bg-olive-50 border-b border-olive-200 items-center">
+      <nav className="p-2 flex flex-wrap gap-2 text-lg bg-olive-50 border-b border-olive-200 items-center">
         <Link to="/" className="text-olive-600 hover:text-olive-400" activeClassname="font-bold">
           Explorar
         </Link>

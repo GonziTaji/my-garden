@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -560,19 +561,12 @@ func (s *Service) ToggleWatering(plantID int64, date string, userID int64) (*Wat
 	return &WateringToggleResult{Watered: true}, nil
 }
 
-type WaterEntryInput struct {
-	PlantID int64   `json:"plant_id"`
-	Date    *string `json:"date"`
-}
-
-func (s *Service) WaterPlant(input WaterEntryInput, userID int64) (*PlantJournalEntry, error) {
-	date := input.Date
-
-	if date == nil || *date == "" {
+func (s *Service) WaterPlant(plantID int64, date string, userID int64) (*PlantJournalEntry, error) {
+	if date == "" {
 		return nil, fmt.Errorf("No valid date: %v", date)
 	}
 
-	existing, err := s.store.GetWateringEntry(input.PlantID, *date)
+	existing, err := s.store.GetWateringEntry(plantID, date)
 	if err != nil {
 		return nil, err
 	}
@@ -585,14 +579,14 @@ func (s *Service) WaterPlant(input WaterEntryInput, userID int64) (*PlantJournal
 	}
 
 	_, err = s.store.CreateJournalEntry(&PlantJournalEntry{
-		PlantID:          input.PlantID,
+		PlantID:          plantID,
 		JournalEntryType: JournalEntryTypeWatering,
-		WateringDate:     *date,
+		WateringDate:     date,
 		UserID:           userID,
 	})
 	if err != nil {
 		if isUniqueConstraintErr(err) {
-			existing, err := s.store.GetWateringEntry(input.PlantID, *date)
+			existing, err := s.store.GetWateringEntry(plantID, date)
 			if err != nil {
 				return nil, err
 			}
@@ -606,7 +600,7 @@ func (s *Service) WaterPlant(input WaterEntryInput, userID int64) (*PlantJournal
 		return nil, err
 	}
 
-	return s.store.GetWateringEntry(input.PlantID, *date)
+	return s.store.GetWateringEntry(plantID, date)
 }
 
 type BulkWaterInput struct {
@@ -640,13 +634,8 @@ func (s *Service) BulkWaterPlants(input BulkWaterInput, userID int64) error {
 	return nil
 }
 
-type DeleteWateringInput struct {
-	PlantID int64  `json:"plant_id"`
-	Date    string `json:"date"`
-}
-
-func (s *Service) DeleteWatering(input DeleteWateringInput) error {
-	existing, err := s.store.GetWateringEntry(input.PlantID, input.Date)
+func (s *Service) DeleteWatering(plantID int64, date string) error {
+	existing, err := s.store.GetWateringEntry(plantID, date)
 	if err != nil {
 		return err
 	}
@@ -654,6 +643,25 @@ func (s *Service) DeleteWatering(input DeleteWateringInput) error {
 		return nil
 	}
 	return s.store.DeleteJournalEntry(existing.ID)
+}
+
+type PlantCalendarInput struct {
+	userId    int64
+	plantId   int64
+	startDate string
+	endDate   string
+}
+
+func (s *Service) GetPlantCalendar(input PlantCalendarInput) (*[]PlantCalendarEntry, error) {
+	entries, err := s.store.GetPlantCalendar(input.plantId, input.userId, input.startDate, input.endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: format or something?
+	log.Printf("%v\n", entries)
+
+	return entries, nil
 }
 
 type WateringRangeInput struct {

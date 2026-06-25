@@ -66,6 +66,30 @@ func (h *Handler) GetPlantDefinition(c *gin.Context) {
 	c.JSON(http.StatusOK, def)
 }
 
+func (h *Handler) GetJournalCalendar(c *gin.Context) {
+	plantId, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
+		return
+	}
+
+	var input PlantCalendarInput
+
+	input.plantId = plantId
+	input.userId = userIDFromContext(c)
+
+	input.startDate = c.Param("startdate")
+	input.endDate = c.Param("enddate")
+
+	calendar, err := h.service.GetPlantCalendar(input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, calendar)
+}
+
 func (h *Handler) CreatePlantDefinition(c *gin.Context) {
 	var input UpsertDefinitionInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -427,14 +451,20 @@ func (h *Handler) GetJournalEntries(c *gin.Context) {
 }
 
 func (h *Handler) WaterPlant(c *gin.Context) {
-	var input WaterEntryInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
+	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
+		return
+	}
+
+	date := c.Param("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Fecha requerida"})
 		return
 	}
 
 	userID := userIDFromContext(c)
-	entry, err := h.service.WaterPlant(input, userID)
+	entry, err := h.service.WaterPlant(plantID, date, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar riego"})
 		return
@@ -444,13 +474,19 @@ func (h *Handler) WaterPlant(c *gin.Context) {
 }
 
 func (h *Handler) DeleteWatering(c *gin.Context) {
-	var input DeleteWateringInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
+	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
 		return
 	}
 
-	if err := h.service.DeleteWatering(input); err != nil {
+	date := c.Param("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Fecha requerida"})
+		return
+	}
+
+	if err := h.service.DeleteWatering(plantID, date); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar riego"})
 		return
 	}
@@ -459,9 +495,14 @@ func (h *Handler) DeleteWatering(c *gin.Context) {
 }
 
 func (h *Handler) ToggleWatering(c *gin.Context) {
+	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
+		return
+	}
+
 	var input struct {
-		PlantID int64  `json:"plant_id"`
-		Date    string `json:"date"`
+		Date string `json:"date"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
@@ -469,7 +510,7 @@ func (h *Handler) ToggleWatering(c *gin.Context) {
 	}
 
 	userID := userIDFromContext(c)
-	result, err := h.service.ToggleWatering(input.PlantID, input.Date, userID)
+	result, err := h.service.ToggleWatering(plantID, input.Date, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al cambiar riego"})
 		return

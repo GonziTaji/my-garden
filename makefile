@@ -11,7 +11,10 @@ export MY_GARDEN_SESSION_SECRET := $(SESSION_SECRET)
 
 dev:
 	MY_GARDEN_ORIGIN=http://localhost:8080 \
-	parallel -u make ::: dev-frontend dev-backend
+	parallel -u make ::: dev-frontend dev-backend-watch
+
+dev-backend-watch:
+	MY_GARDEN_ORIGIN=http://localhost:8080 go run . --watch
 
 dev-backend:
 	MY_GARDEN_ORIGIN=http://localhost:8080 go run .

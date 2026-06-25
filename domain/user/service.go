@@ -33,6 +33,14 @@ func (s *Service) RequestLogin(email string) (*SendLinkResult, error) {
 		return nil, fmt.Errorf("email is required")
 	}
 
+	recent, err := s.store.GetRecentAuthTokenByEmail(email)
+	if err != nil {
+		return nil, fmt.Errorf("check recent token: %w", err)
+	}
+	if recent != nil {
+		return nil, fmt.Errorf("a token was already sent recently, please wait before requesting a new one")
+	}
+
 	token := make([]byte, 32)
 	if _, err := rand.Read(token); err != nil {
 		return nil, fmt.Errorf("generate token: %w", err)

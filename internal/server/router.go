@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -52,7 +53,7 @@ func GetNewRouter(cfg RouterConfig, fsys fs.FS) *gin.Engine {
 	app_router.mountFrontend()
 
 	app_router.router.GET("checkhealth", func(ctx *gin.Context) {
-		ctx.String(200, "OK")
+		ctx.String(200, "OK!!")
 	})
 
 	return app_router.router
@@ -140,10 +141,11 @@ func (g *AppRouter) mountApiRoutes() {
 		protected.DELETE("/plants/:id/images/:imageId", plantHandler.DeletePlantImage)
 
 		protected.GET("/plants/:id/journal", plantHandler.GetJournalEntries)
+		protected.GET("/plants/:id/journal/calendar/:startdate/:enddate", plantHandler.GetJournalCalendar)
 
-		protected.POST("/journal/watering", plantHandler.WaterPlant)
-		protected.DELETE("/journal/watering", plantHandler.DeleteWatering)
-		protected.POST("/journal/watering/toggle", plantHandler.ToggleWatering)
+		protected.POST("/plants/:id/watering/:date", plantHandler.WaterPlant)
+		protected.DELETE("/plants/:id/watering/:date", plantHandler.DeleteWatering)
+		protected.POST("/plants/:id/watering/toggle", plantHandler.ToggleWatering)
 		protected.POST("/journal/watering/bulk", plantHandler.BulkWaterPlants)
 		protected.POST("/journal/last-watered", plantHandler.GetLastWateredDates)
 		protected.POST("/journal/watering/range", plantHandler.GetWateringHistoryByDateRange)
@@ -164,6 +166,11 @@ func (g *AppRouter) mountFrontend() {
 	g.router.StaticFileFS("/icons.svg", "icons.svg", http.FS(g.webapp_fs))
 
 	g.router.NoRoute(func(ctx *gin.Context) {
+		if strings.HasPrefix(ctx.Request.URL.Path, "/api/") {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+
 		data, err := fs.ReadFile(g.webapp_fs, "index.html")
 		if err != nil {
 			ctx.Status(http.StatusNotFound)

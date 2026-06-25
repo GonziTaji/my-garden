@@ -95,6 +95,42 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 	return defs, nil
 }
 
+func (s *Store) GetPlantCalendar(id int64, userId int64, startDate string, endDate string) (*[]PlantCalendarEntry, error) {
+	query := `
+		select id, journal_entry_type, watering_date
+		from plant_journal_entries
+		where plant_id = ?
+		and watering_date >= ?
+		and watering_date <= ?
+		order by entry_created_at desc
+	`
+
+	log.Printf("%s - %d %s %s\n", query, id, startDate, endDate)
+
+	rows, err := s.db.Query(query, id, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []PlantCalendarEntry
+
+	for rows.Next() {
+		var entry PlantCalendarEntry
+
+		if err := rows.Scan(
+			&entry.Id,
+			&entry.EventType,
+			&entry.Date,
+		); err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return &entries, nil
+}
+
 func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, error) {
 	query := `select id, common_name, scientific_name, water_profile, light_level, soil_type,
 		pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility,

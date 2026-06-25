@@ -37,4 +37,6 @@ type StoreInterface interface {
 	GetWateringEntry(int64, string) (*PlantJournalEntry, error)
 	GetWateringHistoryByDateRange([]int64, string, string) ([]PlantJournalEntry, error)
 	GetLastWateredDates([]int64) (map[int64]*string, error)
+
+	GetPlantCalendar(id int64, userId int64, startDate string, endDate string) (*[]PlantCalendarEntry, error)
 }

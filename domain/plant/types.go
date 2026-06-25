@@ -90,20 +90,20 @@ const (
 // Entities
 
 type PlantDefinition struct {
-	ID               int64                   `json:"id"`
-	CommonName       string                  `json:"common_name"`
-	ScientificName   string                  `json:"scientific_name"`
-	WaterProfile     WaterProfile            `json:"water_profile"`
-	LightLevel       LightLevel              `json:"light_level"`
-	SoilType         SoilType                `json:"soil_type"`
-	PetToxicity      PetToxicity             `json:"pet_toxicity"`
-	PetToxicityNotes string                  `json:"pet_toxicity_notes"`
-	CategoriesJSON   string                  `json:"categories_json"`
-	UserID           int64                   `json:"user_id"`
-	Visibility       string                  `json:"visibility"`
-	Images           []PlantDefinitionImage  `json:"images"`
-	CreatedAt        string                  `json:"created_at"`
-	UpdatedAt        string                  `json:"updated_at"`
+	ID               int64                  `json:"id"`
+	CommonName       string                 `json:"common_name"`
+	ScientificName   string                 `json:"scientific_name"`
+	WaterProfile     WaterProfile           `json:"water_profile"`
+	LightLevel       LightLevel             `json:"light_level"`
+	SoilType         SoilType               `json:"soil_type"`
+	PetToxicity      PetToxicity            `json:"pet_toxicity"`
+	PetToxicityNotes string                 `json:"pet_toxicity_notes"`
+	CategoriesJSON   string                 `json:"categories_json"`
+	UserID           int64                  `json:"user_id"`
+	Visibility       string                 `json:"visibility"`
+	Images           []PlantDefinitionImage `json:"images"`
+	CreatedAt        string                 `json:"created_at"`
+	UpdatedAt        string                 `json:"updated_at"`
 }
 
 type PlantDefinitionImage struct {
@@ -114,16 +114,16 @@ type PlantDefinitionImage struct {
 }
 
 type Plant struct {
-	ID                int64        `json:"id"`
-	Nickname          string       `json:"nickname"`
-	Source            NullString   `json:"source"`
-	PlantDefinitionID int64        `json:"plant_definition_id"`
-	AcquiredAt        NullString   `json:"acquired_at"`
-	Location          NullString   `json:"location"`
-	Notes             NullString   `json:"notes"`
-	UserID            int64        `json:"user_id"`
-	CreatedAt         string       `json:"created_at"`
-	UpdatedAt         string       `json:"updated_at"`
+	ID                int64      `json:"id"`
+	Nickname          string     `json:"nickname"`
+	Source            NullString `json:"source"`
+	PlantDefinitionID int64      `json:"plant_definition_id"`
+	AcquiredAt        NullString `json:"acquired_at"`
+	Location          NullString `json:"location"`
+	Notes             NullString `json:"notes"`
+	UserID            int64      `json:"user_id"`
+	CreatedAt         string     `json:"created_at"`
+	UpdatedAt         string     `json:"updated_at"`
 }
 
 type PlantDefinitionBrief struct {
@@ -163,6 +163,12 @@ type PlantLocationHistoryEntry struct {
 	Notes        string `json:"notes"`
 	CreatedAt    string `json:"created_at"`
 	UserID       int64  `json:"user_id"`
+}
+
+type PlantCalendarEntry struct {
+	Id        string           `json:"id"`
+	Date      string           `json:"date"`
+	EventType JournalEntryType `json:"eventType"`
 }
 
 type PlantJournalEntry struct {
