@@ -10,7 +10,7 @@ export MY_GARDEN_SMTP_FROM := gonzalo.tajmuch@gmail.com
 export MY_GARDEN_SESSION_SECRET := $(SESSION_SECRET)
 
 dev:
-	MY_GARDEN_ORIGIN=http://localhost:8080 \
+	MY_GARDEN_ORIGIN=http://192.168.1.26:8080 \
 	parallel -u make ::: dev-frontend dev-backend-watch
 
 dev-backend-watch:

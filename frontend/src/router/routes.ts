@@ -14,6 +14,7 @@ export const routerPaths = [
   { path: "/plants", component: PlantsList },
   { path: "/plants/new", component: PlantNew },
   { path: "/plants/:plantid", component: PlantDetailPage },
+  { path: "/plants/:plantid", component: PlantDetailPage },
   { path: "/catalog", component: CatalogList },
   { path: "/catalog/new", component: CatalogNew },
   { path: "/catalog/:plantdefid", component: CatalogDetail },

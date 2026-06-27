@@ -103,7 +103,7 @@ func (g *AppRouter) mountApiRoutes() {
 
 	// Fully public auth endpoints (no middleware)
 	api.POST("/auth/send-link", userHandler.SendLink)
-	api.GET("/auth/verify", userHandler.Verify)
+	api.POST("/auth/verify", userHandler.Verify)
 	api.POST("/auth/logout", userHandler.Logout)
 
 	// Public group with OptionalAuth (sets userID if session present, never rejects)

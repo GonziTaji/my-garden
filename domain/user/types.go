@@ -21,6 +21,10 @@ type SendLinkRequest struct {
 	Email string `json:"email" binding:"required"`
 }
 
+type VerifyCodeRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
 type UserResponse struct {
 	ID       int64  `json:"id"`
 	Email    string `json:"email"`

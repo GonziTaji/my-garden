@@ -1,35 +1,33 @@
-import { usePlantCalendar, useQuickWater } from "@/api/watering"
+import { usePlantCalendar, type PlantCalendarEntry } from "@/api/watering"
 import type { Plant } from "@/domain/plants/plant"
-import type { PlantJournalEntry } from "@/domain/plants/plant-journal"
-import useDialog from "@/hooks/use-dialog"
 import DateUtils from "@/utils/dates"
 import { cn } from "@sglara/cn"
-import { useRef, useState, type ChangeEvent, type MouseEvent } from "react"
+import { useState, type ChangeEvent, type MouseEvent } from "react"
 
 // calendar grid
 const CALENDAR_WEEKS = 6
 const CALENDAR_WEEKDAYS = 7
 
+export interface SelectedDay {
+  plantId: number,
+  date: Date,
+  events: PlantCalendarEntry[]
+  isWatered?: boolean
+}
+
 interface CalendarProps {
   plantId: Plant['id']
+  onDaySelect?: (data: SelectedDay) => void
 }
 
 interface GridDayData {
   date: Date | null
+  events: PlantCalendarEntry[]
   isWatered: boolean
 }
 
-// interface PopoverPosition {
-//   direction: 'up' | 'down'
-//   y: number
-// }
-
-export default function PlantCalendar({ plantId }: CalendarProps) {
+export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
   const [monthIndex, setMonthIndex] = useState(() => new Date().getMonth())
-  const [eventsOfDay, setEventsOfDay] = useState<{ date: Date, events: PlantJournalEntry[] }>({ date: new Date(), events: [] })
-  const popoverRef = useRef<HTMLDialogElement>(null)
-  const { close, show } = useDialog({ dialogRef: popoverRef })
-  const quickWater = useQuickWater()
 
   const startDate = new Date()
   startDate.setMonth(monthIndex)
@@ -53,35 +51,36 @@ export default function PlantCalendar({ plantId }: CalendarProps) {
     return <>Cargando...</>
   }
 
+  if (!calendarData) {
+    return <>Unexpected error!</>
+  }
+
   const isWatered = (dateString: string) => (
     !!calendarData?.find((d) => d.date === dateString && d.eventType === 'watering')
   )
 
-  const gridDateTemplate = new Date(startDate)
+  const daysInMonth = Array.from({ length: endDate.getDate() }, (_, i) => {
+    const d = new Date(startDate)
+    d.setDate(i + 1)
+    return d
+  })
 
-  const grid: GridDayData[] = new Array(CALENDAR_WEEKS)
-    .fill(null)
-    .flatMap((_, week) => (
-      new Array(CALENDAR_WEEKDAYS)
-        .fill(null)
-        .map((_, weekday) => {
-          if (week === 0 && weekday < startDate.getDay()) {
-            return { date: null, isWatered: false };
-          }
+  const blanksBefore = startDate.getDay()
+  const blanksAfter = CALENDAR_WEEKS * CALENDAR_WEEKDAYS - blanksBefore - daysInMonth.length
 
-          if (gridDateTemplate.getDate() >= endDate.getDate()) {
-            return { date: null, isWatered: false };
-          }
+  const grid: GridDayData[] = [
+    ...Array.from({ length: blanksBefore }, () => ({ date: null, events: [], isWatered: false })),
 
-          gridDateTemplate.setDate(gridDateTemplate.getDate() + 1)
+    ...daysInMonth.map(date => ({
+      date: date,
+      events: calendarData.filter((c) => c.date === DateUtils.toInputValue(date)),
+      isWatered: isWatered(DateUtils.toInputValue(date))
+    })),
 
-          return {
-            date: new Date(gridDateTemplate),
-            isWatered: isWatered(DateUtils.toInputValue(gridDateTemplate))
-          };
-        })))
+    ...Array.from({ length: blanksAfter }, () => ({ date: null, events: [], isWatered: false })),
+  ]
 
-  const months = new Array(12).fill(null).map((_, i) => {
+  const months = Array.from({ length: 12 }).fill(null).map((_, i) => {
     const d = new Date()
     d.setMonth(i)
 
@@ -99,30 +98,18 @@ export default function PlantCalendar({ plantId }: CalendarProps) {
     handleMonthChange(Number(ev.currentTarget.value))
   }
 
-  function handleShowDayDialog(_: MouseEvent<HTMLButtonElement>, gridDayData: GridDayData) {
-    if (!gridDayData.date) {
+  function handleDayClick(_: MouseEvent<HTMLButtonElement>, gridDayData: GridDayData) {
+    if (!gridDayData.date || !onDaySelect) {
       return
     }
 
-    // clean selection. dialog show only date and create entry button
-    // with events: show events as buttons to navigate to them
-    // do that with state and so and so
+    console.log('selected date', gridDayData.date)
 
-    // show skelleton events until loaded
-    const events: PlantJournalEntry[] = []
-    if (gridDayData.isWatered) {
-      events.push({ date: gridDayData.date, plantId, id: 1, images: [], type: 'watering' })
-    }
-    setEventsOfDay({ date: gridDayData.date, events })
-    show()
-
-    console.log('setting events', events)
-  }
-
-  function handleQuickWatering() {
-    const dateStr = DateUtils.toInputValue(eventsOfDay.date)
-    quickWater.mutate({ plantId, date: dateStr }, {
-      onSuccess: () => close()
+    onDaySelect({
+      plantId,
+      isWatered: gridDayData.isWatered,
+      date: gridDayData.date,
+      events: gridDayData.events
     })
   }
 
@@ -144,7 +131,7 @@ export default function PlantCalendar({ plantId }: CalendarProps) {
         {grid.map((gridDay, i) => (
           <button
             type="button"
-            onClick={(e) => handleShowDayDialog(e, gridDay)}
+            onClick={(e) => handleDayClick(e, gridDay)}
             disabled={gridDay.date === null}
             key={`${monthIndex}-${i * 100}`}
             className={cn(
@@ -156,30 +143,6 @@ export default function PlantCalendar({ plantId }: CalendarProps) {
           </button>)
         )}
       </div>
-
-      <dialog ref={popoverRef} id="popover1" popover="auto">
-        <div className="grid">
-          <span>{
-            Intl.DateTimeFormat('default', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric'
-            }).format(eventsOfDay.date)
-          }</span>
-
-          {eventsOfDay.events.map((e) => (
-            <div key={e.date.toISOString()}>
-              <span>{e.plantId}</span>
-              <span>{e.type}</span>
-            </div>
-          ))}
-          {!eventsOfDay.events.find((e) => e.type === 'watering') && (
-            <button type="button" onClick={handleQuickWatering} disabled={quickWater.isPending}>riego rapido</button>
-          )}
-          <button type="button" onClick={close} >close</button>
-        </div>
-      </dialog>
     </div>
   )
 }
-

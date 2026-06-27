@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "./client"
 import type { Plant } from "@/domain/plants/plant"
-import type { PlantJournalEntryType } from "@/domain/plants/plant-journal"
+import type { PlantJournalEntry, PlantJournalEntryType } from "@/domain/plants/plant-journal"
 
 interface ToggleResult {
   watered: boolean
@@ -19,11 +19,19 @@ export function useToggleWatering() {
   })
 }
 
+interface MutateQuickWaterArgs {
+  plantId: number;
+  date: string;
+  remove?: boolean;
+}
+
 export function useQuickWater() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ plantId, date }: { plantId: number; date: string }) =>
-      api.post(`/api/plants/${plantId}/watering/${date}`),
+    mutationFn: ({ plantId, date, remove }: MutateQuickWaterArgs) => {
+      const fn = remove ? api.del : api.post
+      return fn(`/api/plants/${plantId}/watering/${date}`)
+    },
     onSuccess: (_data, { plantId }) => {
       qc.invalidateQueries({ queryKey: ["plant", "watering", plantId] })
       qc.invalidateQueries({ queryKey: ["watering"] })
@@ -57,7 +65,7 @@ interface WateringEntry {
   watering_date: string
 }
 
-interface PlantCalendarEntry {
+export interface PlantCalendarEntry {
   id: string,
   date: string,
   eventType: PlantJournalEntryType

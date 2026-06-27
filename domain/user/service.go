@@ -3,8 +3,8 @@ package user
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -22,9 +22,10 @@ func NewService(store *Store, origin string, mailer email.Mailer) *Service {
 	return &Service{store: store, origin: origin, mailer: mailer}
 }
 
+var codeCharset = []rune("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+
 type SendLinkResult struct {
 	Message string `json:"message"`
-	Link    string `json:"link,omitempty"`
 }
 
 func (s *Service) RequestLogin(email string) (*SendLinkResult, error) {
@@ -41,12 +42,11 @@ func (s *Service) RequestLogin(email string) (*SendLinkResult, error) {
 		return nil, fmt.Errorf("a token was already sent recently, please wait before requesting a new one")
 	}
 
-	token := make([]byte, 32)
-	if _, err := rand.Read(token); err != nil {
-		return nil, fmt.Errorf("generate token: %w", err)
+	rawToken, err := generateCode(8)
+	if err != nil {
+		return nil, fmt.Errorf("generate code: %w", err)
 	}
 
-	rawToken := hex.EncodeToString(token)
 	tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(rawToken)))
 	expiresAt := time.Now().UTC().Add(15 * time.Minute).Format("2006-01-02 15:04:05")
 
@@ -54,27 +54,36 @@ func (s *Service) RequestLogin(email string) (*SendLinkResult, error) {
 		return nil, fmt.Errorf("store auth token: %w", err)
 	}
 
-	magicLink := fmt.Sprintf("%s/api/auth/verify?token=%s", s.origin, rawToken)
-
-	subject := "Tu enlace mágico para My Garden"
+	subject := "Tu código de acceso para My Garden"
 	body := fmt.Sprintf(`Hola,
 
-Usa este enlace para iniciar sesión en My Garden:
+Usa este código para iniciar sesión en My Garden:
 
 %s
 
-Este enlace expira en 15 minutos.
+Este código expira en 15 minutos.
 
-Si no solicitaste esto, ignora este correo.`, magicLink)
+Si no solicitaste esto, ignora este correo.`, rawToken)
 
 	if err := s.mailer.Send(email, subject, body); err != nil {
 		return nil, fmt.Errorf("send email: %w", err)
 	}
 
 	return &SendLinkResult{
-		Message: "If that email is registered, a magic link has been sent.",
-		Link:    magicLink,
+		Message: "If that email is registered, a code has been sent.",
 	}, nil
+}
+
+func generateCode(length int) (string, error) {
+	code := make([]rune, length)
+	for i := range code {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(codeCharset))))
+		if err != nil {
+			return "", fmt.Errorf("rand int: %w", err)
+		}
+		code[i] = codeCharset[n.Int64()]
+	}
+	return strings.ToUpper(string(code)), nil
 }
 
 type VerifyResult struct {

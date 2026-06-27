@@ -13,6 +13,7 @@ interface AuthContextValue {
   user: User | null
   isLoading: boolean
   sendLoginEmail: (email: string) => Promise<void>
+  verifyCode: (code: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -35,13 +36,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.post("/api/auth/send-link", { email })
   }, [])
 
+  const verifyCode = useCallback(async (code: string) => {
+    const data = await api.post<User>("/api/auth/verify", { code })
+    setUser(data)
+  }, [])
+
   const logout = useCallback(async () => {
     await api.post("/api/auth/logout")
     setUser(null)
   }, [])
 
   return (
-    <AuthContext value={{ user, isLoading, sendLoginEmail, logout }}>
+    <AuthContext value={{ user, isLoading, sendLoginEmail, verifyCode, logout }}>
       {children}
     </AuthContext>
   )

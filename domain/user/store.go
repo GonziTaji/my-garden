@@ -83,6 +83,7 @@ func (s *Store) GetRecentAuthTokenByEmail(email string) (*AuthToken, error) {
 		from auth_tokens
 		where email = ?
 		and datetime(created_at) > datetime('now', '-2 minutes', 'localtime')
+		and used_at is null
 		order by created_at desc
 		limit 1
 	`, email)

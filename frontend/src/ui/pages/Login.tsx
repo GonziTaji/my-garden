@@ -1,14 +1,17 @@
-import { useState } from "react"
+import { useState, type SubmitEvent } from "react"
 import { useAuth } from "@/auth/AuthContext"
 import { buttonVariants } from "@/ui/classVariants/button"
+import { useNavigate } from "@/router/provider"
 
 export default function Login() {
-  const { sendLoginEmail } = useAuth()
+  const { sendLoginEmail, verifyCode } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [sent, setSent] = useState(false)
+  const [code, setCode] = useState("")
   const [error, setError] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
     try {
@@ -19,13 +22,46 @@ export default function Login() {
     }
   }
 
+  const handleVerifyCode = async (e: SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError("")
+    try {
+      await verifyCode(code)
+      navigate("/")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Código inválido o expirado")
+    }
+  }
+
   if (sent) {
     return (
       <div className="p-8 text-center">
         <h2 className="text-2xl font-bold text-olive-700">Revisa tu correo</h2>
         <p className="text-olive-500 mt-2">
-          Te hemos enviado un enlace mágico a <strong>{email}</strong>
+          Te hemos enviado un código a <strong>{email}</strong>
         </p>
+        <form onSubmit={handleVerifyCode} className="flex flex-col gap-4 max-w-sm mx-auto mt-6">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="Ej: A3K9M2X7"
+            required
+            autoFocus
+            maxLength={8}
+            className="border border-olive-300 rounded-md p-2 text-center text-lg tracking-widest uppercase"
+          />
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button type="submit" className={buttonVariants({ variant: "primary" })}>
+            Verificar código
+          </button>
+        </form>
+        <button
+          onClick={() => { setSent(false); setCode(""); setError("") }}
+          className="text-olive-500 underline mt-4 text-sm"
+        >
+          Volver
+        </button>
       </div>
     )
   }
@@ -44,7 +80,7 @@ export default function Login() {
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button type="submit" className={buttonVariants({ variant: "primary" })}>
-          Enviar enlace mágico
+          Enviar código de acceso
         </button>
       </form>
     </div>

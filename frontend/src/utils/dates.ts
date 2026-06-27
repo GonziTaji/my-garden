@@ -10,11 +10,11 @@ function toInputValue(date: Date) {
   let mm = (date.getMonth() + 1).toString()
   let dd = date.getDate().toString()
 
-  if (Number(mm) < 9) {
+  if (Number(mm) < 10) {
     mm = `${0}${mm}`
   }
 
-  if (Number(dd) < 9) {
+  if (Number(dd) < 10) {
     dd = `${0}${dd}`
   }
 

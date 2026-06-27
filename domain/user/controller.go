@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -34,20 +35,20 @@ func (h *Handler) SendLink(c *gin.Context) {
 }
 
 func (h *Handler) Verify(c *gin.Context) {
-	rawToken := c.Query("token")
-	if rawToken == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Token is required"})
+	var req VerifyCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Code is required"})
 		return
 	}
 
-	result, err := h.service.VerifyLogin(rawToken)
+	result, err := h.service.VerifyLogin(strings.ToUpper(req.Code))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
 	auth.SetSessionCookie(c, result.User.ID)
-	c.Redirect(http.StatusTemporaryRedirect, "/")
+	c.JSON(http.StatusOK, result.User)
 }
 
 func (h *Handler) Logout(c *gin.Context) {
