@@ -2,9 +2,18 @@ const DateUtils = {
   toInputValue,
   getDateRange,
   getMonthDays,
+  toDisplayDate,
 }
 
 export default DateUtils
+
+function toDisplayDate(date: Date) {
+  return Intl.DateTimeFormat('default', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(date)
+}
 
 function toInputValue(date: Date) {
   let mm = (date.getMonth() + 1).toString()

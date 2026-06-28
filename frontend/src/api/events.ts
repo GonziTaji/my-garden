@@ -3,7 +3,6 @@ import { api } from "./client"
 import type { PlantEvent, CalendarEntry } from "@/domain/plants/plant-event"
 
 interface CreateEventInput {
-  plant_id: number
   event_type: string
   event_date: string
   notes?: string | null
@@ -54,13 +53,13 @@ export function usePlantEvent(plantId: number, eventId: number) {
   })
 }
 
-export function useCreateEvent() {
+export function useCreateEvent(plantId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ plant_id, ...input }: CreateEventInput) =>
-      api.post<ApiPlantEvent>(`/api/plants/${plant_id}/events`, input),
+    mutationFn: (input: CreateEventInput) =>
+      api.post<ApiPlantEvent>(`/api/plants/${plantId}/events`, input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["events", plant_id] })
+      qc.invalidateQueries({ queryKey: ["events", plantId] })
     },
   })
 }

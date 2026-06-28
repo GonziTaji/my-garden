@@ -8,6 +8,7 @@ import { cn } from "@sglara/cn"
 import { useRef, useState } from "react"
 import { Link } from '@/router/components/Link'
 import PlantCalendar, { type SelectedDay } from './PlantCalendar'
+import { buttonVariants } from "../classVariants/button"
 
 export default function WateringHistoryGrid() {
   const { data: plants, isLoading: isLoadingPlants } = usePlants()
@@ -20,6 +21,7 @@ export default function WateringHistoryGrid() {
 
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const { data: selectedEntry, isLoading: isLoadingJE } = usePlantEvent(selectedDay.plantId, selectedEntryId ?? 0)
+  const plantOfSelectedEntry = plants?.find(p => p.id === selectedEntry?.plantId)
 
   const daySummaryRef = useRef<HTMLDialogElement>(null)
   const { close: closeDaySummary, show: showDaySummary } = useDialog({ dialogRef: daySummaryRef })
@@ -29,6 +31,7 @@ export default function WateringHistoryGrid() {
 
   const createEvent = useCreateEvent(selectedDay.plantId)
   const deleteEvent = useDeleteEvent(selectedDay.plantId)
+  console.log({ createEvent })
 
   function handleDaySelect(data: SelectedDay) {
     if (daySummaryRef.current?.open) {
@@ -53,8 +56,12 @@ export default function WateringHistoryGrid() {
     })
   }
 
-  function handleDeleteEvent(e: PlantCalendarEntry) {
-    deleteEvent.mutate(Number(e.id))
+  function handleDeleteEvent() {
+    if (!selectedEntry) {
+      return
+    }
+
+    deleteEvent.mutate(selectedEntry.id)
   }
 
   if (isLoadingPlants) return <>Cargando...</>
@@ -152,12 +159,67 @@ export default function WateringHistoryGrid() {
           "backdrop:opacity-0 open:backdrop:opacity-100 starting:open:backdrop:opacity-0",
         )}
       >
-        <div className="grid mx-4 mt-4">
-          {isLoadingJE ? 'cargando...' : JSON.stringify(selectedEntry)}
+        <div className="grid mx-4 h-full">
+          {isLoadingJE && "Cargando..."}
 
-          <button type="button" onClick={closeEventDetails}>Cerrar</button>
+          {selectedEntry && plantOfSelectedEntry && (
+            <div className="p-4 flex flex-col gap-8">
+              <div className="grid grid-cols-2 gap-8">
+                {plantOfSelectedEntry.images.length > 0 && (
+                  <img
+                    className="w-full aspect-square object-cover"
+                    src={plantOfSelectedEntry.images[0].filepath}
+                  />
+                )}
+
+                <div className="flex flex-col">
+                  <span>
+                    {plantOfSelectedEntry.nickname}
+                  </span>
+
+                  <span>
+                    {plantEventType.meta[selectedEntry?.type].label}
+                  </span>
+
+                  <span>
+                    {DateUtils.toDisplayDate(new Date(selectedEntry.eventDate))}
+                  </span>
+
+                  <span>
+                    {selectedEntry.notes || 'Sin notas'}
+                  </span>
+                </div>
+              </div>
+
+              {selectedEntry.images.length > 0 ? (
+                selectedEntry.images.map((imgSrc) => (
+                  <img key={imgSrc} className="h-48" src={imgSrc} />
+                ))
+              ) : <span className="">Sin imagenes</span>}
+
+              <div className="grow">&nbsp;</div>
+
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: 'danger' })}
+                  onClick={handleDeleteEvent}
+                >
+                  Elimiar evento
+                </button>
+
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: 'secondary' })}
+                  onClick={closeEventDetails}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      </dialog>
-    </div>
+      </dialog >
+    </div >
   )
 }
