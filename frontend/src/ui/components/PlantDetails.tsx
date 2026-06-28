@@ -1,4 +1,5 @@
-import { useCreateLocationChange, addPlantImage, deletePlantImage, type CreateLocationChangeInput } from "@/api/plants"
+import { addPlantImage, deletePlantImage } from "@/api/plants"
+import { useCreateEvent } from "@/api/events"
 import type { PlantWithDefinition } from "@/domain/plants/plant"
 import { useState, type SyntheticEvent } from "react"
 import { buttonVariants } from "../classVariants/button"
@@ -15,7 +16,7 @@ const locationChangeActionTypes = { cancel: "cancel", submit: "submit" } as cons
 type LocationChangeActionType = keyof typeof locationChangeActionTypes
 
 export default function PlantDetails({ plant }: PlantDetailProps) {
-  const createLocationChange = useCreateLocationChange()
+  const createEvent = useCreateEvent(plant.id)
 
   const [editingField, setEditingField] = useState<"" | "nickname" | "acquiredAt" | "notes">("")
   const [images, setImages] = useState(plant.images)
@@ -68,24 +69,26 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       case "submit":
         const fd = new FormData(form)
 
-        const mutationInput: CreateLocationChangeInput = {
-          location: fd.get("new-location")?.toString() || '',
-          plant_id: plant.id,
-          registered_at: fd.get("new-location-date")?.toString() || '',
-          notes: fd.get("new-location-notes")?.toString() || '',
-        }
+        const location = fd.get("new-location")?.toString() || ''
+        const registeredAt = fd.get("new-location-date")?.toString() || ''
+        const notes = fd.get("new-location-notes")?.toString() || ''
 
-        if (!mutationInput.location) {
+        if (!location) {
           console.warn("no location in formdata")
           return
         }
 
-        if (!mutationInput.registered_at) {
+        if (!registeredAt) {
           console.warn("no date in formdata")
           return
         }
 
-        const res = await createLocationChange.mutateAsync(mutationInput)
+        const res = await createEvent.mutateAsync({
+          event_type: "location_change",
+          event_date: registeredAt,
+          notes: notes || null,
+          metadata: { location },
+        })
         console.log(res)
 
         form.reset()

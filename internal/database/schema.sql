@@ -56,7 +56,6 @@ create table if not exists plants (
   source text null,
   plant_definition_id integer not null,
   acquired_at text null,
-  location text null,
   notes text null,
   user_id integer references users(id),
   created_at text default (datetime('now', 'localtime')) not null,
@@ -102,4 +101,25 @@ create table if not exists plant_location_history (
   user_id integer references users(id),
   foreign key (plant_id) references plants(id) on delete cascade
 );
+
+create table if not exists plant_events (
+  id          integer primary key autoincrement not null,
+  plant_id    integer not null references plants(id) on delete cascade,
+  event_type  text not null,
+  event_date  text not null,
+  notes       text not null default '',
+  metadata    text not null default '{}',
+  created_at  text default (datetime('now', 'localtime')) not null,
+  user_id     integer references users(id)
+);
+
+create table if not exists plant_event_images (
+  id             integer primary key autoincrement not null,
+  plant_event_id integer not null references plant_events(id) on delete cascade,
+  url            text not null
+);
+
+create unique index if not exists idx_unique_plant_watering_date
+  on plant_events (plant_id, event_date)
+  where event_type = 'watering';
 

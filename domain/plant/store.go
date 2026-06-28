@@ -2,8 +2,8 @@ package plant
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"log"
 )
 
 type Store struct {
@@ -93,42 +93,6 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 	}
 
 	return defs, nil
-}
-
-func (s *Store) GetPlantCalendar(id int64, userId int64, startDate string, endDate string) (*[]PlantCalendarEntry, error) {
-	query := `
-		select id, journal_entry_type, watering_date
-		from plant_journal_entries
-		where plant_id = ?
-		and watering_date >= ?
-		and watering_date <= ?
-		order by entry_created_at desc
-	`
-
-	log.Printf("%s - %d %s %s\n", query, id, startDate, endDate)
-
-	rows, err := s.db.Query(query, id, startDate, endDate)
-	if err != nil {
-		return nil, err
-	}
-
-	var entries []PlantCalendarEntry
-
-	for rows.Next() {
-		var entry PlantCalendarEntry
-
-		if err := rows.Scan(
-			&entry.Id,
-			&entry.EventType,
-			&entry.Date,
-		); err != nil {
-			return nil, err
-		}
-
-		entries = append(entries, entry)
-	}
-
-	return &entries, nil
 }
 
 func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, error) {
@@ -446,18 +410,20 @@ func (s *Store) ListPlants(definitionID *int64, userID int64) ([]Plant, error) {
 		rows *sql.Rows
 		err  error
 	)
+
+	selectCols := `id, nickname, source, plant_definition_id, acquired_at,
+		notes, user_id, created_at, updated_at`
+
 	if definitionID != nil {
 		rows, err = s.db.Query(`
-			select id, nickname, source, plant_definition_id, acquired_at,
-				location, notes, user_id, created_at, updated_at
+			select `+selectCols+`
 			from plants
 			where plant_definition_id = ? and user_id = ?
 			order by nickname asc
 		`, *definitionID, userID)
 	} else {
 		rows, err = s.db.Query(`
-			select id, nickname, source, plant_definition_id, acquired_at,
-				location, notes, user_id, created_at, updated_at
+			select `+selectCols+`
 			from plants
 			where user_id = ?
 			order by nickname asc
@@ -472,7 +438,7 @@ func (s *Store) ListPlants(definitionID *int64, userID int64) ([]Plant, error) {
 	for rows.Next() {
 		var p Plant
 		err := rows.Scan(&p.ID, &p.Nickname, &p.Source, &p.PlantDefinitionID,
-			&p.AcquiredAt, &p.Location, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
+			&p.AcquiredAt, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("scan plant: %w", err)
 		}
@@ -484,14 +450,14 @@ func (s *Store) ListPlants(definitionID *int64, userID int64) ([]Plant, error) {
 func (s *Store) GetPlant(id int64, userID int64) (*Plant, error) {
 	row := s.db.QueryRow(`
 		select id, nickname, source, plant_definition_id, acquired_at,
-			location, notes, user_id, created_at, updated_at
+			notes, user_id, created_at, updated_at
 		from plants
 		where id = ? and user_id = ?
 	`, id, userID)
 
 	var p Plant
 	err := row.Scan(&p.ID, &p.Nickname, &p.Source, &p.PlantDefinitionID,
-		&p.AcquiredAt, &p.Location, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
+		&p.AcquiredAt, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -504,9 +470,9 @@ func (s *Store) GetPlant(id int64, userID int64) (*Plant, error) {
 func (s *Store) CreatePlant(p *Plant) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plants
-			(nickname, source, plant_definition_id, acquired_at, location, notes, user_id)
-		values (?, ?, ?, ?, ?, ?, ?)
-	`, p.Nickname, p.Source, p.PlantDefinitionID, p.AcquiredAt, p.Location, p.Notes, p.UserID)
+			(nickname, source, plant_definition_id, acquired_at, notes, user_id)
+		values (?, ?, ?, ?, ?, ?)
+	`, p.Nickname, p.Source, p.PlantDefinitionID, p.AcquiredAt, p.Notes, p.UserID)
 	if err != nil {
 		return 0, fmt.Errorf("create plant: %w", err)
 	}
@@ -551,11 +517,10 @@ func (s *Store) ListPlantsWithDefinition(definitionID *int64, userID int64) ([]P
 		p.created_at, p.updated_at,
 		d.id as def_id, d.common_name, d.scientific_name, d.user_id, d.visibility,
 		coalesce(
-			(select location from plant_location_history
-			 where plant_id = p.id
-			 order by registered_at desc, id desc
-			 limit 1),
-			p.location
+			(select json_extract(metadata, '$.location') from plant_events
+			 where plant_id = p.id and event_type = 'location_change'
+			 order by event_date desc, id desc limit 1),
+			''
 		) as location
 	from plants p
 	inner join plant_definitions d on d.id = p.plant_definition_id
@@ -631,11 +596,10 @@ func (s *Store) GetPlantWithDefinition(id int64, userID int64) (*PlantWithDefini
 			p.created_at, p.updated_at,
 			d.id as def_id, d.common_name, d.scientific_name, d.user_id, d.visibility,
 			coalesce(
-				(select location from plant_location_history
-				 where plant_id = p.id
-				 order by registered_at desc, id desc
-				 limit 1),
-				p.location
+				(select json_extract(metadata, '$.location') from plant_events
+				 where plant_id = p.id and event_type = 'location_change'
+				 order by event_date desc, id desc limit 1),
+				''
 			) as location
 		from plants p
 		inner join plant_definitions d on d.id = p.plant_definition_id
@@ -719,171 +683,221 @@ func (s *Store) CountPlantImageReferences(filepath string) (int, error) {
 	return count, nil
 }
 
-// Location History
+// Events
 
-func (s *Store) CreatePlantLocationHistory(e *PlantLocationHistoryEntry) (int64, error) {
+func (s *Store) CreateEvent(e *PlantEvent) (int64, error) {
 	result, err := s.db.Exec(`
-		insert into plant_location_history
-			(plant_id, location, registered_at, notes, user_id)
-		values (?, ?, ?, ?, ?)
-	`, e.PlantID, e.Location, e.RegisteredAt, e.Notes, e.UserID)
+		insert into plant_events
+			(plant_id, event_type, event_date, notes, metadata, user_id)
+		values (?, ?, ?, ?, ?, ?)
+	`, e.PlantID, e.EventType, e.EventDate, e.Notes, string(e.Metadata), e.UserID)
 	if err != nil {
-		return 0, fmt.Errorf("create location history: %w", err)
+		return 0, fmt.Errorf("create event: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("get last insert id: %w", err)
-	}
-	return id, nil
+	return result.LastInsertId()
 }
 
-// Journal
-
-func (s *Store) CreateJournalEntry(e *PlantJournalEntry) (int64, error) {
-	result, err := s.db.Exec(`
-		insert into plant_journal_entries
-			(plant_id, journal_entry_type, notes, watering_date, user_id)
-		values (?, ?, ?, ?, ?)
-	`, e.PlantID, e.JournalEntryType, e.Notes, e.WateringDate, e.UserID)
-	if err != nil {
-		return 0, fmt.Errorf("create journal entry: %w", err)
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("get last insert id: %w", err)
-	}
-	return id, nil
-}
-
-func (s *Store) DeleteJournalEntry(id int64) error {
-	_, err := s.db.Exec("delete from plant_journal_entries where id = ?", id)
-	if err != nil {
-		return fmt.Errorf("delete journal entry: %w", err)
-	}
-	return nil
-}
-
-func (s *Store) GetJournalEntries(plantID int64) ([]PlantJournalEntry, error) {
-	rows, err := s.db.Query(`
-		select id, plant_id, journal_entry_type, notes, entry_created_at, entry_updated_at, watering_date
-		from plant_journal_entries
-		where plant_id = ?
-		order by entry_created_at desc
-	`, plantID)
-	if err != nil {
-		return nil, fmt.Errorf("get journal entries: %w", err)
-	}
-	defer rows.Close()
-
-	entries := make([]PlantJournalEntry, 0)
-	for rows.Next() {
-		var e PlantJournalEntry
-		err := rows.Scan(&e.ID, &e.PlantID, &e.JournalEntryType, &e.Notes,
-			&e.EntryCreatedAt, &e.EntryUpdatedAt, &e.WateringDate)
-		if err != nil {
-			return nil, fmt.Errorf("scan journal entry: %w", err)
-		}
-		entries = append(entries, e)
-	}
-	return entries, nil
-}
-
-func (s *Store) GetWateringEntry(plantID int64, date string) (*PlantJournalEntry, error) {
+func (s *Store) GetEvent(eventID int64) (*PlantEvent, error) {
 	row := s.db.QueryRow(`
-		select id, plant_id, journal_entry_type, notes, entry_created_at, entry_updated_at, watering_date
-		from plant_journal_entries
-		where plant_id = ? and journal_entry_type = 'watering' and watering_date = ?
-	`, plantID, date)
+		select id, plant_id, event_type, event_date, notes, metadata, created_at, user_id
+		from plant_events
+		where id = ?
+	`, eventID)
 
-	var e PlantJournalEntry
-	err := row.Scan(&e.ID, &e.PlantID, &e.JournalEntryType, &e.Notes,
-		&e.EntryCreatedAt, &e.EntryUpdatedAt, &e.WateringDate)
+	var e PlantEvent
+	var metadataStr string
+	err := row.Scan(&e.ID, &e.PlantID, &e.EventType, &e.EventDate, &e.Notes,
+		&metadataStr, &e.CreatedAt, &e.UserID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("get watering entry: %w", err)
+		return nil, fmt.Errorf("get event: %w", err)
 	}
+	e.Metadata = json.RawMessage(metadataStr)
 	return &e, nil
 }
 
-func (s *Store) GetWateringHistoryByDateRange(plantIDs []int64, startDate, endDate string) ([]PlantJournalEntry, error) {
-	query := `select id, plant_id, journal_entry_type, notes, entry_created_at, entry_updated_at, watering_date
-		from plant_journal_entries
+func (s *Store) DeleteEvent(id int64) error {
+	_, err := s.db.Exec("delete from plant_events where id = ?", id)
+	if err != nil {
+		return fmt.Errorf("delete event: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetEvents(plantID int64) ([]PlantEvent, error) {
+	rows, err := s.db.Query(`
+		select id, plant_id, event_type, event_date, notes, metadata, created_at, user_id
+		from plant_events
+		where plant_id = ?
+		order by event_date desc, id desc
+	`, plantID)
+	if err != nil {
+		return nil, fmt.Errorf("get events: %w", err)
+	}
+	defer rows.Close()
+
+	events := make([]PlantEvent, 0)
+	for rows.Next() {
+		var e PlantEvent
+		var metadataStr string
+		err := rows.Scan(&e.ID, &e.PlantID, &e.EventType, &e.EventDate, &e.Notes,
+			&metadataStr, &e.CreatedAt, &e.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("scan event: %w", err)
+		}
+		e.Metadata = json.RawMessage(metadataStr)
+		events = append(events, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+
+	// batch load images
+	s.loadEventImages(events)
+
+	return events, nil
+}
+
+func (s *Store) loadEventImages(events []PlantEvent) {
+	if len(events) == 0 {
+		return
+	}
+	ids := make([]int64, len(events))
+	idIndex := make(map[int64]int, len(events))
+	for i, e := range events {
+		ids[i] = e.ID
+		idIndex[e.ID] = i
+	}
+
+	rows, err := s.db.Query(`
+		select plant_event_id, url from plant_event_images
+		where plant_event_id in (`+placeholders(len(ids))+`)
+		order by plant_event_id asc, id asc
+	`, int64sToAny(ids)...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var eventID int64
+		var url string
+		if err := rows.Scan(&eventID, &url); err != nil {
+			continue
+		}
+		if idx, ok := idIndex[eventID]; ok {
+			events[idx].Images = append(events[idx].Images, url)
+		}
+	}
+}
+
+func (s *Store) GetEventsByDateRange(plantIDs []int64, start, end string, eventType *string) ([]PlantEvent, error) {
+	query := `select id, plant_id, event_type, event_date, notes, metadata, created_at, user_id
+		from plant_events
 		where plant_id in (` + placeholders(len(plantIDs)) + `)
-			and journal_entry_type = 'watering'
-			and watering_date >= ?
-			and watering_date <= ?
-		order by plant_id, entry_created_at`
-
-	log.Printf("start and end dates: %s - %s\n", startDate, endDate)
-	log.Printf("Query: %s\n", query)
-
+			and event_date >= ? and event_date <= ?`
 	args := make([]any, 0, len(plantIDs)+2)
 	for _, id := range plantIDs {
 		args = append(args, id)
 	}
-	args = append(args, startDate, endDate)
+	args = append(args, start, end)
+
+	if eventType != nil {
+		query += ` and event_type = ?`
+		args = append(args, *eventType)
+	}
+	query += ` order by plant_id, event_date desc`
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("get watering history: %w", err)
+		return nil, fmt.Errorf("get events by date range: %w", err)
 	}
 	defer rows.Close()
 
-	entries := make([]PlantJournalEntry, 0)
+	events := make([]PlantEvent, 0)
 	for rows.Next() {
-		var e PlantJournalEntry
-
-		err := rows.Scan(&e.ID, &e.PlantID, &e.JournalEntryType, &e.Notes,
-			&e.EntryCreatedAt, &e.EntryUpdatedAt, &e.WateringDate)
-
+		var e PlantEvent
+		var metadataStr string
+		err := rows.Scan(&e.ID, &e.PlantID, &e.EventType, &e.EventDate, &e.Notes,
+			&metadataStr, &e.CreatedAt, &e.UserID)
 		if err != nil {
-			return nil, fmt.Errorf("scan entry: %w", err)
+			return nil, fmt.Errorf("scan event: %w", err)
 		}
-
-		entries = append(entries, e)
+		e.Metadata = json.RawMessage(metadataStr)
+		events = append(events, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
 	}
 
-	log.Printf("entries: %v\n", entries)
-
-	return entries, nil
+	return events, nil
 }
 
-func (s *Store) GetLastWateredDates(plantIDs []int64) (map[int64]*string, error) {
-	query := `select p.id, max(j.entry_created_at) as last_watered
+func (s *Store) GetLastEventDates(plantIDs []int64, eventType *string) (map[int64]*string, error) {
+	query := `select p.id, max(e.event_date) as last_date
 		from plants p
-		left join plant_journal_entries j on j.plant_id = p.id
-			and j.journal_entry_type = 'watering'
-		where p.id in (` + placeholders(len(plantIDs)) + `)
-		group by p.id`
+		left join plant_events e on e.plant_id = p.id`
+	args := make([]any, 0, len(plantIDs)+1)
+	args = append(args, int64sToAny(plantIDs)...)
 
-	args := make([]any, len(plantIDs))
-	for i, id := range plantIDs {
-		args[i] = id
+	if eventType != nil {
+		query += ` and e.event_type = ?`
+		args = append(args, *eventType)
 	}
 
-	rows, err := s.db.Query(query, args...)
+	query += ` where p.id in (` + placeholders(len(plantIDs)) + `)
+		group by p.id`
+
+	rows, err := s.db.Query(query, int64sToAny(plantIDs)...)
 	if err != nil {
-		return nil, fmt.Errorf("get last watered dates: %w", err)
+		return nil, fmt.Errorf("get last event dates: %w", err)
 	}
 	defer rows.Close()
 
 	result := make(map[int64]*string)
 	for rows.Next() {
 		var plantID int64
-		var lastWatered sql.NullString
-		if err := rows.Scan(&plantID, &lastWatered); err != nil {
-			return nil, fmt.Errorf("scan last watered: %w", err)
+		var lastDate sql.NullString
+		if err := rows.Scan(&plantID, &lastDate); err != nil {
+			return nil, fmt.Errorf("scan last event date: %w", err)
 		}
-		if lastWatered.Valid {
-			result[plantID] = &lastWatered.String
+		if lastDate.Valid {
+			result[plantID] = &lastDate.String
 		} else {
 			result[plantID] = nil
 		}
 	}
 	return result, nil
+}
+
+func (s *Store) GetCalendarEvents(plantID int64, start, end string) ([]CalendarEntry, error) {
+	rows, err := s.db.Query(`
+		select id, event_type, event_date
+		from plant_events
+		where plant_id = ? and event_date >= ? and event_date <= ?
+		order by event_date desc
+	`, plantID, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("get calendar events: %w", err)
+	}
+	defer rows.Close()
+
+	entries := make([]CalendarEntry, 0)
+	for rows.Next() {
+		var entry CalendarEntry
+		var id int64
+		if err := rows.Scan(&id, &entry.EventType, &entry.Date); err != nil {
+			return nil, fmt.Errorf("scan calendar entry: %w", err)
+		}
+		entry.ID = fmt.Sprintf("%d", id)
+		entries = append(entries, entry)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+	return entries, nil
 }
 
 func placeholders(n int) string {

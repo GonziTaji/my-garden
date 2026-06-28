@@ -1,13 +1,13 @@
-import { useQuickWater, type PlantCalendarEntry } from "@/api/watering"
+import { type PlantCalendarEntry } from "@/api/watering"
 import { usePlants } from '@/api/plants'
-import { plantJournalEntryType } from "@/domain/plants/plant-journal"
+import { useCreateEvent, useDeleteEvent, usePlantEvent } from "@/api/events"
+import { plantEventType } from "@/domain/plants/plant-event"
 import useDialog from "@/hooks/use-dialog"
 import DateUtils from "@/utils/dates"
 import { cn } from "@sglara/cn"
 import { useRef, useState } from "react"
 import { Link } from '@/router/components/Link'
 import PlantCalendar, { type SelectedDay } from './PlantCalendar'
-import { useJournalEntry } from "@/api/journal"
 
 export default function WateringHistoryGrid() {
   const { data: plants, isLoading: isLoadingPlants } = usePlants()
@@ -18,8 +18,8 @@ export default function WateringHistoryGrid() {
     events: []
   })
 
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
-  const { data: selectedEntry, isLoading: isLoadingJE } = useJournalEntry(selectedEntryId)
+  const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
+  const { data: selectedEntry, isLoading: isLoadingJE } = usePlantEvent(selectedDay.plantId, selectedEntryId ?? 0)
 
   const daySummaryRef = useRef<HTMLDialogElement>(null)
   const { close: closeDaySummary, show: showDaySummary } = useDialog({ dialogRef: daySummaryRef })
@@ -27,20 +27,34 @@ export default function WateringHistoryGrid() {
   const eventDetailsRef = useRef<HTMLDialogElement>(null)
   const { close: closeEventDetails, show: showEventDetails } = useDialog({ dialogRef: eventDetailsRef })
 
-  const quickWater = useQuickWater()
+  const createEvent = useCreateEvent(selectedDay.plantId)
+  const deleteEvent = useDeleteEvent(selectedDay.plantId)
 
   function handleDaySelect(data: SelectedDay) {
+    if (daySummaryRef.current?.open) {
+      closeDaySummary()
+      return;
+    }
+
     setSelectedDay(data)
-    showDaySummary()
+
+    if (!daySummaryRef.current?.open) {
+      showDaySummary()
+    }
   }
 
   function handleQuickWatering() {
     const dateStr = DateUtils.toInputValue(selectedDay.date)
-    console.log({ dateStr })
 
-    quickWater.mutate({ plantId: selectedDay.plantId, date: dateStr }, {
-      onSuccess: () => closeDaySummary()
+    createEvent.mutate({
+      event_type: 'watering',
+      event_date: dateStr,
+      notes: '',
     })
+  }
+
+  function handleDeleteEvent(e: PlantCalendarEntry) {
+    deleteEvent.mutate(Number(e.id))
   }
 
   if (isLoadingPlants) return <>Cargando...</>
@@ -58,7 +72,7 @@ export default function WateringHistoryGrid() {
 
   function handleCalendarEntrySelect(entry: PlantCalendarEntry) {
     showEventDetails()
-    setSelectedEntryId(entry.id)
+    setSelectedEntryId(Number(entry.id))
   }
 
   return (
@@ -80,17 +94,18 @@ export default function WateringHistoryGrid() {
         ))}
       </div>
 
-      <dialog className={cn(
-        "rounded-t-4xl h-2/3 min-w-screen lg:max-w-xl",
-
-        "transition-all transition-discrete duration-500",
-        "top-full open:top-2/3 starting:open:top-full",
-
-        "backdrop:transition-opacity backdrop:duration-500",
-        "backdrop:opacity-0 open:backdrop:opacity-100 starting:open:backdrop:opacity-0",
-      )}
+      <dialog
         ref={daySummaryRef}
         closedby="any"
+        className={cn(
+          "rounded-t-4xl h-2/3 min-w-screen lg:max-w-xl",
+
+          "transition-all transition-discrete duration-500",
+          "top-full starting:top-full starting:open:top-full open:top-2/3",
+
+          "backdrop:transition-opacity backdrop:duration-500",
+          "backdrop:opacity-0 starting:open:backdrop:opacity-0 open:backdrop:opacity-100",
+        )}
       >
         <div className="grid mx-4 mt-4">
           <span className="text-center">{
@@ -101,30 +116,38 @@ export default function WateringHistoryGrid() {
             }).format(selectedDay.date)
           }</span>
 
-
           {selectedDay.events.map((e) => (
             <button key={e.id} onClick={() => handleCalendarEntrySelect(e)}>
-              {plantJournalEntryType.meta[e.eventType].label}
+              {plantEventType.meta[e.eventType].label}
             </button>
           ))}
 
           {!selectedDay.isWatered && (
-            <button type="button" onClick={handleQuickWatering} disabled={quickWater.isPending}>riego rapido</button>
+            <button
+              type="button"
+              onClick={handleQuickWatering}
+              disabled={createEvent.isPending || deleteEvent.isPending}
+            >
+              riego rapido
+            </button>
           )}
 
-          <button type="button" onClick={closeDaySummary} >Cerrar</button>
+          <button type="button" onClick={closeDaySummary}>Cerrar</button>
         </div>
       </dialog>
 
       <dialog
         ref={eventDetailsRef}
-        closedby="closerequest"
+        closedby="any"
         className={cn(
-          "rounded-4xl h-2/3 mx-4",
-
-          "transition-all transition-discrete duration-500",
-          "translate-x-full starting:open:translate-x-full open:translate-0",
-
+          "w-11/12 h-11/12 rounded-4xl m-auto",
+          // transitions
+          "transition-[transform_opacity] transition-discrete duration-500",
+          // translate
+          "translate-x-full starting:translate-x-full open:starting:translate-x-full open:translate-0",
+          // opacity
+          "opacity-0 starting:opacity-0 open:starting:opacity-0 open:opacity-100",
+          // backdrop opacity
           "backdrop:transition-opacity backdrop:duration-500",
           "backdrop:opacity-0 open:backdrop:opacity-100 starting:open:backdrop:opacity-0",
         )}
@@ -138,4 +161,3 @@ export default function WateringHistoryGrid() {
     </div>
   )
 }
-

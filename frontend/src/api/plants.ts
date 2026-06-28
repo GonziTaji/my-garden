@@ -43,7 +43,6 @@ interface CreatePlantInput {
 interface UpdatePlantInput {
   nickname?: string
   source?: string
-  location?: string
   acquired_at?: string
   notes?: string
 }
@@ -75,17 +74,6 @@ interface ApiPlantWithDefinition {
   updated_at: string
 }
 
-
-interface ApiLocationChange {
-  id: number
-  plant_id: number
-  location: string
-  registered_at: string
-  notes: string
-  created_at: string
-}
-
-export interface CreateLocationChangeInput extends Omit<ApiLocationChange, "id" | "created_at"> { }
 
 function toDomain(p: ApiPlantWithDefinition): PlantWithDefinition {
   return {
@@ -154,18 +142,6 @@ export function useUpdatePlant(plantid: ApiPlantDefinitionBrief["id"]) {
     mutationFn: (input: UpdatePlantInput) =>
       api.put<ApiPlantWithDefinition>(`/api/plants/${plantid}`, input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["plants"] })
-    },
-  })
-}
-
-export function useCreateLocationChange() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (input: CreateLocationChangeInput) =>
-      api.post<ApiLocationChange>(`/api/plants/${input.plant_id}/location`, input),
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["plants", vars.plant_id] })
       qc.invalidateQueries({ queryKey: ["plants"] })
     },
   })

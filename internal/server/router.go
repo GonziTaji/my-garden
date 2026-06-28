@@ -135,20 +135,16 @@ func (g *AppRouter) mountApiRoutes() {
 		protected.PUT("/plants/:id", plantHandler.UpdatePlant)
 		protected.DELETE("/plants/:id", plantHandler.DeletePlant)
 
-		protected.POST("/plants/:id/location", plantHandler.CreateLocationChange)
-
 		protected.POST("/plants/:id/images", plantHandler.AddPlantImage)
 		protected.DELETE("/plants/:id/images/:imageId", plantHandler.DeletePlantImage)
 
-		protected.GET("/plants/:id/journal", plantHandler.GetJournalEntries)
-		protected.GET("/plants/:id/journal/calendar/:startdate/:enddate", plantHandler.GetJournalCalendar)
-
-		protected.POST("/plants/:id/watering/:date", plantHandler.WaterPlant)
-		protected.DELETE("/plants/:id/watering/:date", plantHandler.DeleteWatering)
-		protected.POST("/plants/:id/watering/toggle", plantHandler.ToggleWatering)
-		protected.POST("/journal/watering/bulk", plantHandler.BulkWaterPlants)
-		protected.POST("/journal/last-watered", plantHandler.GetLastWateredDates)
-		protected.POST("/journal/watering/range", plantHandler.GetWateringHistoryByDateRange)
+		protected.GET("/plants/:id/events", plantHandler.ListEvents)
+		protected.POST("/plants/:id/events", plantHandler.CreateEvent)
+		protected.GET("/plants/:id/events/:eventId", plantHandler.GetEventHandler)
+		protected.DELETE("/plants/:id/events/:eventId", plantHandler.DeleteEvent)
+		protected.GET("/plants/:id/events/calendar/:start/:end", plantHandler.GetCalendarEvents)
+		protected.POST("/events/range", plantHandler.GetEventsRange)
+		protected.POST("/plants/last-event", plantHandler.GetLastEventDates)
 	}
 }
 

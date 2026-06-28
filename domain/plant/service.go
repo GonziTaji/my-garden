@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -357,40 +356,6 @@ func (s *Service) UploadImage(file *multipart.FileHeader) (*UploadResult, error)
 	return &UploadResult{Filepath: publicPath}, nil
 }
 
-// Location History
-
-type CreateLocationChangeInput struct {
-	PlantID      int64   `json:"plant_id"`
-	Location     string  `json:"location"`
-	RegisteredAt *string `json:"registered_at"`
-	Notes        *string `json:"notes"`
-}
-
-func (s *Service) CreateLocationChange(input CreateLocationChangeInput, userID int64) (*PlantLocationHistoryEntry, error) {
-	entry := &PlantLocationHistoryEntry{
-		PlantID:  input.PlantID,
-		Location: input.Location,
-		UserID:   userID,
-	}
-
-	if input.RegisteredAt != nil {
-		entry.RegisteredAt = *input.RegisteredAt
-	} else {
-		entry.RegisteredAt = time.Now().Format("2006-01-02 15:04:05")
-	}
-
-	if input.Notes != nil {
-		entry.Notes = *input.Notes
-	}
-
-	id, err := s.store.CreatePlantLocationHistory(entry)
-	if err != nil {
-		return nil, fmt.Errorf("create location change: %w", err)
-	}
-	entry.ID = id
-	return entry, nil
-}
-
 // Plants
 
 type CreatePlantInput struct {
@@ -427,9 +392,6 @@ func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithD
 	if input.AcquiredAt != nil {
 		plant.AcquiredAt = NullString{sql.NullString{String: *input.AcquiredAt, Valid: true}}
 	}
-	if input.Location != nil {
-		plant.Location = NullString{sql.NullString{String: *input.Location, Valid: true}}
-	}
 	if input.Notes != nil {
 		plant.Notes = NullString{sql.NullString{String: *input.Notes, Valid: true}}
 	}
@@ -440,21 +402,23 @@ func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithD
 	}
 
 	if input.Location != nil && *input.Location != "" {
-		regAt := ""
+		eventDate := ""
 		if input.AcquiredAt != nil {
-			regAt = *input.AcquiredAt
+			eventDate = *input.AcquiredAt
 		} else {
-			regAt = time.Now().Format("2006-01-02 15:04:05")
+			eventDate = time.Now().Format("2006-01-02")
 		}
-		_, err = s.store.CreatePlantLocationHistory(&PlantLocationHistoryEntry{
-			PlantID:      id,
-			Location:     *input.Location,
-			RegisteredAt: regAt,
-			Notes:        "Initial location",
-			UserID:       userID,
+		meta, _ := json.Marshal(LocationChangeMetadata{Location: *input.Location})
+		_, err = s.store.CreateEvent(&PlantEvent{
+			PlantID:   id,
+			EventType: EventTypeLocationChange,
+			EventDate: eventDate,
+			Notes:     "Initial location",
+			Metadata:  meta,
+			UserID:    userID,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("create initial location history: %w", err)
+			return nil, fmt.Errorf("create initial location event: %w", err)
 		}
 	}
 
@@ -527,159 +491,111 @@ func (s *Service) DeletePlant(id int64, userID int64) error {
 	return s.store.DeletePlant(id, userID)
 }
 
-// Journal / Watering
+// Events
 
-type WateringToggleResult struct {
-	Watered bool `json:"watered"`
+type CreateEventInput struct {
+	EventType string          `json:"event_type"`
+	EventDate string          `json:"event_date"`
+	Notes     *string         `json:"notes"`
+	Metadata  json.RawMessage `json:"metadata"`
 }
 
-func (s *Service) ToggleWatering(plantID int64, date string, userID int64) (*WateringToggleResult, error) {
-	existing, err := s.store.GetWateringEntry(plantID, date)
-	if err != nil {
-		return nil, err
-	}
-
-	if existing != nil {
-		if err := s.store.DeleteJournalEntry(existing.ID); err != nil {
-			return nil, err
-		}
-		return &WateringToggleResult{Watered: false}, nil
-	}
-
-	_, err = s.store.CreateJournalEntry(&PlantJournalEntry{
-		PlantID:          plantID,
-		JournalEntryType: JournalEntryTypeWatering,
-		WateringDate:     date,
-		UserID:           userID,
-	})
-	if err != nil {
-		if isUniqueConstraintErr(err) {
-			return &WateringToggleResult{Watered: true}, nil
-		}
-		return nil, err
-	}
-	return &WateringToggleResult{Watered: true}, nil
-}
-
-func (s *Service) WaterPlant(plantID int64, date string, userID int64) (*PlantJournalEntry, error) {
-	if date == "" {
-		return nil, fmt.Errorf("No valid date: %v", date)
-	}
-
-	existing, err := s.store.GetWateringEntry(plantID, date)
-	if err != nil {
-		return nil, err
-	}
-
-	if existing != nil {
-		if err := s.store.DeleteJournalEntry(existing.ID); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}
-
-	_, err = s.store.CreateJournalEntry(&PlantJournalEntry{
-		PlantID:          plantID,
-		JournalEntryType: JournalEntryTypeWatering,
-		WateringDate:     date,
-		UserID:           userID,
-	})
-	if err != nil {
-		if isUniqueConstraintErr(err) {
-			existing, err := s.store.GetWateringEntry(plantID, date)
-			if err != nil {
-				return nil, err
-			}
-			if existing != nil {
-				if err := s.store.DeleteJournalEntry(existing.ID); err != nil {
-					return nil, err
-				}
-			}
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return s.store.GetWateringEntry(plantID, date)
-}
-
-type BulkWaterInput struct {
-	PlantIDs []int64 `json:"plant_ids"`
-}
-
-func (s *Service) BulkWaterPlants(input BulkWaterInput, userID int64) error {
-	today := time.Now().Format("2006-01-02")
-	for _, plantID := range input.PlantIDs {
-		existing, err := s.store.GetWateringEntry(plantID, today)
-		if err != nil {
-			return err
-		}
-		if existing != nil {
-			continue
-		}
-
-		_, err = s.store.CreateJournalEntry(&PlantJournalEntry{
-			PlantID:          plantID,
-			JournalEntryType: JournalEntryTypeWatering,
-			WateringDate:     today,
-			UserID:           userID,
-		})
-		if err != nil {
-			if isUniqueConstraintErr(err) {
-				continue
-			}
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Service) DeleteWatering(plantID int64, date string) error {
-	existing, err := s.store.GetWateringEntry(plantID, date)
-	if err != nil {
-		return err
-	}
-	if existing == nil {
-		return nil
-	}
-	return s.store.DeleteJournalEntry(existing.ID)
-}
-
-type PlantCalendarInput struct {
-	userId    int64
-	plantId   int64
-	startDate string
-	endDate   string
-}
-
-func (s *Service) GetPlantCalendar(input PlantCalendarInput) (*[]PlantCalendarEntry, error) {
-	entries, err := s.store.GetPlantCalendar(input.plantId, input.userId, input.startDate, input.endDate)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: format or something?
-	log.Printf("%v\n", entries)
-
-	return entries, nil
-}
-
-type WateringRangeInput struct {
+type EventsRangeInput struct {
 	PlantIDs  []int64 `json:"plant_ids"`
 	StartDate string  `json:"start_date"`
 	EndDate   string  `json:"end_date"`
+	EventType *string `json:"event_type,omitempty"`
 }
 
-func (s *Service) GetWateringHistoryByDateRange(input WateringRangeInput) ([]PlantJournalEntry, error) {
-	return s.store.GetWateringHistoryByDateRange(input.PlantIDs, input.StartDate, input.EndDate)
+func (s *Service) CreateEvent(input CreateEventInput, plantID int64, userID int64) (*PlantEvent, error) {
+	if _, err := time.Parse("2006-01-02", input.EventDate); err != nil {
+		return nil, &ValidationError{Field: "event_date", Message: "La fecha debe tener formato YYYY-MM-DD"}
+	}
+
+	eventType := EventType(input.EventType)
+	switch eventType {
+	case EventTypeWatering, EventTypeFertilizing, EventTypeRepotting, EventTypeNote, EventTypeLocationChange:
+	default:
+		return nil, &ValidationError{Field: "event_type", Message: "Tipo de evento invalido"}
+	}
+
+	if err := validateEventMetadata(eventType, input.Metadata); err != nil {
+		return nil, err
+	}
+
+	notes := ""
+	if input.Notes != nil {
+		notes = *input.Notes
+	}
+
+	metadata := input.Metadata
+	if metadata == nil {
+		metadata = json.RawMessage("{}")
+	}
+
+	id, err := s.store.CreateEvent(&PlantEvent{
+		PlantID:   plantID,
+		EventType: eventType,
+		EventDate: input.EventDate,
+		Notes:     notes,
+		Metadata:  metadata,
+		UserID:    userID,
+	})
+	if err != nil {
+		if isUniqueConstraintErr(err) {
+			return nil, &UniqueConstraintError{
+				Field:   "event_date",
+				Message: "Ya existe un registro de riego para esta fecha",
+			}
+		}
+		return nil, fmt.Errorf("create event: %w", err)
+	}
+
+	return s.store.GetEvent(id)
 }
 
-func (s *Service) GetLastWateredDates(plantIDs []int64) (map[int64]*string, error) {
-	return s.store.GetLastWateredDates(plantIDs)
+func (s *Service) GetEvent(id int64, userID int64) (*PlantEvent, error) {
+	event, err := s.store.GetEvent(id)
+	if err != nil {
+		return nil, err
+	}
+	if event == nil {
+		return nil, &ValidationError{Field: "id", Message: "Evento no encontrado"}
+	}
+	if event.UserID != userID {
+		return nil, &ValidationError{Field: "id", Message: "No tienes permiso para ver este evento"}
+	}
+	return event, nil
 }
 
-func (s *Service) GetJournalEntries(plantID int64) ([]PlantJournalEntry, error) {
-	return s.store.GetJournalEntries(plantID)
+func (s *Service) ListEvents(plantID int64, userID int64) ([]PlantEvent, error) {
+	return s.store.GetEvents(plantID)
+}
+
+func (s *Service) DeleteEvent(id int64, userID int64) error {
+	event, err := s.store.GetEvent(id)
+	if err != nil {
+		return err
+	}
+	if event == nil {
+		return nil
+	}
+	if event.UserID != userID {
+		return &ValidationError{Field: "id", Message: "No tienes permiso para eliminar este evento"}
+	}
+	return s.store.DeleteEvent(id)
+}
+
+func (s *Service) GetEventsRange(input EventsRangeInput, userID int64) ([]PlantEvent, error) {
+	return s.store.GetEventsByDateRange(input.PlantIDs, input.StartDate, input.EndDate, input.EventType)
+}
+
+func (s *Service) GetLastEventDates(plantIDs []int64, eventType *string) (map[int64]*string, error) {
+	return s.store.GetLastEventDates(plantIDs, eventType)
+}
+
+func (s *Service) GetCalendarEvents(plantID int64, start, end string, userID int64) ([]CalendarEntry, error) {
+	return s.store.GetCalendarEvents(plantID, start, end)
 }
 
 // Internal helpers
@@ -771,6 +687,31 @@ var validPlantCategories = []string{
 
 func isUniqueConstraintErr(err error) bool {
 	return strings.Contains(err.Error(), "UNIQUE constraint failed")
+}
+
+func validateEventMetadata(eventType EventType, raw json.RawMessage) error {
+	if raw == nil || string(raw) == "" || string(raw) == "null" {
+		return nil
+	}
+	switch eventType {
+	case EventTypeWatering:
+		var meta WateringMetadata
+		if err := json.Unmarshal(raw, &meta); err != nil {
+			return &ValidationError{Field: "metadata", Message: "Metadata de riego invalida"}
+		}
+		if meta.Type != "" && meta.Type != "rocio" && meta.Type != "riego" {
+			return &ValidationError{Field: "metadata.type", Message: "Tipo de riego invalido (usar 'rocio' o 'riego')"}
+		}
+	case EventTypeLocationChange:
+		var meta LocationChangeMetadata
+		if err := json.Unmarshal(raw, &meta); err != nil {
+			return &ValidationError{Field: "metadata", Message: "Metadata de cambio de ubicacion invalida"}
+		}
+		if meta.Location == "" {
+			return &ValidationError{Field: "metadata.location", Message: "La ubicacion es requerida"}
+		}
+	}
+	return nil
 }
 
 func cleanupOrphanedFiles(store StoreInterface, oldFilepaths []string) {

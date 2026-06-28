@@ -66,30 +66,6 @@ func (h *Handler) GetPlantDefinition(c *gin.Context) {
 	c.JSON(http.StatusOK, def)
 }
 
-func (h *Handler) GetJournalCalendar(c *gin.Context) {
-	plantId, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
-		return
-	}
-
-	var input PlantCalendarInput
-
-	input.plantId = plantId
-	input.userId = userIDFromContext(c)
-
-	input.startDate = c.Param("startdate")
-	input.endDate = c.Param("enddate")
-
-	calendar, err := h.service.GetPlantCalendar(input)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, calendar)
-}
-
 func (h *Handler) CreatePlantDefinition(c *gin.Context) {
 	var input UpsertDefinitionInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -413,158 +389,152 @@ func (h *Handler) DeletePlant(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
-// Location History
+// Events
 
-func (h *Handler) CreateLocationChange(c *gin.Context) {
-	var input CreateLocationChangeInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
-		return
-	}
-
-	userID := userIDFromContext(c)
-	entry, err := h.service.CreateLocationChange(input, userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar cambio de ubicacion"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, entry)
-}
-
-// Journal / Watering
-
-func (h *Handler) GetJournalEntries(c *gin.Context) {
+func (h *Handler) ListEvents(c *gin.Context) {
 	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
 		return
 	}
 
-	entries, err := h.service.GetJournalEntries(plantID)
+	userID := userIDFromContext(c)
+	events, err := h.service.ListEvents(plantID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener historial"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar eventos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, events)
+}
+
+func (h *Handler) CreateEvent(c *gin.Context) {
+	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
+		return
+	}
+
+	var input CreateEventInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
+		return
+	}
+
+	userID := userIDFromContext(c)
+	event, err := h.service.CreateEvent(input, plantID, userID)
+	if err != nil {
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
+			return
+		}
+		var uniqueErr *UniqueConstraintError
+		if errors.As(err, &uniqueErr) {
+			c.JSON(http.StatusConflict, gin.H{"error": uniqueErr.Message, "field": uniqueErr.Field})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear evento"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, event)
+}
+
+func (h *Handler) GetEventHandler(c *gin.Context) {
+	eventID, err := strconv.ParseInt(c.Param("eventId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento invalido"})
+		return
+	}
+
+	userID := userIDFromContext(c)
+	event, err := h.service.GetEvent(eventID, userID)
+	if err != nil {
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener evento"})
+		return
+	}
+
+	c.JSON(http.StatusOK, event)
+}
+
+func (h *Handler) DeleteEvent(c *gin.Context) {
+	eventID, err := strconv.ParseInt(c.Param("eventId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento invalido"})
+		return
+	}
+
+	userID := userIDFromContext(c)
+	if err := h.service.DeleteEvent(eventID, userID); err != nil {
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar evento"})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}
+
+func (h *Handler) GetCalendarEvents(c *gin.Context) {
+	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
+		return
+	}
+
+	start := c.Param("start")
+	end := c.Param("end")
+	userID := userIDFromContext(c)
+	entries, err := h.service.GetCalendarEvents(plantID, start, end, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener calendario"})
 		return
 	}
 
 	c.JSON(http.StatusOK, entries)
 }
 
-func (h *Handler) WaterPlant(c *gin.Context) {
-	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
-		return
-	}
-
-	date := c.Param("date")
-	if date == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Fecha requerida"})
+func (h *Handler) GetEventsRange(c *gin.Context) {
+	var input EventsRangeInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
 		return
 	}
 
 	userID := userIDFromContext(c)
-	entry, err := h.service.WaterPlant(plantID, date, userID)
+	events, err := h.service.GetEventsRange(input, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar riego"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener eventos"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, entry)
+	c.JSON(http.StatusOK, events)
 }
 
-func (h *Handler) DeleteWatering(c *gin.Context) {
-	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
-		return
-	}
-
-	date := c.Param("date")
-	if date == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Fecha requerida"})
-		return
-	}
-
-	if err := h.service.DeleteWatering(plantID, date); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar riego"})
-		return
-	}
-
-	c.JSON(http.StatusNoContent, nil)
-}
-
-func (h *Handler) ToggleWatering(c *gin.Context) {
-	plantID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de planta invalido"})
-		return
-	}
-
+func (h *Handler) GetLastEventDates(c *gin.Context) {
 	var input struct {
-		Date string `json:"date"`
+		PlantIDs  []int64  `json:"plant_ids"`
+		EventType *string `json:"event_type,omitempty"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
 		return
 	}
 
-	userID := userIDFromContext(c)
-	result, err := h.service.ToggleWatering(plantID, input.Date, userID)
+	dates, err := h.service.GetLastEventDates(input.PlantIDs, input.EventType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al cambiar riego"})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
-}
-
-func (h *Handler) BulkWaterPlants(c *gin.Context) {
-	var input BulkWaterInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
-		return
-	}
-
-	userID := userIDFromContext(c)
-	if err := h.service.BulkWaterPlants(input, userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al regar plantas"})
-		return
-	}
-
-	c.JSON(http.StatusNoContent, nil)
-}
-
-func (h *Handler) GetLastWateredDates(c *gin.Context) {
-	var input struct {
-		PlantIDs []int64 `json:"plant_ids"`
-	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
-		return
-	}
-
-	dates, err := h.service.GetLastWateredDates(input.PlantIDs)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener ultimos riegos"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener ultimas fechas"})
 		return
 	}
 
 	c.JSON(http.StatusOK, dates)
-}
-
-func (h *Handler) GetWateringHistoryByDateRange(c *gin.Context) {
-	var input WateringRangeInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
-		return
-	}
-
-	entries, err := h.service.GetWateringHistoryByDateRange(input)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener historial de riegos"})
-		return
-	}
-
-	c.JSON(http.StatusOK, entries)
 }

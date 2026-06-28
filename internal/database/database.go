@@ -140,16 +140,149 @@ func ApplyMigrations() error {
 		}
 	}
 
-	// backfill plants.location into plant_location_history
-	_, err = open_db.Exec(`
-		insert or ignore into plant_location_history (plant_id, location, registered_at, notes)
-		select id, location, acquired_at, 'Migrated from plants.location'
-		from plants
-		where location is not null and location != ''
-	`)
-	if err != nil {
-		return fmt.Errorf("backfill plant locations: %w", err)
+	// backfill plants.location into plant_location_history (only if location column exists)
+	var hasLocationCol bool
+	_ = open_db.QueryRow("select count(*) from pragma_table_info('plants') where name = 'location'").Scan(&hasLocationCol)
+	if hasLocationCol {
+		_, err = open_db.Exec(`
+			insert or ignore into plant_location_history (plant_id, location, registered_at, notes)
+			select id, location, acquired_at, 'Migrated from plants.location'
+			from plants
+			where location is not null and location != ''
+		`)
+		if err != nil {
+			return fmt.Errorf("backfill plant locations: %w", err)
+		}
+	}
+
+	// event unification: migrate journal + location_history into plant_events
+	if err := migrateEvents(open_db); err != nil {
+		return fmt.Errorf("event unification: %w", err)
 	}
 
 	return nil
+}
+
+func migrateEvents(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// only run if old tables still exist and have data
+	var count int
+	err = tx.QueryRow("select count(*) from plant_journal_entries").Scan(&count)
+	if err != nil || count == 0 {
+		return nil
+	}
+
+	// 1. migrate journal entries — keep old_id → new_id mapping for images
+	type journalRow struct {
+		oldID    int64
+		plantID  int64
+		entryType string
+		notes    string
+		date     string
+		created  string
+		userID   int64
+	}
+	rows, err := tx.Query(`
+		select id, plant_id, journal_entry_type,
+			coalesce(notes, ''),
+			coalesce(watering_date, date(entry_created_at)),
+			entry_created_at,
+			coalesce(user_id, 1)
+		from plant_journal_entries
+		order by id
+	`)
+	if err != nil {
+		return fmt.Errorf("query journal entries: %w", err)
+	}
+	var journalRows []journalRow
+	for rows.Next() {
+		var r journalRow
+		if err := rows.Scan(&r.oldID, &r.plantID, &r.entryType, &r.notes, &r.date, &r.created, &r.userID); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan journal entry: %w", err)
+		}
+		journalRows = append(journalRows, r)
+	}
+	rows.Close()
+
+	type eventMapping struct{ oldID, newID int64 }
+	var mappings []eventMapping
+
+	for _, r := range journalRows {
+		res, err := tx.Exec(`
+			insert into plant_events (plant_id, event_type, event_date, notes, metadata, created_at, user_id)
+			values (?, ?, ?, ?, '{}', ?, ?)
+		`, r.plantID, r.entryType, r.date, r.notes, r.created, r.userID)
+		if err != nil {
+			return fmt.Errorf("insert event: %w", err)
+		}
+		newID, err := res.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("last insert id: %w", err)
+		}
+		mappings = append(mappings, eventMapping{oldID: r.oldID, newID: newID})
+	}
+
+	// 2. migrate images using the collected mapping
+	stmt, err := tx.Prepare("insert into plant_event_images (plant_event_id, url) values (?, ?)")
+	if err != nil {
+		return fmt.Errorf("prepare image insert: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, m := range mappings {
+		imgRows, err := tx.Query("select url from plant_journal_entry_images where plant_journal_entry_id = ?", m.oldID)
+		if err != nil {
+			return fmt.Errorf("query images for entry %d: %w", m.oldID, err)
+		}
+		for imgRows.Next() {
+			var url string
+			if err := imgRows.Scan(&url); err != nil {
+				imgRows.Close()
+				return fmt.Errorf("scan image url: %w", err)
+			}
+			if _, err := stmt.Exec(m.newID, url); err != nil {
+				imgRows.Close()
+				return fmt.Errorf("insert image: %w", err)
+			}
+		}
+		imgRows.Close()
+	}
+	stmt.Close()
+
+	// 3. migrate location history
+	_, err = tx.Exec(`
+		insert into plant_events (plant_id, event_type, event_date, notes, metadata, created_at, user_id)
+		select plant_id, 'location_change',
+			registered_at,
+			notes,
+			json_object('location', location),
+			created_at,
+			coalesce(user_id, 1)
+		from plant_location_history
+	`)
+	if err != nil {
+		return fmt.Errorf("migrate location history: %w", err)
+	}
+
+	// 4. drop old tables
+	for _, table := range []string{"plant_journal_entry_images", "plant_journal_entries", "plant_location_history"} {
+		_, err = tx.Exec("drop table if exists " + table)
+		if err != nil {
+			return fmt.Errorf("drop table %s: %w", table, err)
+		}
+	}
+
+	// 5. drop location column from plants
+	_, err = tx.Exec("alter table plants drop column location")
+	if err != nil {
+		return fmt.Errorf("drop location column: %w", err)
+	}
+
+	return tx.Commit()
 }

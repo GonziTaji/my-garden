@@ -78,13 +78,14 @@ const (
 	PetToxicityHighlyToxic  PetToxicity = "highly_toxic"
 )
 
-type JournalEntryType string
+type EventType string
 
 const (
-	JournalEntryTypeWatering    JournalEntryType = "watering"
-	JournalEntryTypeFertilizing JournalEntryType = "fertilizing"
-	JournalEntryTypeRepotting   JournalEntryType = "repotting"
-	JournalEntryTypeNote        JournalEntryType = "note"
+	EventTypeWatering      EventType = "watering"
+	EventTypeFertilizing   EventType = "fertilizing"
+	EventTypeRepotting     EventType = "repotting"
+	EventTypeNote          EventType = "note"
+	EventTypeLocationChange EventType = "location_change"
 )
 
 // Entities
@@ -155,37 +156,37 @@ type PlantWithDefinition struct {
 	UpdatedAt       string               `json:"updated_at"`
 }
 
-type PlantLocationHistoryEntry struct {
+type WateringMetadata struct {
+	Amount string `json:"amount,omitempty"`
+	Type   string `json:"type,omitempty"`
+}
+
+type LocationChangeMetadata struct {
+	Location string `json:"location"`
+}
+
+type PlantEvent struct {
+	ID        int64           `json:"id"`
+	PlantID   int64           `json:"plant_id"`
+	EventType EventType       `json:"event_type"`
+	EventDate string          `json:"event_date"`
+	Notes     string          `json:"notes"`
+	Metadata  json.RawMessage `json:"metadata"`
+	Images    []string        `json:"images"`
+	CreatedAt string          `json:"created_at"`
+	UserID    int64           `json:"user_id"`
+}
+
+type PlantEventImage struct {
 	ID           int64  `json:"id"`
-	PlantID      int64  `json:"plant_id"`
-	Location     string `json:"location"`
-	RegisteredAt string `json:"registered_at"`
-	Notes        string `json:"notes"`
-	CreatedAt    string `json:"created_at"`
-	UserID       int64  `json:"user_id"`
+	PlantEventID int64  `json:"plant_event_id"`
+	URL          string `json:"url"`
 }
 
-type PlantCalendarEntry struct {
-	Id        string           `json:"id"`
-	Date      string           `json:"date"`
-	EventType JournalEntryType `json:"eventType"`
-}
-
-type PlantJournalEntry struct {
-	ID               int64            `json:"id"`
-	PlantID          int64            `json:"plant_id"`
-	JournalEntryType JournalEntryType `json:"journal_entry_type"`
-	Notes            NullString       `json:"notes"`
-	EntryCreatedAt   string           `json:"entry_created_at"`
-	EntryUpdatedAt   string           `json:"entry_updated_at"`
-	WateringDate     string           `json:"watering_date"`
-	UserID           int64            `json:"user_id"`
-}
-
-type PlantJournalEntryImage struct {
-	ID                  int64  `json:"id"`
-	PlantJournalEntryID int64  `json:"plant_journal_entry_id"`
-	URL                 string `json:"url"`
+type CalendarEntry struct {
+	ID        string    `json:"id"`
+	Date      string    `json:"date"`
+	EventType EventType `json:"eventType"`
 }
 
 // Enum metadata for client consumption
@@ -232,11 +233,12 @@ var PetToxicities = []EnumOption{
 	{"highly_toxic", "Muy tóxico"},
 }
 
-var JournalEntryTypes = []EnumOption{
+var EventTypes = []EnumOption{
 	{"watering", "Watering"},
 	{"fertilizing", "Fertilizing"},
 	{"repotting", "Repotting"},
 	{"note", "Note"},
+	{"location_change", "Location change"},
 }
 
 func AllEnums() map[string][]EnumOption {
@@ -246,6 +248,6 @@ func AllEnums() map[string][]EnumOption {
 		"soil_types":          SoilTypes,
 		"categories":          PlantCategories,
 		"pet_toxicities":      PetToxicities,
-		"journal_entry_types": JournalEntryTypes,
+		"event_types": EventTypes,
 	}
 }

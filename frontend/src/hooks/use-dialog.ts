@@ -1,4 +1,4 @@
-import { useEffect, useId, type RefObject } from "react";
+import { useEffect, useId, useState, type RefObject } from "react";
 
 type CloseHandler = (returnValue: string | null) => void
 
@@ -36,6 +36,7 @@ export default function useDialog({
   onBeforeShow,
 }: UseDialogParams) {
   const id = useId()
+
   if (dialogRef.current && !dialogRef.current?.id) {
     dialogRef.current.id = id
   }
@@ -48,7 +49,8 @@ export default function useDialog({
     if (onClose) {
       registry[dialogRef.current.id] = onClose
     }
-  }, [])
+
+  }, [dialogRef.current])
 
   function show() {
     onBeforeShow && onBeforeShow
