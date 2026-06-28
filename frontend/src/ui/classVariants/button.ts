@@ -10,7 +10,7 @@ export const buttonVariants = cva([
   variants: {
     variant: {
       primary: 'bg-rose-200',
-      secondary: 'bg-olive-200 text-olive-600',
+      secondary: 'disabled:bg-olive-200 disabled:text-olive-600 bg-olive-300 text-olive-900',
       tertiary: 'border-rose-200/40 bg-rose-200/10',
       danger: 'bg-red-400 text-white',
       clean: 'bg-rose-200/10',

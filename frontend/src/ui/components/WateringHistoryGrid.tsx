@@ -31,7 +31,6 @@ export default function WateringHistoryGrid() {
 
   const createEvent = useCreateEvent(selectedDay.plantId)
   const deleteEvent = useDeleteEvent(selectedDay.plantId)
-  console.log({ createEvent })
 
   function handleDaySelect(data: SelectedDay) {
     if (daySummaryRef.current?.open) {
@@ -53,7 +52,7 @@ export default function WateringHistoryGrid() {
       event_type: 'watering',
       event_date: dateStr,
       notes: '',
-    })
+    }, { onSuccess: closeDaySummary })
   }
 
   function handleDeleteEvent() {
@@ -61,7 +60,18 @@ export default function WateringHistoryGrid() {
       return
     }
 
-    deleteEvent.mutate(selectedEntry.id)
+    deleteEvent.mutate(selectedEntry.id, {
+      onSuccess: () => {
+        closeEventDetails()
+        closeDaySummary()
+        setSelectedEntryId(null)
+      }
+    })
+  }
+
+  function handleCalendarEntrySelect(entry: PlantCalendarEntry) {
+    showEventDetails()
+    setSelectedEntryId(Number(entry.id))
   }
 
   if (isLoadingPlants) return <>Cargando...</>
@@ -77,10 +87,6 @@ export default function WateringHistoryGrid() {
     )
   }
 
-  function handleCalendarEntrySelect(entry: PlantCalendarEntry) {
-    showEventDetails()
-    setSelectedEntryId(Number(entry.id))
-  }
 
   return (
     <div className="px-2">
@@ -103,51 +109,77 @@ export default function WateringHistoryGrid() {
 
       <dialog
         ref={daySummaryRef}
-        closedby="any"
+        closedby="closerequest"
         className={cn(
-          "rounded-t-4xl h-2/3 min-w-screen lg:max-w-xl",
+          "rounded-t-4xl h-1/2 min-w-screen lg:max-w-xl overflow-auto",
 
           "transition-all transition-discrete duration-500",
-          "top-full starting:top-full starting:open:top-full open:top-2/3",
+          "top-full starting:top-full starting:open:top-full open:top-1/2",
 
           "backdrop:transition-opacity backdrop:duration-500",
           "backdrop:opacity-0 starting:open:backdrop:opacity-0 open:backdrop:opacity-100",
         )}
       >
-        <div className="grid mx-4 mt-4">
-          <span className="text-center">{
-            Intl.DateTimeFormat('default', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric'
-            }).format(selectedDay.date)
-          }</span>
+        <div className="px-4 flex flex-col gap-2">
+          <div className="flex justify-between items-start align-bottom pt-2">
+            <span className="text-center text-lg pt-4">{
+              Intl.DateTimeFormat('default', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              }).format(selectedDay.date)
+            }</span>
 
-          {selectedDay.events.map((e) => (
-            <button key={e.id} onClick={() => handleCalendarEntrySelect(e)}>
-              {plantEventType.meta[e.eventType].label}
+            <button
+              type="button"
+              onClick={closeDaySummary}
+              className="font-semibold text-xl w-8 align-top"
+            >
+              &times;
             </button>
-          ))}
+          </div>
+
 
           {!selectedDay.isWatered && (
             <button
               type="button"
               onClick={handleQuickWatering}
+              className={buttonVariants({ variant: 'primary' })}
               disabled={createEvent.isPending || deleteEvent.isPending}
             >
               riego rapido
             </button>
           )}
 
-          <button type="button" onClick={closeDaySummary}>Cerrar</button>
+          {selectedDay.events.map((e) => (
+            <button key={e.id} className="py-2 px-4 rounded-md border w-full flex justify-between" onClick={() => handleCalendarEntrySelect(e)}>
+              <span>{plantEventType.meta[e.eventType].label}</span>
+              {' '}
+              <span>&gt;</span>
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={handleQuickWatering}
+            disabled={createEvent.isPending || deleteEvent.isPending}
+            className={buttonVariants({
+              variant: 'primary',
+              size: 'sm',
+              className: 'rounded-full! absolute bottom-0 right-0 m-4 w-12 h-12'
+            })}
+          >
+            +
+          </button>
         </div>
       </dialog>
 
       <dialog
         ref={eventDetailsRef}
-        closedby="any"
+        closedby="closerequest"
         className={cn(
-          "w-11/12 h-11/12 rounded-4xl m-auto",
+          "w-11/12 h-3/4 rounded-4xl m-auto",
           // transitions
           "transition-[transform_opacity] transition-discrete duration-500",
           // translate
@@ -204,6 +236,7 @@ export default function WateringHistoryGrid() {
                   type="button"
                   className={buttonVariants({ variant: 'danger' })}
                   onClick={handleDeleteEvent}
+                  disabled={deleteEvent.isPending}
                 >
                   Elimiar evento
                 </button>

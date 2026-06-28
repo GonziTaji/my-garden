@@ -60,6 +60,9 @@ export function useCreateEvent(plantId: number) {
       api.post<ApiPlantEvent>(`/api/plants/${plantId}/events`, input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["events", plantId] })
+      qc.invalidateQueries({ queryKey: ["events", "calendar", plantId] })
+      qc.invalidateQueries({ queryKey: ["events", "last-dates"] })
+      qc.invalidateQueries({ queryKey: ["events", "range"] })
     },
   })
 }
@@ -71,6 +74,9 @@ export function useDeleteEvent(plantId: number) {
       api.del(`/api/plants/${plantId}/events/${eventId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["events", plantId] })
+      qc.invalidateQueries({ queryKey: ["events", "calendar", plantId] })
+      qc.invalidateQueries({ queryKey: ["events", "last-dates"] })
+      qc.invalidateQueries({ queryKey: ["events", "range"] })
     },
   })
 }

@@ -1,5 +1,6 @@
-import { usePlantCalendar, type PlantCalendarEntry } from "@/api/watering"
+import { useCalendarEvents } from "@/api/events"
 import type { Plant } from "@/domain/plants/plant"
+import type { PlantCalendarEntry } from "@/api/watering"
 import DateUtils from "@/utils/dates"
 import { cn } from "@sglara/cn"
 import { useState, type ChangeEvent, type MouseEvent } from "react"
@@ -37,7 +38,7 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
   endDate.setMonth(monthIndex)
   endDate.setDate(DateUtils.getMonthDays(monthIndex + 1))
 
-  const { data: calendarData, error, isLoading } = usePlantCalendar(
+  const { data: calendarData, error, isLoading } = useCalendarEvents(
     plantId,
     DateUtils.toInputValue(startDate),
     DateUtils.toInputValue(endDate)
