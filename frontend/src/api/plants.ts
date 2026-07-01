@@ -40,13 +40,6 @@ interface CreatePlantInput {
   plant_definition_id?: number
 }
 
-interface UpdatePlantInput {
-  nickname?: string
-  source?: string
-  acquired_at?: string
-  notes?: string
-}
-
 interface ApiPlantImage {
   id: number
   plant_id: number
@@ -136,23 +129,4 @@ export function useCreatePlant() {
   })
 }
 
-export function useUpdatePlant(plantid: ApiPlantDefinitionBrief["id"]) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (input: UpdatePlantInput) =>
-      api.put<ApiPlantWithDefinition>(`/api/plants/${plantid}`, input),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["plants"] })
-    },
-  })
-}
 
-export function useDeletePlant() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: number) => api.del(`/api/plants/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["plants"] })
-    },
-  })
-}

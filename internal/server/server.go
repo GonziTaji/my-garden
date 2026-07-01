@@ -28,17 +28,6 @@ type ServerConfig struct {
 	SMTPFrom       string
 }
 
-func DefaultConfig() ServerConfig {
-	return ServerConfig{
-		Env:            ENV_DEV,
-		ServerAddr:     ":8080",
-		FrontendFolder: "frontend/dist",
-	}
-}
-
-type Server struct {
-}
-
 func StartWebServer(cfg ServerConfig) error {
 	db, err := database.GetDatabase()
 	if err != nil {

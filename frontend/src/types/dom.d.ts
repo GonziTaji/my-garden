@@ -6,4 +6,10 @@ declare module "react" {
     commandfor?: string
     formmethod?: string
   }
+
+  namespace JSX {
+    interface IntrinsicElements {
+      selectedcontent: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+    }
+  }
 }

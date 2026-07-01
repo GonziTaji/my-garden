@@ -25,7 +25,6 @@ type StoreInterface interface {
 	CreatePlantImage(int64, string) (int64, error)
 	GetPlantImages(int64) ([]PlantImage, error)
 	DeletePlantImage(int64) error
-	CountPlantImageReferences(string) (int, error)
 
 	// Events
 	CreateEvent(e *PlantEvent) (int64, error)

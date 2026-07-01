@@ -23,33 +23,6 @@ export type PlantWithDefinition = Plant & {
   definition: PlantDefinition
 }
 
-export type PlantGroup = {
-  plants: PlantWithDefinition[]
-  definition: PlantWithDefinition['definition']
-}
-
-export type PlantsByDefinitionMap = Record<string, PlantGroup>
-
-export function groupPlantsByDefinition(plants: PlantWithDefinition[]): PlantsByDefinitionMap {
-  if (!plants || plants.length === 0) {
-    return {}
-  }
-
-  return plants.reduce((groups, plant) => {
-    const key = String(plant.definition.id)
-
-    if (!groups[key]) {
-      groups[key] = { plants: [plant], definition: plant.definition }
-    } else if (!groups[key].plants) {
-      groups[key].plants = [plant]
-    } else {
-      groups[key].plants.push(plant)
-    }
-
-    return groups
-  }, {} as PlantsByDefinitionMap)
-}
-
 function plantFullText(plant: PlantWithDefinition) {
   return `${plant.nickname}${plant.definition.commonName}${plant.definition.scientificName}`.toLowerCase()
 }

@@ -18,12 +18,6 @@ type ConnectionConfig struct {
 
 var open_db *sql.DB = nil
 
-func DefaultConfig() ConnectionConfig {
-	return ConnectionConfig{
-		DBName: "internal/database/databases/main.db",
-	}
-}
-
 func OpenDatabase(cfg ConnectionConfig) error {
 	if open_db != nil {
 		return fmt.Errorf("Database already open")
@@ -49,16 +43,6 @@ func GetDatabase() (*sql.DB, error) {
 	}
 
 	return open_db, nil
-}
-
-func CloseDatabase() error {
-	if open_db == nil {
-		return nil
-	}
-
-	err := open_db.Close()
-	open_db = nil
-	return err
 }
 
 func ApplyMigrations() error {

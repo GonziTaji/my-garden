@@ -2,6 +2,8 @@ import { usePlants } from "@/api/plants"
 import { fullsearchPlants, type PlantWithDefinition } from "@/domain/plants/plant"
 import { Link } from "@/router/components/Link"
 import { useState, type ChangeEvent } from "react"
+import { buttonVariants } from "../classVariants/button"
+import { useNavigate } from "@/router/provider"
 
 type PlantsColumnsData = [PlantWithDefinition[], PlantWithDefinition[]]
 
@@ -12,6 +14,8 @@ export default function PlantsList({ }: PlantsListProps) {
   const { data: plants, isLoading, error } = usePlants()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDefinitionId, setSelectedDefinitionId] = useState('')
+
+  const navigate = useNavigate()
 
   const plantsColumns: PlantsColumnsData =
     fullsearchPlants(searchTerm, plants || [])
@@ -39,6 +43,10 @@ export default function PlantsList({ }: PlantsListProps) {
 
   function handleDefinitionFilterChange(ev: ChangeEvent<HTMLSelectElement>) {
     setSelectedDefinitionId(ev.currentTarget.value)
+  }
+
+  function handleCreateClick() {
+    navigate('/plants/new')
   }
 
   return (
@@ -76,7 +84,20 @@ export default function PlantsList({ }: PlantsListProps) {
             )}
           </div>
         ))}
-      </nav >
+      </nav>
+
+      <button
+        type="button"
+        onClick={handleCreateClick}
+        // disabled={}
+        className={buttonVariants({
+          variant: 'primary',
+          size: 'sm',
+          className: 'rounded-full! absolute bottom-0 right-0 m-4 w-12 h-12'
+        })}
+      >
+        +
+      </button>
     </div>
   )
 }

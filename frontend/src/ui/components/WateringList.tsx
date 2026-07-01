@@ -91,11 +91,4 @@ export default function WateringList({ }: WateringListProps) {
   )
 }
 
-export function getSelectedPlantIds(formData: FormData): number[] {
-  const plantIdsJson = formData.get('plantIds')?.toString() ?? '[]'
-  try {
-    return JSON.parse(plantIdsJson) as number[]
-  } catch {
-    return []
-  }
-}
+

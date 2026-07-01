@@ -3,9 +3,12 @@ import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
 import { useNavigate } from '@/router/provider'
 import { useCreatePlant } from '@/api/plants'
+import { useDefinitions } from '@/api/definitions'
+import { cn } from '@sglara/cn'
 
 const inputVariants = cva([
-  "border", "border-rose-200 p-2 rounded-lg",
+  "border", "border-rose-200", "outline-rose-300", "rounded-lg",
+  "min-w-0", "w-full", "p-2",
 ], {
   variants: {},
 })
@@ -17,6 +20,7 @@ export default function PlantForm({ }: PlantFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const navigate = useNavigate()
+  const { data: plantDefinitions } = useDefinitions()
   const createPlant = useCreatePlant()
 
   function submit(fd: FormData) {
@@ -26,12 +30,12 @@ export default function PlantForm({ }: PlantFormProps) {
     startTransition(async () => {
       try {
         const result = await createPlant.mutateAsync({
-          nickname: fd.get("nickname"),
-          source: fd.get("source"),
-          location: fd.get("location") || undefined,
-          acquired_at: fd.get("acquiredAt") || undefined,
-          notes: fd.get("notes") || undefined,
-          plant_definition_id: Number(fd.get("plantDefinitionId")) || undefined,
+          nickname: fd.get("nickname")?.toString() || '',
+          source: fd.get("source")?.toString() || '',
+          location: fd.get("location")?.toString() || undefined,
+          acquired_at: fd.get("acquiredAt")?.toString() || undefined,
+          notes: fd.get("notes")?.toString() || undefined,
+          plant_definition_id: Number(fd.get("plantDefinitionId")?.toString()) || undefined,
         })
 
         if (result?.id) {
@@ -45,34 +49,47 @@ export default function PlantForm({ }: PlantFormProps) {
 
   return (
     <form action={submit} className="mx-8 p-8 flex flex-col gap-8 border border-olive-200">
-      <div className="flex justify-end gap-4">
-        <button
-          className={buttonVariants({ variant: 'secondary' })}
-          type="reset"
-          disabled={isPending}
-          onClick={() => navigate("/plants")}
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className={buttonVariants({ variant: 'primary' })}
-        >
-          {isPending ? 'Guardando...' : 'Guardar'}
-        </button>
-      </div>
-
       {error && (
         <div className="form-error" role="alert">
           {error}
         </div>
       )}
 
-      {/*<input type="hidden" name="plantDefinitionId" value={plantDefinitionId} />*/}
+      <fieldset>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="plantDefinitionId">Especie</label>
+          <select
+            name="plantDefinitionId"
+            className={inputVariants()}
+          >
+            <button className="flex gap-8">
+              <selectedcontent></selectedcontent>
+            </button>
 
-      <fieldset className="grid gap-8">
+
+            {plantDefinitions?.map((d) => (
+              <option
+                key={d.id}
+                value={d.id?.toString()}
+                className={cn(
+                  'p-2',
+                  'not-last:border-b',
+                  'not-last:border-olive-200',
+                  'checked:bg-red-100',
+                  // 'checked:font-semibold',
+                )}
+              >
+                <div className='p flex flex-col'>
+                  <span className="text-sm">{d.commonName}</span>{' '}
+                  <span className='text-xs'>{d.scientificName}</span>
+                </div>
+              </option>
+            ))}
+          </select>
+        </div>
+      </fieldset>
+
+      <fieldset className="grid gap-8 overflow-auto">
         <div className="flex flex-col gap-2">
           <label htmlFor="nickname">Nombre (apodo)</label>
           <input
@@ -138,6 +155,26 @@ export default function PlantForm({ }: PlantFormProps) {
           />
         </div>
       </fieldset>
+
+      <div className="flex justify-end gap-4">
+        <button
+          className={buttonVariants({ variant: 'secondary' })}
+          type="reset"
+          disabled={isPending}
+          onClick={() => navigate("/plants")}
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          disabled={isPending}
+          className={buttonVariants({ variant: 'primary' })}
+        >
+          {isPending ? 'Guardando...' : 'Guardar'}
+        </button>
+      </div>
+
     </form>
   )
 }

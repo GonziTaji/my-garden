@@ -33,16 +33,6 @@ function toDomain(e: ApiPlantEvent): PlantEvent {
   }
 }
 
-export function usePlantEvents(plantId: number) {
-  return useQuery({
-    queryKey: ["events", plantId],
-    queryFn: () =>
-      api.get<ApiPlantEvent[]>(`/api/plants/${plantId}/events`),
-    select: (data) => data.map(toDomain),
-    enabled: !!plantId,
-  })
-}
-
 export function usePlantEvent(plantId: number, eventId: number) {
   return useQuery({
     queryKey: ["events", plantId, eventId],
@@ -91,31 +81,4 @@ export function useCalendarEvents(plantId: number, start: string, end: string) {
   })
 }
 
-export function useEventsRange(plantIds: number[], start: string, end: string, eventType?: string | null) {
-  return useQuery({
-    queryKey: ["events", "range", ...[...plantIds].sort(), start, end, eventType],
-    queryFn: () =>
-      api.post<ApiPlantEvent[]>("/api/events/range", {
-        plant_ids: plantIds,
-        start_date: start,
-        end_date: end,
-        event_type: eventType || null,
-      }),
-    enabled: plantIds.length > 0,
-    staleTime: 30_000,
-    select: (data) => data.map(toDomain),
-  })
-}
 
-export function useLastEventDates(plantIds: number[], eventType?: string | null) {
-  return useQuery({
-    queryKey: ["events", "last-dates", ...[...plantIds].sort(), eventType],
-    queryFn: () =>
-      api.post<Record<string, string | null>>("/api/plants/last-event", {
-        plant_ids: plantIds,
-        event_type: eventType || null,
-      }),
-    enabled: plantIds.length > 0,
-    staleTime: 30_000,
-  })
-}

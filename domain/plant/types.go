@@ -120,7 +120,6 @@ type Plant struct {
 	Source            NullString `json:"source"`
 	PlantDefinitionID int64      `json:"plant_definition_id"`
 	AcquiredAt        NullString `json:"acquired_at"`
-	Location          NullString `json:"location"`
 	Notes             NullString `json:"notes"`
 	UserID            int64      `json:"user_id"`
 	CreatedAt         string     `json:"created_at"`
@@ -175,12 +174,6 @@ type PlantEvent struct {
 	Images    []string        `json:"images"`
 	CreatedAt string          `json:"created_at"`
 	UserID    int64           `json:"user_id"`
-}
-
-type PlantEventImage struct {
-	ID           int64  `json:"id"`
-	PlantEventID int64  `json:"plant_event_id"`
-	URL          string `json:"url"`
 }
 
 type CalendarEntry struct {

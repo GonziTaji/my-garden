@@ -292,32 +292,6 @@ func (s *Store) ToggleFavorite(userID int64, defID int64) (bool, error) {
 	return true, nil
 }
 
-// Plant Definition Images
-
-func (s *Store) GetPlantDefinitionImages(defID int64) ([]PlantDefinitionImage, error) {
-	rows, err := s.db.Query(`
-		select id, plant_definition_id, filepath, position
-		from plant_definition_images
-		where plant_definition_id = ?
-		order by position asc
-	`, defID)
-	if err != nil {
-		return nil, fmt.Errorf("get definition images: %w", err)
-	}
-	defer rows.Close()
-
-	images := make([]PlantDefinitionImage, 0)
-	for rows.Next() {
-		var img PlantDefinitionImage
-		err := rows.Scan(&img.ID, &img.PlantDefinitionID, &img.Filepath, &img.Position)
-		if err != nil {
-			return nil, fmt.Errorf("scan image: %w", err)
-		}
-		images = append(images, img)
-	}
-	return images, nil
-}
-
 func (s *Store) syncDefinitionImages(defID int64, images []PlantDefinitionImage) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -364,88 +338,7 @@ func (s *Store) GetDefinitionImageFilepaths(defID int64) ([]string, error) {
 	return filepaths, nil
 }
 
-func (s *Store) GetOrphanedFilepaths(keep []string) ([]string, error) {
-	if len(keep) == 0 {
-		rows, err := s.db.Query(`
-			select distinct filepath from plant_definition_images
-		`)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		var fps []string
-		for rows.Next() {
-			var fp string
-			if err := rows.Scan(&fp); err != nil {
-				return nil, err
-			}
-			fps = append(fps, fp)
-		}
-		return fps, nil
-	}
-
-	query := `select distinct filepath from plant_definition_images
-		where filepath not in (` + placeholders(len(keep)) + `)`
-	rows, err := s.db.Query(query, stringsToAny(keep)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var fps []string
-	for rows.Next() {
-		var fp string
-		if err := rows.Scan(&fp); err != nil {
-			return nil, err
-		}
-		fps = append(fps, fp)
-	}
-	return fps, nil
-}
-
 // Plants
-
-func (s *Store) ListPlants(definitionID *int64, userID int64) ([]Plant, error) {
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	selectCols := `id, nickname, source, plant_definition_id, acquired_at,
-		notes, user_id, created_at, updated_at`
-
-	if definitionID != nil {
-		rows, err = s.db.Query(`
-			select `+selectCols+`
-			from plants
-			where plant_definition_id = ? and user_id = ?
-			order by nickname asc
-		`, *definitionID, userID)
-	} else {
-		rows, err = s.db.Query(`
-			select `+selectCols+`
-			from plants
-			where user_id = ?
-			order by nickname asc
-		`, userID)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("list plants: %w", err)
-	}
-	defer rows.Close()
-
-	plants := make([]Plant, 0)
-	for rows.Next() {
-		var p Plant
-		err := rows.Scan(&p.ID, &p.Nickname, &p.Source, &p.PlantDefinitionID,
-			&p.AcquiredAt, &p.Notes, &p.UserID, &p.CreatedAt, &p.UpdatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("scan plant: %w", err)
-		}
-		plants = append(plants, p)
-	}
-	return plants, nil
-}
 
 func (s *Store) GetPlant(id int64, userID int64) (*Plant, error) {
 	row := s.db.QueryRow(`
@@ -670,17 +563,6 @@ func (s *Store) DeletePlantImage(id int64) error {
 		return fmt.Errorf("delete plant image: %w", err)
 	}
 	return nil
-}
-
-func (s *Store) CountPlantImageReferences(filepath string) (int, error) {
-	var count int
-	err := s.db.QueryRow(`
-		select count(*) from plant_images where filepath = ?
-	`, filepath).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("count plant image refs: %w", err)
-	}
-	return count, nil
 }
 
 // Events
@@ -922,10 +804,4 @@ func int64sToAny(ids []int64) []any {
 	return result
 }
 
-func stringsToAny(strs []string) []any {
-	result := make([]any, len(strs))
-	for i, s := range strs {
-		result[i] = s
-	}
-	return result
-}
+
