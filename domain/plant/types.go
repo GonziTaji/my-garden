@@ -105,6 +105,9 @@ type PlantDefinition struct {
 	Visibility       string                 `json:"visibility"`
 	AuthorUsername   string                 `json:"author_username"`
 	Images           []PlantDefinitionImage `json:"images"`
+	IsFavorited      bool                   `json:"is_favorited"`
+	UserPlantCount   int                    `json:"user_plant_count"`
+	IsQuick          bool                   `json:"is_quick"`
 	CreatedAt        string                 `json:"created_at"`
 	UpdatedAt        string                 `json:"updated_at"`
 }

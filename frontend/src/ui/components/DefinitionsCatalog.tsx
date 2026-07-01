@@ -34,7 +34,7 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
             <span className="italic text-xl">{d.scientificName}</span>
 
             <div className="text-sm">
-              {d.categories.map((c) => <span key={c.toString()}>{plantCategory.meta[c].label}</span>)}
+              {d.categories?.map((c) => <span key={c.toString()}>{plantCategory.meta[c].label}</span>)}
             </div>
 
             <div>
@@ -60,6 +60,17 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
                 </span>
               ))}
             </div>
+
+            {d.userPlantCount !== undefined && d.userPlantCount > 0 && (
+              <span className="text-xs text-olive-500 mt-1">
+                {d.userPlantCount} {d.userPlantCount === 1 ? 'planta' : 'plantas'}
+              </span>
+            )}
+            {d.isQuick && (
+              <span className="text-xs bg-yellow-100 text-yellow-700 px-1 rounded mt-1">
+                Rápida
+              </span>
+            )}
           </div>
         </Link>
       ))}

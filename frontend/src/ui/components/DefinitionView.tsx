@@ -30,7 +30,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
   const updateDefinition = useUpdateDefinition()
   const cloneDefinition = useCloneDefinition()
   const toggleFavorite = useToggleFavorite()
-  const [favorited, setFavorited] = useState(false)
+  const [favorited, setFavorited] = useState(record.isFavorited || false)
 
   const categoriesOptions = plantCategory.options.map((opt) => ({
     ...opt,
@@ -140,6 +140,13 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
               <>
                 {user.id !== record.userId && (
                   <>
+                    <Link
+                      to="/catalog/:plantdefid/new-plant"
+                      params={{ plantdefid: String(record.id) }}
+                      className={buttonVariants({ variant: "primary" })}
+                    >
+                      Crear planta
+                    </Link>
                     <button
                       onClick={() => cloneDefinition.mutate(record.id!)}
                       className={buttonVariants({ variant: "secondary" })}

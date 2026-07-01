@@ -30,9 +30,11 @@ export default function PlantsList({ }: PlantsListProps) {
         return cols
       }, [[], []] as PlantsColumnsData) || [[], []]
 
-  const allDefinitions = (plants || [])
-    .flatMap((p) => p.definition)
-    .filter((p, i, arr) => arr.indexOf(p) === i)
+  const allDefinitions =
+    (plants || [])
+      .flatMap((plant) => plant.definition)
+      .filter((def, i, arr) => arr.findIndex((other) => (def.id === other.id)) === i)
+
 
   if (isLoading) return "Obteniendo plantas..."
   if (error) return "Error obteniendo plantas: " + error.toString()
@@ -56,7 +58,7 @@ export default function PlantsList({ }: PlantsListProps) {
 
         <select onChange={handleDefinitionFilterChange} className="border-b">
           <option value="" className="">Todas</option>
-          {allDefinitions.map((def) => (
+          {Array.from(allDefinitions).map((def) => (
             <option key={def.id} value={def.id!} className="">{def.commonName} - {def.scientificName}</option>
           ))}
         </select>

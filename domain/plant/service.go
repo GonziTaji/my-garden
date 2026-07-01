@@ -73,6 +73,7 @@ type UpsertDefinitionInput struct {
 	Categories       []string               `json:"categories"`
 	Notes            *string                `json:"notes"`
 	Images           []DefinitionImageInput `json:"images"`
+	IsQuick          bool                   `json:"is_quick"`
 }
 
 type DefinitionImageInput struct {
@@ -83,22 +84,17 @@ type DefinitionImageInput struct {
 // Validate and create
 
 func (s *Service) CreateDefinition(input UpsertDefinitionInput, userID int64) (*PlantDefinition, error) {
-	validated, err := validateUpsert(input)
+	validated, err := validateUpsert(input, input.IsQuick)
 	if err != nil {
 		return nil, err
 	}
 
 	validated.UserID = userID
 	validated.Visibility = "public"
+	validated.IsQuick = input.IsQuick
 
 	id, err := s.store.CreatePlantDefinition(validated)
 	if err != nil {
-		if isUniqueConstraintErr(err) {
-			return nil, &UniqueConstraintError{
-				Field:   "scientific_name",
-				Message: "Ya existe un tipo de planta con ese nombre cientifico",
-			}
-		}
 		return nil, fmt.Errorf("create definition: %w", err)
 	}
 
@@ -118,7 +114,7 @@ func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput, userID
 		return nil, &ValidationError{Field: "id", Message: "No tienes permiso para editar este tipo de planta"}
 	}
 
-	validated, err := validateUpsert(input)
+	validated, err := validateUpsert(input, false)
 	if err != nil {
 		return nil, err
 	}
@@ -132,12 +128,6 @@ func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput, userID
 	validated.UserID = userID
 	validated.Visibility = existing.Visibility
 	if err := s.store.UpdatePlantDefinition(validated); err != nil {
-		if isUniqueConstraintErr(err) {
-			return nil, &UniqueConstraintError{
-				Field:   "scientific_name",
-				Message: "Ya existe un tipo de planta con ese nombre cientifico",
-			}
-		}
 		return nil, fmt.Errorf("update definition: %w", err)
 	}
 
@@ -605,7 +595,7 @@ func (s *Service) GetCalendarEvents(plantID int64, start, end string, userID int
 
 // Internal helpers
 
-func validateUpsert(input UpsertDefinitionInput) (*PlantDefinition, error) {
+func validateUpsert(input UpsertDefinitionInput, isQuick bool) (*PlantDefinition, error) {
 	d := &PlantDefinition{}
 
 	d.CommonName = strings.TrimSpace(input.CommonName)
@@ -614,34 +604,60 @@ func validateUpsert(input UpsertDefinitionInput) (*PlantDefinition, error) {
 	}
 
 	d.ScientificName = strings.TrimSpace(input.ScientificName)
-	if d.ScientificName == "" {
-		return nil, &ValidationError{Field: "scientific_name", Message: "El nombre cientifico es requerido"}
-	}
 
 	d.WaterProfile = WaterProfile(input.WaterProfile)
 	if !isValidEnum(string(d.WaterProfile), validWaterProfiles) {
 		return nil, &ValidationError{Field: "water_profile", Message: "Perfil de agua invalido"}
 	}
 
-	d.LightLevel = LightLevel(input.LightLevel)
-	if !isValidEnum(string(d.LightLevel), validLightLevels) {
-		return nil, &ValidationError{Field: "light_level", Message: "Nivel de luz invalido"}
-	}
-
-	d.SoilType = SoilType(input.SoilType)
-	if !isValidEnum(string(d.SoilType), validSoilTypes) {
-		return nil, &ValidationError{Field: "soil_type", Message: "Tipo de suelo invalido"}
-	}
-
-	d.PetToxicity = PetToxicity(input.PetToxicity)
-	if !isValidEnum(string(d.PetToxicity), validPetToxicities) {
-		return nil, &ValidationError{Field: "pet_toxicity", Message: "Toxicidad invalida"}
+	if isQuick {
+		if input.LightLevel != "" {
+			d.LightLevel = LightLevel(input.LightLevel)
+			if !isValidEnum(string(d.LightLevel), validLightLevels) {
+				return nil, &ValidationError{Field: "light_level", Message: "Nivel de luz invalido"}
+			}
+		} else {
+			d.LightLevel = LightLevelIndirect
+		}
+		if input.SoilType != "" {
+			d.SoilType = SoilType(input.SoilType)
+			if !isValidEnum(string(d.SoilType), validSoilTypes) {
+				return nil, &ValidationError{Field: "soil_type", Message: "Tipo de suelo invalido"}
+			}
+		} else {
+			d.SoilType = SoilTypeWellDraining
+		}
+		if input.PetToxicity != "" {
+			d.PetToxicity = PetToxicity(input.PetToxicity)
+			if !isValidEnum(string(d.PetToxicity), validPetToxicities) {
+				return nil, &ValidationError{Field: "pet_toxicity", Message: "Toxicidad invalida"}
+			}
+		} else {
+			d.PetToxicity = PetToxicityNonToxic
+		}
+	} else {
+		d.LightLevel = LightLevel(input.LightLevel)
+		if !isValidEnum(string(d.LightLevel), validLightLevels) {
+			return nil, &ValidationError{Field: "light_level", Message: "Nivel de luz invalido"}
+		}
+		d.SoilType = SoilType(input.SoilType)
+		if !isValidEnum(string(d.SoilType), validSoilTypes) {
+			return nil, &ValidationError{Field: "soil_type", Message: "Tipo de suelo invalido"}
+		}
+		d.PetToxicity = PetToxicity(input.PetToxicity)
+		if !isValidEnum(string(d.PetToxicity), validPetToxicities) {
+			return nil, &ValidationError{Field: "pet_toxicity", Message: "Toxicidad invalida"}
+		}
 	}
 
 	d.PetToxicityNotes = input.PetToxicityNotes
 
 	if input.Notes != nil {
 		d.Notes = *input.Notes
+	}
+
+	if input.Categories == nil {
+		input.Categories = []string{}
 	}
 
 	for _, cat := range input.Categories {

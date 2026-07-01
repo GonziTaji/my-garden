@@ -19,8 +19,12 @@ export interface PlantDefinition {
 
   notes: string
 
-  categories: PlantCategory[]
+  categories?: PlantCategory[]
   images: Omit<PlantDefinitionImage, 'plantDefinitionId'>[]
+
+  isFavorited?: boolean
+  userPlantCount?: number
+  isQuick?: boolean
 
   userId?: number
   visibility?: string

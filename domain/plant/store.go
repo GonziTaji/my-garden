@@ -20,12 +20,15 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 	query := `select pd.id, pd.common_name, pd.scientific_name, pd.water_profile, pd.light_level, pd.soil_type,
 		pd.pet_toxicity, pd.pet_toxicity_notes, pd.categories_json, pd.notes, pd.user_id, pd.visibility,
 		coalesce(u.username, '') as author_username,
-		pd.created_at, pd.updated_at
+		pd.created_at, pd.updated_at,
+		pd.is_quick,
+		coalesce((select count(*) from plants where plant_definition_id = pd.id and user_id = ?), 0) as user_plant_count,
+		case when exists (select 1 from plant_definition_favorites where plant_definition_id = pd.id and user_id = ?) then 1 else 0 end as is_favorited
 	from plant_definitions pd
 	left join users u on u.id = pd.user_id
 	where pd.visibility = 'public'`
 
-	args := []any{}
+	args := []any{userID, userID}
 	if userID > 0 {
 		query += ` or pd.user_id = ?`
 		args = append(args, userID)
@@ -41,14 +44,21 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 	defs := make([]PlantDefinition, 0)
 	for rows.Next() {
 		var d PlantDefinition
+		var isQuickInt int
+		var userPlantCount int
+		var isFavoritedInt int
 		err := rows.Scan(&d.ID, &d.CommonName, &d.ScientificName, &d.WaterProfile,
 			&d.LightLevel, &d.SoilType, &d.PetToxicity, &d.PetToxicityNotes,
 			&d.CategoriesJSON, &d.Notes, &d.UserID, &d.Visibility,
 			&d.AuthorUsername,
-			&d.CreatedAt, &d.UpdatedAt)
+			&d.CreatedAt, &d.UpdatedAt,
+			&isQuickInt, &userPlantCount, &isFavoritedInt)
 		if err != nil {
 			return nil, fmt.Errorf("scan definition: %w", err)
 		}
+		d.IsQuick = isQuickInt == 1
+		d.UserPlantCount = userPlantCount
+		d.IsFavorited = isFavoritedInt == 1
 		defs = append(defs, d)
 	}
 	if err := rows.Err(); err != nil {
@@ -100,13 +110,16 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 
 func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, error) {
 	query := `select pd.id, pd.common_name, pd.scientific_name, pd.water_profile, pd.light_level, pd.soil_type,
-		pd.pet_toxicity, pd.pet_toxicity_notes, pd.categories_json, pd.notes, pd.user_id, pd.visibility,
+		pd.pet_toxicity, pd.pet_toxicity_notes, coalesce(pd.categories_json, "[]"), pd.notes, pd.user_id, pd.visibility,
 		coalesce(u.username, '') as author_username,
-		pd.created_at, pd.updated_at
+		pd.created_at, pd.updated_at,
+		pd.is_quick,
+		coalesce((select count(*) from plants where plant_definition_id = pd.id and user_id = ?), 0) as user_plant_count,
+		case when exists (select 1 from plant_definition_favorites where plant_definition_id = pd.id and user_id = ?) then 1 else 0 end as is_favorited
 	from plant_definitions pd
 	left join users u on u.id = pd.user_id
 	where pd.id = ? and (pd.visibility = 'public'`
-	args := []any{id}
+	args := []any{userID, userID, id}
 	if userID > 0 {
 		query += ` or pd.user_id = ?`
 		args = append(args, userID)
@@ -116,11 +129,24 @@ func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, er
 	row := s.db.QueryRow(query, args...)
 
 	var d PlantDefinition
+	var isQuickInt int
+	var userPlantCount int
+	var isFavoritedInt int
 	err := row.Scan(&d.ID, &d.CommonName, &d.ScientificName, &d.WaterProfile,
 		&d.LightLevel, &d.SoilType, &d.PetToxicity, &d.PetToxicityNotes,
 		&d.CategoriesJSON, &d.Notes, &d.UserID, &d.Visibility,
 		&d.AuthorUsername,
-		&d.CreatedAt, &d.UpdatedAt)
+		&d.CreatedAt, &d.UpdatedAt,
+		&isQuickInt, &userPlantCount, &isFavoritedInt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get definition: %w", err)
+	}
+	d.IsQuick = isQuickInt == 1
+	d.UserPlantCount = userPlantCount
+	d.IsFavorited = isFavoritedInt == 1
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -156,11 +182,11 @@ func (s *Store) CreatePlantDefinition(d *PlantDefinition) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_definitions
 			(common_name, scientific_name, water_profile, light_level, soil_type,
-			 pet_toxicity, pet_toxicity_notes, categories_json, notes, user_id, visibility)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 pet_toxicity, pet_toxicity_notes, categories_json, notes, user_id, visibility, is_quick)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.CommonName, d.ScientificName, d.WaterProfile, d.LightLevel,
 		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON,
-		d.Notes, d.UserID, d.Visibility)
+		d.Notes, d.UserID, d.Visibility, boolToInt(d.IsQuick))
 	if err != nil {
 		return 0, fmt.Errorf("create definition: %w", err)
 	}
@@ -186,12 +212,12 @@ func (s *Store) UpdatePlantDefinition(d *PlantDefinition) error {
 		update plant_definitions
 		set common_name = ?, scientific_name = ?, water_profile = ?, light_level = ?,
 			soil_type = ?, pet_toxicity = ?, pet_toxicity_notes = ?,
-			categories_json = ?, notes = ?, visibility = ?,
+			categories_json = ?, notes = ?, visibility = ?, is_quick = ?,
 			updated_at = datetime('now', 'localtime')
 		where id = ? and user_id = ?
 	`, d.CommonName, d.ScientificName, d.WaterProfile, d.LightLevel,
 		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON,
-		d.Notes, d.Visibility, d.ID, d.UserID)
+		d.Notes, d.Visibility, boolToInt(d.IsQuick), d.ID, d.UserID)
 	if err != nil {
 		return fmt.Errorf("update definition: %w", err)
 	}
@@ -242,11 +268,11 @@ func (s *Store) ClonePlantDefinition(defID int64, userID int64) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_definitions
 			(common_name, scientific_name, water_profile, light_level, soil_type,
-			 pet_toxicity, pet_toxicity_notes, categories_json, notes, user_id, visibility)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private')
+			 pet_toxicity, pet_toxicity_notes, categories_json, notes, user_id, visibility, is_quick)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private', ?)
 	`, def.CommonName, def.ScientificName, def.WaterProfile, def.LightLevel,
 		def.SoilType, def.PetToxicity, def.PetToxicityNotes, def.CategoriesJSON,
-		def.Notes, userID)
+		def.Notes, userID, boolToInt(def.IsQuick))
 	if err != nil {
 		return 0, fmt.Errorf("clone definition: %w", err)
 	}
@@ -811,4 +837,9 @@ func int64sToAny(ids []int64) []any {
 	return result
 }
 
-
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}

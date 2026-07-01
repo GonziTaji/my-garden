@@ -5,6 +5,7 @@ import { useState, type SyntheticEvent } from "react"
 import { buttonVariants } from "../classVariants/button"
 import { cn } from "@sglara/cn"
 import { inputVariants } from "../classVariants/input"
+import { Link } from "@/router/components/Link"
 import DateUtils from "@/utils/dates"
 
 interface PlantDetailProps {
@@ -112,6 +113,16 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         })}
         onBlur={() => setEditingField("")}
       />
+
+      <div className="flex justify-end mt-2">
+        <Link
+          to="/catalog/:plantdefid/new-plant"
+          params={{ plantdefid: String(plant.plantDefinitionId) }}
+          className={buttonVariants({ variant: "secondary", size: "sm" })}
+        >
+          Clonar especie
+        </Link>
+      </div>
 
       <div className="py-2">
         <hr />

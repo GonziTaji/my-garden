@@ -8,13 +8,14 @@ interface CreateDefinitionInput {
   common_name: string
   scientific_name: string
   water_profile: string
-  light_level: string
-  soil_type: string
-  pet_toxicity: string
+  light_level?: string
+  soil_type?: string
+  pet_toxicity?: string
   pet_toxicity_notes?: string
   notes?: string
   categories?: string[]
   images?: { filepath: string; position: number }[]
+  is_quick?: boolean
 }
 
 interface ApiDefinitionImage {
@@ -39,6 +40,9 @@ interface ApiDefinition {
   visibility: string
   author_username: string
   images: ApiDefinitionImage[]
+  is_favorited: boolean
+  user_plant_count: number
+  is_quick: boolean
   created_at: string
   updated_at: string
 }
@@ -60,6 +64,9 @@ function toDomain(d: ApiDefinition): PlantDefinition {
       filepath: img.filepath,
       position: img.position,
     })),
+    isFavorited: d.is_favorited,
+    userPlantCount: d.user_plant_count,
+    isQuick: d.is_quick,
     userId: d.user_id,
     visibility: d.visibility,
     authorUsername: d.author_username,

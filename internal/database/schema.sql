@@ -26,7 +26,7 @@ create table if not exists plant_definition_favorites (
 create table if not exists plant_definitions (
   id integer primary key autoincrement not null,
   common_name text not null,
-  scientific_name text not null collate nocase unique,
+  scientific_name text not null default '',
   water_profile text not null,
   light_level text not null,
   soil_type text not null,
@@ -36,6 +36,7 @@ create table if not exists plant_definitions (
   notes text not null default '',
   user_id integer references users(id),
   visibility text not null default 'private',
+  is_quick integer not null default 0,
   created_at text default (datetime('now', 'localtime')) not null,
   updated_at text default (datetime('now', 'localtime')) not null
 );
