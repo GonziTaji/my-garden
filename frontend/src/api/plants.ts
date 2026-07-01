@@ -92,6 +92,7 @@ function toDomain(p: ApiPlantWithDefinition): PlantWithDefinition {
       soilType: "" as PlantDefinition["soilType"],
       petToxicity: "" as PlantDefinition["petToxicity"],
       petToxicityNotes: "",
+      notes: "",
       categories: [],
       images: [],
     },

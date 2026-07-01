@@ -71,6 +71,7 @@ type UpsertDefinitionInput struct {
 	PetToxicity      string                 `json:"pet_toxicity"`
 	PetToxicityNotes string                 `json:"pet_toxicity_notes"`
 	Categories       []string               `json:"categories"`
+	Notes            *string                `json:"notes"`
 	Images           []DefinitionImageInput `json:"images"`
 }
 
@@ -154,6 +155,10 @@ func (s *Service) GetDefinition(id int64, userID int64) (*PlantDefinition, error
 		return nil, &ValidationError{Field: "id", Message: "Tipo de planta no encontrado"}
 	}
 	return def, nil
+}
+
+func (s *Service) ExploreDefinitions() ([]PlantDefinition, error) {
+	return s.store.ListPlantDefinitions(0)
 }
 
 func (s *Service) ListDefinitions(userID int64) ([]PlantDefinition, error) {
@@ -634,6 +639,10 @@ func validateUpsert(input UpsertDefinitionInput) (*PlantDefinition, error) {
 	}
 
 	d.PetToxicityNotes = input.PetToxicityNotes
+
+	if input.Notes != nil {
+		d.Notes = *input.Notes
+	}
 
 	for _, cat := range input.Categories {
 		if !isValidEnum(cat, validPlantCategories) {

@@ -100,8 +100,10 @@ type PlantDefinition struct {
 	PetToxicity      PetToxicity            `json:"pet_toxicity"`
 	PetToxicityNotes string                 `json:"pet_toxicity_notes"`
 	CategoriesJSON   string                 `json:"categories_json"`
+	Notes            string                 `json:"notes"`
 	UserID           int64                  `json:"user_id"`
 	Visibility       string                 `json:"visibility"`
+	AuthorUsername   string                 `json:"author_username"`
 	Images           []PlantDefinitionImage `json:"images"`
 	CreatedAt        string                 `json:"created_at"`
 	UpdatedAt        string                 `json:"updated_at"`

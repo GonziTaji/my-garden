@@ -85,6 +85,7 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
           soil_type: fd.get("soilType"),
           pet_toxicity: fd.get("petToxicity"),
           pet_toxicity_notes: fd.get("petToxicityNotes") || "",
+          notes: fd.get("notes") || "",
           categories,
           images,
         }
@@ -288,6 +289,19 @@ export default function DefinitionView({ record, editMode }: DefinitionViewProps
                 </DetailListItem>
               </div>
             )}
+
+            <DetailListItem title="Notas">
+              {editMode ? (
+                <textarea
+                  className="border border-slate-300 rounded-sm w-full p-2"
+                  name="notes"
+                  defaultValue={record.notes}
+                  placeholder="Notas adicionales sobre el tipo de planta"
+                ></textarea>
+              ) : (
+                <span className="text-sm italic whitespace-pre-wrap">{record.notes}</span>
+              )}
+            </DetailListItem>
           </dl>
         </div>
       </form>

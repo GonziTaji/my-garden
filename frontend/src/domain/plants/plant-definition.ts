@@ -17,11 +17,14 @@ export interface PlantDefinition {
   petToxicity: PetToxicity
   petToxicityNotes: string
 
+  notes: string
+
   categories: PlantCategory[]
   images: Omit<PlantDefinitionImage, 'plantDefinitionId'>[]
 
   userId?: number
   visibility?: string
+  authorUsername?: string
 
   createdAt?: string
   updatedAt?: string

@@ -17,18 +17,20 @@ func NewStore(db *sql.DB) *Store {
 // Plant Definitions
 
 func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
-	query := `select id, common_name, scientific_name, water_profile, light_level, soil_type,
-		pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility,
-		created_at, updated_at
-	from plant_definitions
-	where visibility = 'public'`
+	query := `select pd.id, pd.common_name, pd.scientific_name, pd.water_profile, pd.light_level, pd.soil_type,
+		pd.pet_toxicity, pd.pet_toxicity_notes, pd.categories_json, pd.notes, pd.user_id, pd.visibility,
+		coalesce(u.username, '') as author_username,
+		pd.created_at, pd.updated_at
+	from plant_definitions pd
+	left join users u on u.id = pd.user_id
+	where pd.visibility = 'public'`
 
 	args := []any{}
 	if userID > 0 {
-		query += ` or user_id = ?`
+		query += ` or pd.user_id = ?`
 		args = append(args, userID)
 	}
-	query += ` order by common_name asc`
+	query += ` order by pd.common_name asc`
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
@@ -41,7 +43,8 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 		var d PlantDefinition
 		err := rows.Scan(&d.ID, &d.CommonName, &d.ScientificName, &d.WaterProfile,
 			&d.LightLevel, &d.SoilType, &d.PetToxicity, &d.PetToxicityNotes,
-			&d.CategoriesJSON, &d.UserID, &d.Visibility,
+			&d.CategoriesJSON, &d.Notes, &d.UserID, &d.Visibility,
+			&d.AuthorUsername,
 			&d.CreatedAt, &d.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("scan definition: %w", err)
@@ -96,14 +99,16 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 }
 
 func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, error) {
-	query := `select id, common_name, scientific_name, water_profile, light_level, soil_type,
-		pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility,
-		created_at, updated_at
-	from plant_definitions
-	where id = ? and (visibility = 'public'`
+	query := `select pd.id, pd.common_name, pd.scientific_name, pd.water_profile, pd.light_level, pd.soil_type,
+		pd.pet_toxicity, pd.pet_toxicity_notes, pd.categories_json, pd.notes, pd.user_id, pd.visibility,
+		coalesce(u.username, '') as author_username,
+		pd.created_at, pd.updated_at
+	from plant_definitions pd
+	left join users u on u.id = pd.user_id
+	where pd.id = ? and (pd.visibility = 'public'`
 	args := []any{id}
 	if userID > 0 {
-		query += ` or user_id = ?`
+		query += ` or pd.user_id = ?`
 		args = append(args, userID)
 	}
 	query += `)`
@@ -113,7 +118,8 @@ func (s *Store) GetPlantDefinition(id int64, userID int64) (*PlantDefinition, er
 	var d PlantDefinition
 	err := row.Scan(&d.ID, &d.CommonName, &d.ScientificName, &d.WaterProfile,
 		&d.LightLevel, &d.SoilType, &d.PetToxicity, &d.PetToxicityNotes,
-		&d.CategoriesJSON, &d.UserID, &d.Visibility,
+		&d.CategoriesJSON, &d.Notes, &d.UserID, &d.Visibility,
+		&d.AuthorUsername,
 		&d.CreatedAt, &d.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -150,11 +156,11 @@ func (s *Store) CreatePlantDefinition(d *PlantDefinition) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_definitions
 			(common_name, scientific_name, water_profile, light_level, soil_type,
-			 pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 pet_toxicity, pet_toxicity_notes, categories_json, notes, user_id, visibility)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.CommonName, d.ScientificName, d.WaterProfile, d.LightLevel,
 		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON,
-		d.UserID, d.Visibility)
+		d.Notes, d.UserID, d.Visibility)
 	if err != nil {
 		return 0, fmt.Errorf("create definition: %w", err)
 	}
@@ -180,12 +186,12 @@ func (s *Store) UpdatePlantDefinition(d *PlantDefinition) error {
 		update plant_definitions
 		set common_name = ?, scientific_name = ?, water_profile = ?, light_level = ?,
 			soil_type = ?, pet_toxicity = ?, pet_toxicity_notes = ?,
-			categories_json = ?, visibility = ?,
+			categories_json = ?, notes = ?, visibility = ?,
 			updated_at = datetime('now', 'localtime')
 		where id = ? and user_id = ?
 	`, d.CommonName, d.ScientificName, d.WaterProfile, d.LightLevel,
 		d.SoilType, d.PetToxicity, d.PetToxicityNotes, d.CategoriesJSON,
-		d.Visibility, d.ID, d.UserID)
+		d.Notes, d.Visibility, d.ID, d.UserID)
 	if err != nil {
 		return fmt.Errorf("update definition: %w", err)
 	}
@@ -236,10 +242,11 @@ func (s *Store) ClonePlantDefinition(defID int64, userID int64) (int64, error) {
 	result, err := s.db.Exec(`
 		insert into plant_definitions
 			(common_name, scientific_name, water_profile, light_level, soil_type,
-			 pet_toxicity, pet_toxicity_notes, categories_json, user_id, visibility)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, 'private')
+			 pet_toxicity, pet_toxicity_notes, categories_json, notes, user_id, visibility)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private')
 	`, def.CommonName, def.ScientificName, def.WaterProfile, def.LightLevel,
-		def.SoilType, def.PetToxicity, def.PetToxicityNotes, def.CategoriesJSON, userID)
+		def.SoilType, def.PetToxicity, def.PetToxicityNotes, def.CategoriesJSON,
+		def.Notes, userID)
 	if err != nil {
 		return 0, fmt.Errorf("clone definition: %w", err)
 	}

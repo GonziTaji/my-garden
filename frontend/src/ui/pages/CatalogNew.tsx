@@ -9,6 +9,7 @@ const emptyDefinition = {
   soilType: "well_draining" as const,
   petToxicity: "non_toxic" as const,
   petToxicityNotes: "",
+  notes: "",
   categories: [],
   images: [],
 }

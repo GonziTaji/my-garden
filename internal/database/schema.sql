@@ -33,6 +33,7 @@ create table if not exists plant_definitions (
   pet_toxicity text not null,
   pet_toxicity_notes text not null default '',
   categories_json text not null default '[]',
+  notes text not null default '',
   user_id integer references users(id),
   visibility text not null default 'private',
   created_at text default (datetime('now', 'localtime')) not null,

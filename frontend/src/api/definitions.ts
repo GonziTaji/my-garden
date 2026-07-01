@@ -12,6 +12,7 @@ interface CreateDefinitionInput {
   soil_type: string
   pet_toxicity: string
   pet_toxicity_notes?: string
+  notes?: string
   categories?: string[]
   images?: { filepath: string; position: number }[]
 }
@@ -33,8 +34,10 @@ interface ApiDefinition {
   pet_toxicity: string
   pet_toxicity_notes: string
   categories_json: string
+  notes: string
   user_id: number
   visibility: string
+  author_username: string
   images: ApiDefinitionImage[]
   created_at: string
   updated_at: string
@@ -50,6 +53,7 @@ function toDomain(d: ApiDefinition): PlantDefinition {
     soilType: d.soil_type as PlantDefinition["soilType"],
     petToxicity: d.pet_toxicity as PlantDefinition["petToxicity"],
     petToxicityNotes: d.pet_toxicity_notes,
+    notes: d.notes,
     categories: JSON.parse(d.categories_json || "[]") as PlantDefinition["categories"],
     images: d.images.map((img): Omit<PlantDefinitionImage, "plantDefinitionId"> => ({
       id: img.id,
@@ -58,9 +62,19 @@ function toDomain(d: ApiDefinition): PlantDefinition {
     })),
     userId: d.user_id,
     visibility: d.visibility,
+    authorUsername: d.author_username,
     createdAt: d.created_at,
     updatedAt: d.updated_at,
   }
+}
+
+/** All definitions for the explore page */
+export function useExploreDefinitions() {
+  return useQuery({
+    queryKey: ["definitions", "explore"],
+    queryFn: () => api.get<ApiDefinition[]>("/api/plant-definitions/all"),
+    select: (data) => data.map(toDomain),
+  })
 }
 
 export function useDefinitions() {

@@ -2,6 +2,7 @@ package plant
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -33,11 +34,21 @@ func (h *Handler) GetEnums(c *gin.Context) {
 }
 
 // Plant Definitions
+func (h *Handler) ExplorePlantDefinitions(c *gin.Context) {
+	defs, err := h.service.ListDefinitions(0)
+	if err != nil {
+		log.Printf("Error: %s\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})
+		return
+	}
+	c.JSON(http.StatusOK, defs)
+}
 
 func (h *Handler) ListPlantDefinitions(c *gin.Context) {
 	userID := userIDFromContext(c)
 	defs, err := h.service.ListDefinitions(userID)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})
 		return
 	}
@@ -522,7 +533,7 @@ func (h *Handler) GetEventsRange(c *gin.Context) {
 
 func (h *Handler) GetLastEventDates(c *gin.Context) {
 	var input struct {
-		PlantIDs  []int64  `json:"plant_ids"`
+		PlantIDs  []int64 `json:"plant_ids"`
 		EventType *string `json:"event_type,omitempty"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {

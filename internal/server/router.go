@@ -112,6 +112,7 @@ func (g *AppRouter) mountApiRoutes() {
 	{
 		public.GET("/auth/me", userHandler.Me)
 		public.GET("/plant-definitions", plantHandler.ListPlantDefinitions)
+		public.GET("/plant-definitions/all", plantHandler.ExplorePlantDefinitions)
 		public.GET("/plant-definitions/:id", plantHandler.GetPlantDefinition)
 		public.GET("/enums", plantHandler.GetEnums)
 	}
