@@ -117,7 +117,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       <div className="flex justify-end mt-2">
         <Link
           to="/catalog/:plantdefid/new-plant"
-          params={{ plantdefid: String(plant.plantDefinitionId) }}
+          params={{ plantdefid: String(plant.definition.id) }}
           className={buttonVariants({ variant: "secondary", size: "sm" })}
         >
           Clonar especie
