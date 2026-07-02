@@ -1,7 +1,7 @@
-import { type MouseEvent, type ReactNode } from "react"
-import { useNavigate } from "../provider"
-import type { RouterPath } from "../routes"
-import { cn } from "@sglara/cn"
+import { type MouseEvent, type ReactNode } from 'react'
+import { useNavigate } from '../provider'
+import type { RouterPath } from '../routes'
+import { cn } from '@sglara/cn'
 
 export function Link({
   to,
@@ -49,7 +49,11 @@ export function Link({
   const isActive = currentPathname === href
 
   return (
-    <a href={href} onClick={handleClick} className={cn(className, isActive && activeClassname)}>
+    <a
+      href={href}
+      onClick={handleClick}
+      className={cn(className, isActive && activeClassname)}
+    >
       {children}
     </a>
   )

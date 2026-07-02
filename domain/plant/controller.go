@@ -35,7 +35,7 @@ func (h *Handler) GetEnums(c *gin.Context) {
 
 // Plant Definitions
 func (h *Handler) ExplorePlantDefinitions(c *gin.Context) {
-	defs, err := h.service.ListDefinitions(0)
+	defs, err := h.service.ListDefinitions(0, "")
 	if err != nil {
 		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})
@@ -46,7 +46,8 @@ func (h *Handler) ExplorePlantDefinitions(c *gin.Context) {
 
 func (h *Handler) ListPlantDefinitions(c *gin.Context) {
 	userID := userIDFromContext(c)
-	defs, err := h.service.ListDefinitions(userID)
+	scope := c.Query("scope")
+	defs, err := h.service.ListDefinitions(userID, scope)
 	if err != nil {
 		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})

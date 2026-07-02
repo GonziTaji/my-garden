@@ -1,26 +1,34 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "./client"
-import type { PlantImage, PlantWithDefinition } from "@/domain/plants/plant"
-import type { PlantDefinition } from "@/domain/plants/plant-definition"
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from './client'
+import type { PlantImage, PlantWithDefinition } from '@/domain/plants/plant'
+import type { PlantDefinition } from '@/domain/plants/plant-definition'
 
-export async function deletePlantImage(plantId: number, imageId: number): Promise<void> {
-  const res = await fetch(`/api/plants/${plantId}/images/${imageId}`, { method: "DELETE" })
+export async function deletePlantImage(
+  plantId: number,
+  imageId: number
+): Promise<void> {
+  const res = await fetch(`/api/plants/${plantId}/images/${imageId}`, {
+    method: 'DELETE',
+  })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || "Error al eliminar imagen")
+    throw new Error(data.error || 'Error al eliminar imagen')
   }
 }
 
-export async function addPlantImage(plantId: number, file: File): Promise<PlantImage> {
+export async function addPlantImage(
+  plantId: number,
+  file: File
+): Promise<PlantImage> {
   const fd = new FormData()
-  fd.append("file", file)
+  fd.append('file', file)
   const res = await fetch(`/api/plants/${plantId}/images`, {
-    method: "POST",
+    method: 'POST',
     body: fd,
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || "Error al subir imagen")
+    throw new Error(data.error || 'Error al subir imagen')
   }
   const data: ApiPlantImage = await res.json()
   return {
@@ -67,7 +75,6 @@ interface ApiPlantWithDefinition {
   updated_at: string
 }
 
-
 function toDomain(p: ApiPlantWithDefinition): PlantWithDefinition {
   return {
     id: p.id,
@@ -77,22 +84,23 @@ function toDomain(p: ApiPlantWithDefinition): PlantWithDefinition {
     acquiredAt: p.acquired_at ? new Date(p.acquired_at) : undefined,
     location: p.location ?? undefined,
     notes: p.notes ?? undefined,
-    images: p.images?.map((img) => ({
-      id: img.id,
-      plantId: img.plant_id,
-      filepath: img.filepath,
-      createdAt: img.created_at,
-    })) || [],
+    images:
+      p.images?.map((img) => ({
+        id: img.id,
+        plantId: img.plant_id,
+        filepath: img.filepath,
+        createdAt: img.created_at,
+      })) || [],
     definition: {
       id: p.plant_definition.id,
       commonName: p.plant_definition.common_name,
       scientificName: p.plant_definition.scientific_name,
-      waterProfile: "" as PlantDefinition["waterProfile"],
-      lightLevel: "" as PlantDefinition["lightLevel"],
-      soilType: "" as PlantDefinition["soilType"],
-      petToxicity: "" as PlantDefinition["petToxicity"],
-      petToxicityNotes: "",
-      notes: "",
+      waterProfile: '' as PlantDefinition['waterProfile'],
+      lightLevel: '' as PlantDefinition['lightLevel'],
+      soilType: '' as PlantDefinition['soilType'],
+      petToxicity: '' as PlantDefinition['petToxicity'],
+      petToxicityNotes: '',
+      notes: '',
       categories: [],
       images: [],
     },
@@ -101,9 +109,9 @@ function toDomain(p: ApiPlantWithDefinition): PlantWithDefinition {
 
 export function usePlants(defId?: number) {
   return useQuery({
-    queryKey: ["plants", defId],
+    queryKey: ['plants', defId],
     queryFn: () => {
-      const params = defId ? `?plant_definition_id=${defId}` : ""
+      const params = defId ? `?plant_definition_id=${defId}` : ''
       return api.get<ApiPlantWithDefinition[]>(`/api/plants${params}`)
     },
     select: (data) => data.map(toDomain),
@@ -112,7 +120,7 @@ export function usePlants(defId?: number) {
 
 export function usePlant(id: number) {
   return useQuery({
-    queryKey: ["plants", id],
+    queryKey: ['plants', id],
     queryFn: () => api.get<ApiPlantWithDefinition>(`/api/plants/${id}`),
     select: toDomain,
     enabled: !!id,
@@ -123,11 +131,9 @@ export function useCreatePlant() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: CreatePlantInput) =>
-      api.post<ApiPlantWithDefinition>("/api/plants", input),
+      api.post<ApiPlantWithDefinition>('/api/plants', input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["plants"] })
+      qc.invalidateQueries({ queryKey: ['plants'] })
     },
   })
 }
-
-

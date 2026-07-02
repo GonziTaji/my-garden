@@ -1,46 +1,53 @@
-import { useState, type SubmitEvent } from "react"
-import { useAuth } from "@/auth/AuthContext"
-import { buttonVariants } from "@/ui/classVariants/button"
-import { useNavigate } from "@/router/provider"
+import { useState, type SubmitEvent } from 'react'
+import { useAuth } from '@/auth/AuthContext'
+import { buttonVariants } from '@/ui/classVariants/button'
+import { useNavigate } from '@/router/provider'
 
 export default function Login() {
   const { sendLoginEmail, verifyCode } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
-  const [code, setCode] = useState("")
-  const [error, setError] = useState("")
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setError('')
     try {
       await sendLoginEmail(email)
       setSent(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al enviar el enlace")
+      setError(err instanceof Error ? err.message : 'Error al enviar el enlace')
     }
   }
 
   const handleVerifyCode = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setError('')
     try {
       await verifyCode(code)
-      navigate("/")
+      navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Código inválido o expirado")
+      setError(
+        err instanceof Error ? err.message : 'Código inválido o expirado'
+      )
     }
   }
 
   if (sent) {
     return (
       <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-olive-700">Revisa tu correo</h2>
-        <p className="text-olive-500 mt-2">
+        <h2 className="text-2xl font-bold text-secondary-dark">
+          Revisa tu correo
+        </h2>
+        <p className="text-secondary-strong mt-2">
           Te hemos enviado un código a <strong>{email}</strong>
         </p>
-        <form onSubmit={handleVerifyCode} className="flex flex-col gap-4 max-w-sm mx-auto mt-6">
+        <form
+          onSubmit={handleVerifyCode}
+          className="flex flex-col gap-4 max-w-sm mx-auto mt-6"
+        >
           <input
             type="text"
             value={code}
@@ -49,16 +56,23 @@ export default function Login() {
             required
             autoFocus
             maxLength={8}
-            className="border border-olive-300 rounded-md p-2 text-center text-lg tracking-widest uppercase"
+            className="border border-secondary-default rounded-md p-2 text-center text-lg tracking-widest uppercase"
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button type="submit" className={buttonVariants({ variant: "primary" })}>
+          {error && <p className="text-danger-strong text-sm">{error}</p>}
+          <button
+            type="submit"
+            className={buttonVariants({ variant: 'primary' })}
+          >
             Verificar código
           </button>
         </form>
         <button
-          onClick={() => { setSent(false); setCode(""); setError("") }}
-          className="text-olive-500 underline mt-4 text-sm"
+          onClick={() => {
+            setSent(false)
+            setCode('')
+            setError('')
+          }}
+          className="text-secondary-strong underline mt-4 text-sm"
         >
           Volver
         </button>
@@ -68,7 +82,9 @@ export default function Login() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-olive-700 mb-4">Iniciar sesión</h2>
+      <h2 className="text-2xl font-bold text-secondary-dark mb-4">
+        Iniciar sesión
+      </h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-sm">
         <input
           type="email"
@@ -76,10 +92,13 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
           required
-          className="border border-olive-300 rounded-md p-2"
+          className="border border-secondary-default rounded-md p-2"
         />
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <button type="submit" className={buttonVariants({ variant: "primary" })}>
+        {error && <p className="text-danger-strong text-sm">{error}</p>}
+        <button
+          type="submit"
+          className={buttonVariants({ variant: 'primary' })}
+        >
           Enviar código de acceso
         </button>
       </form>

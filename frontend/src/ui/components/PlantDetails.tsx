@@ -1,25 +1,30 @@
-import { addPlantImage, deletePlantImage } from "@/api/plants"
-import { useCreateEvent } from "@/api/events"
-import type { PlantWithDefinition } from "@/domain/plants/plant"
-import { useState, type SyntheticEvent } from "react"
-import { buttonVariants } from "../classVariants/button"
-import { cn } from "@sglara/cn"
-import { inputVariants } from "../classVariants/input"
-import { Link } from "@/router/components/Link"
-import DateUtils from "@/utils/dates"
+import { addPlantImage, deletePlantImage } from '@/api/plants'
+import { useCreateEvent } from '@/api/events'
+import type { PlantWithDefinition } from '@/domain/plants/plant'
+import { useState, type SyntheticEvent } from 'react'
+import { buttonVariants } from '../classVariants/button'
+import { cn } from '@sglara/cn'
+import { inputVariants } from '../classVariants/input'
+import { Link } from '@/router/components/Link'
+import DateUtils from '@/utils/dates'
 
 interface PlantDetailProps {
   plant: PlantWithDefinition
 }
 
-const locationChangeActionTypes = { cancel: "cancel", submit: "submit" } as const
+const locationChangeActionTypes = {
+  cancel: 'cancel',
+  submit: 'submit',
+} as const
 
 type LocationChangeActionType = keyof typeof locationChangeActionTypes
 
 export default function PlantDetails({ plant }: PlantDetailProps) {
   const createEvent = useCreateEvent(plant.id)
 
-  const [editingField, setEditingField] = useState<"" | "nickname" | "acquiredAt" | "notes">("")
+  const [editingField, setEditingField] = useState<
+    '' | 'nickname' | 'acquiredAt' | 'notes'
+  >('')
   const [images, setImages] = useState(plant.images)
   const [editingImages, setEditingImages] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -29,7 +34,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       await deletePlantImage(plant.id, imageId)
       setImages((prev) => prev.filter((img) => img.id !== imageId))
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al eliminar imagen")
+      alert(err instanceof Error ? err.message : 'Error al eliminar imagen')
     }
   }
 
@@ -39,7 +44,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       const newImage = await addPlantImage(plant.id, file)
       setImages((prev) => [...prev, newImage])
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al subir imagen")
+      alert(err instanceof Error ? err.message : 'Error al subir imagen')
     } finally {
       setUploading(false)
     }
@@ -49,7 +54,9 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   //dialog should ask for the new location name, the date of the change (default current date) and any notes.
   //to submit the dialog the location name and date must be populated
 
-  async function handleLocationChangeDialogClose(e: SyntheticEvent<HTMLDialogElement, Event>) {
+  async function handleLocationChangeDialogClose(
+    e: SyntheticEvent<HTMLDialogElement, Event>
+  ) {
     e.preventDefault()
 
     const ct = e.currentTarget
@@ -57,35 +64,35 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
     const action = ct.returnValue as LocationChangeActionType
 
     if (!form || !action) {
-      console.warn("missing form and/or action in dialog close event handler")
+      console.warn('missing form and/or action in dialog close event handler')
       return
     }
 
     switch (action) {
-      case "cancel":
+      case 'cancel':
         form.reset()
         // do something here?
-        return;
+        return
 
-      case "submit":
+      case 'submit':
         const fd = new FormData(form)
 
-        const location = fd.get("new-location")?.toString() || ''
-        const registeredAt = fd.get("new-location-date")?.toString() || ''
-        const notes = fd.get("new-location-notes")?.toString() || ''
+        const location = fd.get('new-location')?.toString() || ''
+        const registeredAt = fd.get('new-location-date')?.toString() || ''
+        const notes = fd.get('new-location-notes')?.toString() || ''
 
         if (!location) {
-          console.warn("no location in formdata")
+          console.warn('no location in formdata')
           return
         }
 
         if (!registeredAt) {
-          console.warn("no date in formdata")
+          console.warn('no date in formdata')
           return
         }
 
         const res = await createEvent.mutateAsync({
-          event_type: "location_change",
+          event_type: 'location_change',
           event_date: registeredAt,
           notes: notes || null,
           metadata: { location },
@@ -94,10 +101,10 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
         form.reset()
 
-        return;
+        return
 
       default:
-        break;
+        break
     }
   }
 
@@ -108,19 +115,19 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         name="nickname"
         defaultValue={plant.nickname}
         className={inputVariants({
-          className: "w-full text-3xl",
-          disabled: editingField !== 'nickname'
+          className: 'w-full text-3xl',
+          disabled: editingField !== 'nickname',
         })}
-        onBlur={() => setEditingField("")}
+        onBlur={() => setEditingField('')}
       />
 
       <div className="flex justify-end mt-2">
         <Link
           to="/catalog/:plantdefid/new-plant"
           params={{ plantdefid: String(plant.definition.id) }}
-          className={buttonVariants({ variant: "secondary", size: "sm" })}
+          className={buttonVariants({ variant: 'secondary', size: 'sm' })}
         >
-          Clonar especie
+          Clonar planta
         </Link>
       </div>
 
@@ -131,19 +138,22 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       <div className="text-xl grid grid-cols-[auto_1fr] gap-x-3 gap-y-6 items-center mx-auto">
         <div className="grid grid-cols-subgrid col-span-2">
           <span>Tipo:</span>
-          <div className="flex gap-2 items-baseline opacity-80">
-            <span className="text-xl">{plant.definition.commonName}</span>
-            <span className="italic text-xs">{plant.definition.scientificName}</span>
-          </div>
+          <Link to="/catalog" search={{ defid: String(plant.definition.id) }}>
+            <div className="flex gap-2 items-baseline opacity-80">
+              <span className="text-xl">{plant.definition.commonName}</span>
+              <span className="italic text-xs">
+                {plant.definition.scientificName}
+              </span>
+            </div>
+          </Link>
         </div>
-
 
         <div className="grid grid-cols-subgrid col-span-2">
           <span>Ubicacion: </span>
           <span className="flex gap-3">
             {plant.location}
             <button
-              className={buttonVariants({ variant: "clean", size: "sm" })}
+              className={buttonVariants({ variant: 'clean', size: 'sm' })}
               command="show-modal"
               commandfor="create-location-change-dialog"
             >
@@ -154,14 +164,13 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
         <div className="grid grid-cols-subgrid col-span-2">
           <span>Adquirida en:</span>
-          <span>{plant.acquiredAt?.toLocaleDateString() || "-"}</span>
+          <span>{plant.acquiredAt?.toLocaleDateString() || '-'}</span>
         </div>
 
         <div className="grid grid-cols-subgrid col-span-2">
           <span>Notas: </span>
-          <span>{plant.notes || "-"}</span>
+          <span>{plant.notes || '-'}</span>
         </div>
-
       </div>
 
       <div className="py-2">
@@ -173,14 +182,14 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
           <span className="text-lg font-medium">Imágenes</span>
           {editingImages ? (
             <button
-              className={buttonVariants({ variant: "clean", size: "sm" })}
+              className={buttonVariants({ variant: 'clean', size: 'sm' })}
               onClick={() => setEditingImages(false)}
             >
               Cancelar
             </button>
           ) : (
             <button
-              className={buttonVariants({ variant: "clean", size: "sm" })}
+              className={buttonVariants({ variant: 'clean', size: 'sm' })}
               onClick={() => setEditingImages(true)}
             >
               Editar
@@ -195,13 +204,13 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
                 <img
                   width="200"
                   height="200"
-                  className="h-32 w-full object-cover border border-olive-300 rounded-sm"
+                  className="h-32 w-full object-cover border border-secondary-default rounded-sm"
                   src={image.filepath}
                   alt="Imagen de planta"
                 />
                 {editingImages && (
                   <button
-                    className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-red-700/80 text-white"
+                    className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-danger-dark/80 text-white"
                     type="button"
                     onClick={() => handleDeleteImage(image.id!)}
                   >
@@ -211,14 +220,16 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
               </div>
             ))
           ) : (
-            <span className="text-sm text-slate-400 col-span-3">Sin imágenes</span>
+            <span className="text-sm text-neutral-default col-span-3">
+              Sin imágenes
+            </span>
           )}
         </div>
 
         {editingImages && (
           <label className="inline-block mt-2 cursor-pointer">
-            <span className={buttonVariants({ variant: "clean", size: "sm" })}>
-              {uploading ? "Subiendo..." : "Agregar imagen"}
+            <span className={buttonVariants({ variant: 'clean', size: 'sm' })}>
+              {uploading ? 'Subiendo...' : 'Agregar imagen'}
             </span>
             <input
               type="file"
@@ -228,45 +239,75 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
               onChange={(e) => {
                 const file = e.currentTarget.files?.item(0)
                 if (file) handleAddImage(file)
-                e.currentTarget.value = ""
+                e.currentTarget.value = ''
               }}
             />
           </label>
         )}
       </div>
 
-      <dialog closedby="any" popover="auto" className={cn(
-        "mt-8 mx-auto p-4 shadow-lg rounded-md",
-        "transition-discrete transition-all duration-300",
-        "-translate-y-32 opacity-0 open:translate-y-0 open:opacity-100",
-        "starting:open:opacity-0 starting:open:-translate-y-32",
-
-      )}
-        id="create-location-change-dialog" onClose={handleLocationChangeDialogClose}
+      <dialog
+        closedby="any"
+        popover="auto"
+        className={cn(
+          'mt-8 mx-auto p-4 shadow-lg rounded-md',
+          'transition-discrete transition-all duration-300',
+          '-translate-y-32 opacity-0 open:translate-y-0 open:opacity-100',
+          'starting:open:opacity-0 starting:open:-translate-y-32'
+        )}
+        id="create-location-change-dialog"
+        onClose={handleLocationChangeDialogClose}
       >
         <form method="dialog" className="grid gap-4">
           <label className="grid">
             Lugar:
-            <input autoComplete="false" className={inputVariants()} type="text" name="new-location" placeholder="Ventanal derecho" required />
+            <input
+              autoComplete="false"
+              className={inputVariants()}
+              type="text"
+              name="new-location"
+              placeholder="Ventanal derecho"
+              required
+            />
           </label>
 
           <label className="grid">
             Fecha cambio:
-            <input className={inputVariants()} type="date" name="new-location-date" defaultValue={DateUtils.toInputValue(new Date())} required />
+            <input
+              className={inputVariants()}
+              type="date"
+              name="new-location-date"
+              defaultValue={DateUtils.toInputValue(new Date())}
+              required
+            />
           </label>
 
           <label className="grid">
             Notas:
-            <textarea className={inputVariants()} name="new-location-notes" placeholder="Por cambio de temporada" />
+            <textarea
+              className={inputVariants()}
+              name="new-location-notes"
+              placeholder="Por cambio de temporada"
+            />
           </label>
 
-
           <div className="flex justify-between">
-            <button className={buttonVariants({ variant: "secondary" })} value={locationChangeActionTypes.cancel} formNoValidate>Cancelar</button>
-            <button className={buttonVariants({ variant: "primary" })} value={locationChangeActionTypes.submit}>Guardar</button>
+            <button
+              className={buttonVariants({ variant: 'secondary' })}
+              value={locationChangeActionTypes.cancel}
+              formNoValidate
+            >
+              Cancelar
+            </button>
+            <button
+              className={buttonVariants({ variant: 'primary' })}
+              value={locationChangeActionTypes.submit}
+            >
+              Guardar
+            </button>
           </div>
         </form>
       </dialog>
-    </section >
+    </section>
   )
 }

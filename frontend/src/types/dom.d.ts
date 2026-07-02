@@ -1,6 +1,6 @@
-import "react"
+import 'react'
 
-declare module "react" {
+declare module 'react' {
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     command?: string
     commandfor?: string
@@ -9,7 +9,10 @@ declare module "react" {
 
   namespace JSX {
     interface IntrinsicElements {
-      selectedcontent: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      selectedcontent: React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >
     }
   }
 }

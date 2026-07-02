@@ -1,5 +1,5 @@
-import type { PlantDefinition } from "./plant-definition"
-import type { PlantImage } from "./plant-image"
+import type { PlantDefinition } from './plant-definition'
+import type { PlantImage } from './plant-image'
 
 export type { PlantImage }
 
@@ -27,11 +27,14 @@ function plantFullText(plant: PlantWithDefinition) {
   return `${plant.nickname}${plant.definition.commonName}${plant.definition.scientificName}`.toLowerCase()
 }
 
-export function fullsearchPlants(term: string, plants: PlantWithDefinition[]): PlantWithDefinition[] {
+export function fullsearchPlants(
+  term: string,
+  plants: PlantWithDefinition[]
+): PlantWithDefinition[] {
   return plants
     .map((p) => ({
       ...p,
-      weight: [...plantFullText(p).matchAll(new RegExp(term, 'ig'))].length
+      weight: [...plantFullText(p).matchAll(new RegExp(term, 'ig'))].length,
     }))
     .filter((p) => p.weight > 0)
     .toSorted((a, b) => a.weight - b.weight)

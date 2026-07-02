@@ -1,5 +1,5 @@
-import { useExploreDefinitions } from "@/api/definitions"
-import ExploreGrid from "@/ui/components/ExploreGrid"
+import { useExploreDefinitions } from '@/api/definitions'
+import ExploreGrid from '@/ui/components/ExploreGrid'
 
 export default function Home() {
   const { data, isLoading, error } = useExploreDefinitions()
@@ -7,7 +7,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-slate-500">Cargando...</p>
+        <p className="text-neutral-strong">Cargando...</p>
       </div>
     )
   }
@@ -15,7 +15,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-red-500">Error al cargar</p>
+        <p className="text-danger-strong">Error al cargar</p>
       </div>
     )
   }
@@ -25,7 +25,9 @@ export default function Home() {
   if (definitions.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-slate-500">No hay tipos de planta públicos todavía.</p>
+        <p className="text-neutral-strong">
+          No hay tipos de planta públicos todavía.
+        </p>
       </div>
     )
   }

@@ -1,43 +1,50 @@
-import { usePlants } from "@/api/plants"
-import { fullsearchPlants, type PlantWithDefinition } from "@/domain/plants/plant"
-import { Link } from "@/router/components/Link"
-import { useState, type ChangeEvent } from "react"
-import { buttonVariants } from "../classVariants/button"
-import { useNavigate } from "@/router/provider"
+import { usePlants } from '@/api/plants'
+import {
+  fullsearchPlants,
+  type PlantWithDefinition,
+} from '@/domain/plants/plant'
+import { Link } from '@/router/components/Link'
+import { useState, type ChangeEvent } from 'react'
+import { buttonVariants } from '../classVariants/button'
+import { useNavigate } from '@/router/provider'
 
 type PlantsColumnsData = [PlantWithDefinition[], PlantWithDefinition[]]
 
-export interface PlantsListProps {
-}
+export interface PlantsListProps {}
 
-export default function PlantsList({ }: PlantsListProps) {
+export default function PlantsList({}: PlantsListProps) {
   const { data: plants, isLoading, error } = usePlants()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDefinitionId, setSelectedDefinitionId] = useState('')
 
   const navigate = useNavigate()
 
-  const plantsColumns: PlantsColumnsData =
-    fullsearchPlants(searchTerm, plants || [])
-      .filter((plant) => {
-        console.log(selectedDefinitionId)
-        if (!selectedDefinitionId) return true
+  const plantsColumns: PlantsColumnsData = fullsearchPlants(
+    searchTerm,
+    plants || []
+  )
+    .filter((plant) => {
+      console.log(selectedDefinitionId)
+      if (!selectedDefinitionId) return true
 
-        return String(plant.definition.id) === selectedDefinitionId
-      })
-      .reduce((cols, plant, i) => {
+      return String(plant.definition.id) === selectedDefinitionId
+    })
+    .reduce(
+      (cols, plant, i) => {
         cols[i % 2].push(plant)
         return cols
-      }, [[], []] as PlantsColumnsData) || [[], []]
+      },
+      [[], []] as PlantsColumnsData
+    ) || [[], []]
 
-  const allDefinitions =
-    (plants || [])
-      .flatMap((plant) => plant.definition)
-      .filter((def, i, arr) => arr.findIndex((other) => (def.id === other.id)) === i)
+  const allDefinitions = (plants || [])
+    .flatMap((plant) => plant.definition)
+    .filter(
+      (def, i, arr) => arr.findIndex((other) => def.id === other.id) === i
+    )
 
-
-  if (isLoading) return "Obteniendo plantas..."
-  if (error) return "Error obteniendo plantas: " + error.toString()
+  if (isLoading) return 'Obteniendo plantas...'
+  if (error) return 'Error obteniendo plantas: ' + error.toString()
 
   function handleSearchChange(ev: ChangeEvent<HTMLInputElement>) {
     setSearchTerm(ev.currentTarget.value)
@@ -54,36 +61,54 @@ export default function PlantsList({ }: PlantsListProps) {
   return (
     <div className="">
       <div className="grid grid-cols-2 p-2 gap-4">
-        <input type="search" onChange={handleSearchChange} placeholder="Buscar" className="border-b" />
+        <input
+          type="search"
+          onChange={handleSearchChange}
+          placeholder="Buscar"
+          className="border-b border-secondary-subtle"
+        />
 
-        <select onChange={handleDefinitionFilterChange} className="border-b">
-          <option value="" className="">Todas</option>
+        <select
+          onChange={handleDefinitionFilterChange}
+          className="border-b border-secondary-subtle"
+        >
+          <option value="" className="">
+            Todas
+          </option>
           {Array.from(allDefinitions).map((def) => (
-            <option key={def.id} value={def.id!} className="">{def.commonName} - {def.scientificName}</option>
+            <option key={def.id} value={def.id!} className="">
+              {def.commonName} - {def.scientificName}
+            </option>
           ))}
         </select>
       </div>
 
-      <nav className="p-4 h-full grid grid-cols-2 gap-4 ">
+      <nav className="p-4 h-full grid grid-cols-2 gap-x-4">
         {plantsColumns?.map((col, i) => (
           <div key={i}>
-            {col.map((p) => <Link
-              key={p.id}
-              to="/plants/:plantid"
-              params={{ plantid: String(p.id) }}
-              className="flex flex-col justify-end rounded p-px"
-            >
-              <div className="w-full overflow-hidden rounded-lg">
-                <img src={p.images[0]?.filepath} />
-              </div>
+            {col.map((p) => (
+              <Link
+                key={p.id}
+                to="/plants/:plantid"
+                params={{ plantid: String(p.id) }}
+                className="flex flex-col justify-end rounded py-2"
+              >
+                <div className="w-full overflow-hidden rounded-lg">
+                  {p.images[0]?.filepath ? (
+                    <img src={p.images[0]?.filepath} />
+                  ) : (
+                    <div className="w-full aspect-square flex items-center justify-center  bg-secondary-default">
+                      <span>Sin imagen</span>
+                    </div>
+                  )}
+                </div>
 
-              <div className="p-2 flex flex-wrap gap-2 items-baseline">
-                <span className="">{p.nickname}</span>
-                <span className="text-xs">{p.definition.scientificName}</span>
-              </div>
-
-            </Link>
-            )}
+                <div className="p-2 grid items-baseline">
+                  <span className="">{p.nickname}</span>
+                  <span className="text-xs">{p.definition.scientificName}</span>
+                </div>
+              </Link>
+            ))}
           </div>
         ))}
       </nav>
@@ -95,7 +120,7 @@ export default function PlantsList({ }: PlantsListProps) {
         className={buttonVariants({
           variant: 'primary',
           size: 'sm',
-          className: 'rounded-full! absolute bottom-0 right-0 m-4 w-12 h-12'
+          className: 'rounded-full! absolute bottom-0 right-0 m-4 w-12 h-12',
         })}
       >
         +

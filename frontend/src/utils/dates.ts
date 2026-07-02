@@ -51,13 +51,13 @@ function getMonthDays(numericMonth: number) {
     case 8:
     case 10:
     case 12:
-      return 31;
+      return 31
 
     case 4:
     case 6:
     case 9:
     case 11:
-      return 30;
+      return 30
   }
 
   return 0

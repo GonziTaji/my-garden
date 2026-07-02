@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "./client"
-import { useNavigate } from "@/router/provider"
-import type { PlantDefinition } from "@/domain/plants/plant-definition"
-import type { PlantDefinitionImage } from "@/domain/plants/plant-image"
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from './client'
+import { useNavigate } from '@/router/provider'
+import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import type { PlantDefinitionImage } from '@/domain/plants/plant-image'
 
 interface CreateDefinitionInput {
   common_name: string
@@ -52,18 +52,22 @@ function toDomain(d: ApiDefinition): PlantDefinition {
     id: d.id,
     commonName: d.common_name,
     scientificName: d.scientific_name,
-    waterProfile: d.water_profile as PlantDefinition["waterProfile"],
-    lightLevel: d.light_level as PlantDefinition["lightLevel"],
-    soilType: d.soil_type as PlantDefinition["soilType"],
-    petToxicity: d.pet_toxicity as PlantDefinition["petToxicity"],
+    waterProfile: d.water_profile as PlantDefinition['waterProfile'],
+    lightLevel: d.light_level as PlantDefinition['lightLevel'],
+    soilType: d.soil_type as PlantDefinition['soilType'],
+    petToxicity: d.pet_toxicity as PlantDefinition['petToxicity'],
     petToxicityNotes: d.pet_toxicity_notes,
     notes: d.notes,
-    categories: JSON.parse(d.categories_json || "[]") as PlantDefinition["categories"],
-    images: d.images.map((img): Omit<PlantDefinitionImage, "plantDefinitionId"> => ({
-      id: img.id,
-      filepath: img.filepath,
-      position: img.position,
-    })),
+    categories: JSON.parse(
+      d.categories_json || '[]'
+    ) as PlantDefinition['categories'],
+    images: d.images.map(
+      (img): Omit<PlantDefinitionImage, 'plantDefinitionId'> => ({
+        id: img.id,
+        filepath: img.filepath,
+        position: img.position,
+      })
+    ),
     isFavorited: d.is_favorited,
     userPlantCount: d.user_plant_count,
     isQuick: d.is_quick,
@@ -78,23 +82,28 @@ function toDomain(d: ApiDefinition): PlantDefinition {
 /** All definitions for the explore page */
 export function useExploreDefinitions() {
   return useQuery({
-    queryKey: ["definitions", "explore"],
-    queryFn: () => api.get<ApiDefinition[]>("/api/plant-definitions/all"),
+    queryKey: ['definitions', 'explore'],
+    queryFn: () => api.get<ApiDefinition[]>('/api/plant-definitions/all'),
     select: (data) => data.map(toDomain),
   })
 }
 
-export function useDefinitions() {
+export function useDefinitions(scope?: string) {
   return useQuery({
-    queryKey: ["definitions"],
-    queryFn: () => api.get<ApiDefinition[]>("/api/plant-definitions"),
+    queryKey: scope ? ['definitions', scope] : ['definitions'],
+    queryFn: () => {
+      const path = scope
+        ? `/api/plant-definitions?scope=${scope}`
+        : '/api/plant-definitions'
+      return api.get<ApiDefinition[]>(path)
+    },
     select: (data) => data.map(toDomain),
   })
 }
 
 export function useDefinition(id: number) {
   return useQuery({
-    queryKey: ["definitions", id],
+    queryKey: ['definitions', id],
     queryFn: () => api.get<ApiDefinition>(`/api/plant-definitions/${id}`),
     select: toDomain,
     enabled: !!id,
@@ -105,9 +114,9 @@ export function useCreateDefinition() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateDefinitionInput) =>
-      api.post<ApiDefinition>("/api/plant-definitions", input),
+      api.post<ApiDefinition>('/api/plant-definitions', input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["definitions"] })
+      qc.invalidateQueries({ queryKey: ['definitions'] })
     },
   })
 }
@@ -115,10 +124,13 @@ export function useCreateDefinition() {
 export function useUpdateDefinition() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...input }: { id: number } & Partial<CreateDefinitionInput>) =>
+    mutationFn: ({
+      id,
+      ...input
+    }: { id: number } & Partial<CreateDefinitionInput>) =>
       api.put<ApiDefinition>(`/api/plant-definitions/${id}`, input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["definitions"] })
+      qc.invalidateQueries({ queryKey: ['definitions'] })
     },
   })
 }
@@ -128,7 +140,7 @@ export function useDeleteDefinition() {
   return useMutation({
     mutationFn: (id: number) => api.del(`/api/plant-definitions/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["definitions"] })
+      qc.invalidateQueries({ queryKey: ['definitions'] })
     },
   })
 }
@@ -140,8 +152,10 @@ export function useCloneDefinition() {
     mutationFn: (id: number) =>
       api.post<ApiDefinition>(`/api/plant-definitions/${id}/clone`),
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["definitions"] })
-      navigate("/catalog/:plantdefid", { params: { plantdefid: String(data.id) } })
+      qc.invalidateQueries({ queryKey: ['definitions'] })
+      navigate('/catalog/:plantdefid', {
+        params: { plantdefid: String(data.id) },
+      })
     },
   })
 }
@@ -155,8 +169,8 @@ export function useToggleFavorite() {
 
 export async function uploadDefinitionImage(file: File): Promise<string> {
   const fd = new FormData()
-  fd.append("file", file)
-  const res = await api.upload("/api/upload/plant-definition-image", fd)
+  fd.append('file', file)
+  const res = await api.upload('/api/upload/plant-definition-image', fd)
   const data = await res.json()
   return data.filepath as string
 }

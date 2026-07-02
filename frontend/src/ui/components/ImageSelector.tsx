@@ -1,13 +1,13 @@
-import type { PlantDefinition } from "@/domain/plants/plant-definition"
-import { type ChangeEventHandler, type FC, useEffect, useState } from "react"
+import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import { type ChangeEventHandler, type FC, useEffect, useState } from 'react'
 
 export interface ImageSelectorProps {
-  image?: PlantDefinition["images"][number]
+  image?: PlantDefinition['images'][number]
   position: number
 }
 
 export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
-  const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? "")
+  const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? '')
 
   useEffect(() => {
     return () => URL.revokeObjectURL(previewUrl)
@@ -15,7 +15,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
 
   const handleRemoveImage = () => {
     URL.revokeObjectURL(previewUrl)
-    setPreviewUrl("")
+    setPreviewUrl('')
   }
 
   const handleOnChangeImage: ChangeEventHandler<HTMLInputElement> = (ev) => {
@@ -25,7 +25,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
     if (maybeFile) {
       setPreviewUrl(URL.createObjectURL(maybeFile))
     } else {
-      setPreviewUrl("")
+      setPreviewUrl('')
     }
   }
 
@@ -34,13 +34,13 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
       <input
         type="hidden"
         name={`imagesExistingId_${position}`}
-        value={image?.id ?? ""}
+        value={image?.id ?? ''}
         readOnly
       />
       <input
         type="hidden"
         name={`imagesIsRemoved_${position}`}
-        value={previewUrl ? "false" : "true"}
+        value={previewUrl ? 'false' : 'true'}
         readOnly
       />
 
@@ -64,7 +64,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
             />
 
             <button
-              className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-slate-900/60 text-white"
+              className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-neutral-dark/60 text-white"
               type="button"
               onClick={handleRemoveImage}
             >
@@ -72,7 +72,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
             </button>
           </>
         ) : (
-          <div className="h-full text-center w-full border border-dashed border-olive-300 grid place-content-center text-sm text-slate-500">
+          <div className="h-full text-center w-full border border-dashed border-secondary-default grid place-content-center text-sm text-neutral-strong">
             Agregar imagen
           </div>
         )}

@@ -1,18 +1,18 @@
-import { createEnumWithMeta } from "../../utils/create-enum-with-meta.ts"
+import { createEnumWithMeta } from '../../utils/create-enum-with-meta.ts'
 
 export const waterProfile = createEnumWithMeta({
   dry_cycle: {
-    label: "Hasta secarse",
-    description: "El sustrato debe secarse totalmente entre riegos",
+    label: 'Hasta secarse',
+    description: 'El sustrato debe secarse totalmente entre riegos',
   },
   semi_dry_cycle: {
-    label: "Parcialmente seco",
+    label: 'Parcialmente seco',
   },
   even_moisture: {
-    label: "Mantener húmedo",
+    label: 'Mantener húmedo',
   },
   wet: {
-    label: "Encharcado",
+    label: 'Encharcado',
   },
 })
 

@@ -1,0 +1,29 @@
+@theme {
+  /* ── Primary — Rose ── */
+  --color-primary-light: var(--color-rose-50);
+  --color-primary-subtle: var(--color-rose-100);
+  --color-primary-default: var(--color-rose-200);
+  --color-primary-strong: var(--color-rose-400);
+  --color-primary-dark: var(--color-rose-700);
+
+  /* ── Secondary — Olive ── */
+  --color-secondary-light: var(--color-olive-50);
+  --color-secondary-subtle: var(--color-olive-200);
+  --color-secondary-default: var(--color-olive-300);
+  --color-secondary-strong: var(--color-olive-500);
+  --color-secondary-dark: var(--color-olive-700);
+
+  /* ── Danger — Red ── */
+  --color-danger-light: var(--color-red-50);
+  --color-danger-subtle: var(--color-red-100);
+  --color-danger-default: var(--color-red-400);
+  --color-danger-strong: var(--color-red-500);
+  --color-danger-dark: var(--color-red-700);
+
+  /* ── Neutral — Slate ── */
+  --color-neutral-light: var(--color-slate-100);
+  --color-neutral-subtle: var(--color-slate-300);
+  --color-neutral-default: var(--color-slate-400);
+  --color-neutral-strong: var(--color-slate-500);
+  --color-neutral-dark: var(--color-slate-900);
+}

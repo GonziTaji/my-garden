@@ -16,7 +16,7 @@ func NewStore(db *sql.DB) *Store {
 
 // Plant Definitions
 
-func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
+func (s *Store) ListPlantDefinitions(userID int64, scope string) ([]PlantDefinition, error) {
 	query := `select pd.id, pd.common_name, pd.scientific_name, pd.water_profile, pd.light_level, pd.soil_type,
 		pd.pet_toxicity, pd.pet_toxicity_notes, pd.categories_json, pd.notes, pd.user_id, pd.visibility,
 		coalesce(u.username, '') as author_username,
@@ -25,13 +25,29 @@ func (s *Store) ListPlantDefinitions(userID int64) ([]PlantDefinition, error) {
 		coalesce((select count(*) from plants where plant_definition_id = pd.id and user_id = ?), 0) as user_plant_count,
 		case when exists (select 1 from plant_definition_favorites where plant_definition_id = pd.id and user_id = ?) then 1 else 0 end as is_favorited
 	from plant_definitions pd
-	left join users u on u.id = pd.user_id
-	where pd.visibility = 'public'`
+	left join users u on u.id = pd.user_id`
 
 	args := []any{userID, userID}
-	if userID > 0 {
-		query += ` or pd.user_id = ?`
+
+	switch scope {
+	case "mine":
+		query += ` where pd.user_id = ?`
 		args = append(args, userID)
+	case "favorites":
+		query += ` where exists (select 1 from plant_definition_favorites where plant_definition_id = pd.id and user_id = ?)`
+		args = append(args, userID)
+	case "linked":
+		query += ` where exists (select 1 from plants where plant_definition_id = pd.id and user_id = ?)`
+		args = append(args, userID)
+	case "mine-favorites":
+		query += ` where (pd.user_id = ? or exists (select 1 from plant_definition_favorites where plant_definition_id = pd.id and user_id = ?) or exists (select 1 from plants where plant_definition_id = pd.id and user_id = ?))`
+		args = append(args, userID, userID, userID)
+	default:
+		query += ` where pd.visibility = 'public'`
+		if userID > 0 {
+			query += ` or pd.user_id = ?`
+			args = append(args, userID)
+		}
 	}
 	query += ` order by pd.common_name asc`
 

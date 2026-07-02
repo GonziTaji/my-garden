@@ -7,7 +7,7 @@ type StoreInterface interface {
 	UpdatePlantDefinition(*PlantDefinition) error
 	DeletePlantDefinition(int64, int64) error
 	ExistsPlantDefinition(int64) (bool, error)
-	ListPlantDefinitions(int64) ([]PlantDefinition, error)
+	ListPlantDefinitions(int64, string) ([]PlantDefinition, error)
 	GetDefinitionImageFilepaths(int64) ([]string, error)
 	CountImageReferences(string) (int, error)
 	ClonePlantDefinition(int64, int64) (int64, error)

@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "./client"
-import type { PlantEvent, CalendarEntry } from "@/domain/plants/plant-event"
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from './client'
+import type { PlantEvent, CalendarEntry } from '@/domain/plants/plant-event'
 
 interface CreateEventInput {
   event_type: string
@@ -35,7 +35,7 @@ function toDomain(e: ApiPlantEvent): PlantEvent {
 
 export function usePlantEvent(plantId: number, eventId: number) {
   return useQuery({
-    queryKey: ["events", plantId, eventId],
+    queryKey: ['events', plantId, eventId],
     queryFn: () =>
       api.get<ApiPlantEvent>(`/api/plants/${plantId}/events/${eventId}`),
     select: toDomain,
@@ -49,10 +49,10 @@ export function useCreateEvent(plantId: number) {
     mutationFn: (input: CreateEventInput) =>
       api.post<ApiPlantEvent>(`/api/plants/${plantId}/events`, input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["events", plantId] })
-      qc.invalidateQueries({ queryKey: ["events", "calendar", plantId] })
-      qc.invalidateQueries({ queryKey: ["events", "last-dates"] })
-      qc.invalidateQueries({ queryKey: ["events", "range"] })
+      qc.invalidateQueries({ queryKey: ['events', plantId] })
+      qc.invalidateQueries({ queryKey: ['events', 'calendar', plantId] })
+      qc.invalidateQueries({ queryKey: ['events', 'last-dates'] })
+      qc.invalidateQueries({ queryKey: ['events', 'range'] })
     },
   })
 }
@@ -63,22 +63,22 @@ export function useDeleteEvent(plantId: number) {
     mutationFn: (eventId: number) =>
       api.del(`/api/plants/${plantId}/events/${eventId}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["events", plantId] })
-      qc.invalidateQueries({ queryKey: ["events", "calendar", plantId] })
-      qc.invalidateQueries({ queryKey: ["events", "last-dates"] })
-      qc.invalidateQueries({ queryKey: ["events", "range"] })
+      qc.invalidateQueries({ queryKey: ['events', plantId] })
+      qc.invalidateQueries({ queryKey: ['events', 'calendar', plantId] })
+      qc.invalidateQueries({ queryKey: ['events', 'last-dates'] })
+      qc.invalidateQueries({ queryKey: ['events', 'range'] })
     },
   })
 }
 
 export function useCalendarEvents(plantId: number, start: string, end: string) {
   return useQuery({
-    queryKey: ["events", "calendar", plantId, start, end],
+    queryKey: ['events', 'calendar', plantId, start, end],
     queryFn: () =>
-      api.get<CalendarEntry[]>(`/api/plants/${plantId}/events/calendar/${start}/${end}`),
+      api.get<CalendarEntry[]>(
+        `/api/plants/${plantId}/events/calendar/${start}/${end}`
+      ),
     enabled: !!plantId && !!start && !!end,
     staleTime: 30_000,
   })
 }
-
-

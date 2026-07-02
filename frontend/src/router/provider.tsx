@@ -6,8 +6,8 @@ import {
   useCallback,
   type ReactNode,
   type ComponentType,
-} from "react"
-import type { routerPaths, RouterPath } from "./routes"
+} from 'react'
+import type { routerPaths, RouterPath } from './routes'
 
 interface RouterState {
   path: string
@@ -26,16 +26,19 @@ interface RouterContextValue extends RouterState {
 
 const RouterContext = createContext<RouterContextValue | null>(null)
 
-function matchPath(pattern: string, pathname: string): Record<string, string> | null {
-  const patternParts = pattern.split("/")
-  const pathParts = pathname.split("/")
+function matchPath(
+  pattern: string,
+  pathname: string
+): Record<string, string> | null {
+  const patternParts = pattern.split('/')
+  const pathParts = pathname.split('/')
 
   if (patternParts.length !== pathParts.length) return null
 
   const params: Record<string, string> = {}
 
   for (let i = 0; i < patternParts.length; i++) {
-    if (patternParts[i].startsWith(":")) {
+    if (patternParts[i].startsWith(':')) {
       params[patternParts[i].slice(1)] = decodeURIComponent(pathParts[i])
     } else if (patternParts[i] !== pathParts[i]) {
       return null
@@ -54,13 +57,14 @@ export function RouterProvider({
   notFound: ComponentType
 }) {
   const [currentLocation, setCurrentLocation] = useState(
-    () => window.location.pathname + window.location.search,
+    () => window.location.pathname + window.location.search
   )
 
   useEffect(() => {
-    const onPop = () => setCurrentLocation(window.location.pathname + window.location.search)
-    window.addEventListener("popstate", onPop)
-    return () => window.removeEventListener("popstate", onPop)
+    const onPop = () =>
+      setCurrentLocation(window.location.pathname + window.location.search)
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
   }, [])
 
   const navigate = useCallback((to: RouterPath, config?: NavigateConfig) => {
@@ -81,12 +85,12 @@ export function RouterProvider({
       if (qs) href += `?${qs}`
     }
 
-    window.history.pushState({}, "", href)
+    window.history.pushState({}, '', href)
     setCurrentLocation(href)
   }, [])
 
-  const currentPath = currentLocation.split("?")[0]
-  const searchString = currentLocation.split("?").slice(1).join("?")
+  const currentPath = currentLocation.split('?')[0]
+  const searchString = currentLocation.split('?').slice(1).join('?')
   const searchParams = new URLSearchParams(searchString)
 
   const matched = routes.find((r) => matchPath(r.path, currentPath) !== null)
@@ -111,7 +115,7 @@ export function RouterProvider({
 
 export function useRouter() {
   const ctx = useContext(RouterContext)
-  if (!ctx) throw new Error("useRouter must be used inside RouterProvider")
+  if (!ctx) throw new Error('useRouter must be used inside RouterProvider')
   return ctx
 }
 
@@ -135,12 +139,12 @@ export function useSearchParams() {
       }
 
       const qs = sp.toString()
-      const newPath = router.path + (qs ? `?${qs}` : "")
+      const newPath = router.path + (qs ? `?${qs}` : '')
 
-      window.history.pushState({}, "", newPath)
-      window.dispatchEvent(new PopStateEvent("popstate"))
+      window.history.pushState({}, '', newPath)
+      window.dispatchEvent(new PopStateEvent('popstate'))
     },
-    [router.path],
+    [router.path]
   )
 
   return [router.searchParams, setSearchParams] as const

@@ -5,13 +5,14 @@ import { usePlants } from '@/api/plants'
 import { buttonVariants } from '../classVariants/button'
 import { useRouter } from '@/router/provider'
 
-export interface WateringListProps {
-}
+export interface WateringListProps {}
 
-export default function WateringList({ }: WateringListProps) {
+export default function WateringList({}: WateringListProps) {
   const toggleWatering = useToggleWatering()
   const { data: plants } = usePlants()
-  const { data: lastWateredRaw } = useLastWateredDates(plants?.map(p => p.id) || [])
+  const { data: lastWateredRaw } = useLastWateredDates(
+    plants?.map((p) => p.id) || []
+  )
   const [_, startTransition] = useTransition()
   const router = useRouter()
 
@@ -26,9 +27,11 @@ export default function WateringList({ }: WateringListProps) {
   }, [lastWateredRaw])
 
   const handleToggleWaterPlant = async (plantid: Plant['id']) => {
-
     startTransition(() => {
-      toggleWatering.mutateAsync({ plantId: plantid, date: new Date().toLocaleDateString() })
+      toggleWatering.mutateAsync({
+        plantId: plantid,
+        date: new Date().toLocaleDateString(),
+      })
     })
   }
 
@@ -42,11 +45,16 @@ export default function WateringList({ }: WateringListProps) {
     if (diffDays === 1) return 'Ayer'
     if (diffDays < 7) return `Hace ${diffDays} días`
 
-    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    return date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+    })
   }
 
   const handlePlantImageClick = (plantid: Plant['id']) => {
-    router.navigate('/plants/:plantid', { params: { plantid: plantid.toString() } })
+    router.navigate('/plants/:plantid', {
+      params: { plantid: plantid.toString() },
+    })
   }
 
   return (
@@ -56,29 +64,44 @@ export default function WateringList({ }: WateringListProps) {
           .map((p) => ({
             ...p,
             lastWatered: lastWateredDates.get(p.id),
-            isWateredToday: new Date(lastWateredDates.get(p.id) ?? '').toLocaleDateString() === new Date().toLocaleDateString()
+            isWateredToday:
+              new Date(
+                lastWateredDates.get(p.id) ?? ''
+              ).toLocaleDateString() === new Date().toLocaleDateString(),
           }))
           .map((p) => (
-            <li key={p.id} className="h-28 flex items-center gap-3 border-2 rounded-md border-amber-200/20 bg-amber-100 p-2">
-              <button className="h-full" type="button" onClick={() => handlePlantImageClick(p.id)}>
-                <img className="h-full aspect-square object-cover rounded-md" src={p.images[0].filepath} />
+            <li
+              key={p.id}
+              className="h-28 flex items-center gap-3 border-2 rounded-md border-amber-200/20 bg-amber-100 p-2"
+            >
+              <button
+                className="h-full"
+                type="button"
+                onClick={() => handlePlantImageClick(p.id)}
+              >
+                <img
+                  className="h-full aspect-square object-cover rounded-md"
+                  src={p.images[0].filepath}
+                />
               </button>
 
-              <div className='grow flex flex-col justify-between h-full p-2'>
+              <div className="grow flex flex-col justify-between h-full p-2">
                 <div className="flex justify-between">
                   <span className="text-xl font-semibold ">{p.nickname}</span>
 
                   <span className="text-sm italic">
                     Ultimo riego:{' '}
-                    {p.lastWatered ? formatWateredDate(p.lastWatered) : "-"}
+                    {p.lastWatered ? formatWateredDate(p.lastWatered) : '-'}
                   </span>
                 </div>
 
-                <div className='flex justify-end gap-2'>
+                <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => handleToggleWaterPlant(p.id)}
-                    className={buttonVariants({ variant: p.isWateredToday ? "secondary" : "tertiary" })}
+                    className={buttonVariants({
+                      variant: p.isWateredToday ? 'secondary' : 'tertiary',
+                    })}
                   >
                     {p.isWateredToday ? 'Revertir' : 'Regar'}
                   </button>
@@ -90,5 +113,3 @@ export default function WateringList({ }: WateringListProps) {
     </div>
   )
 }
-
-

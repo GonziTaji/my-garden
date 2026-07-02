@@ -1,5 +1,5 @@
-import type { PlantDefinition } from "@/domain/plants/plant-definition"
-import { Link } from "@/router/components/Link"
+import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import { Link } from '@/router/components/Link'
 
 export interface ExploreGridProps {
   list: PlantDefinition[]
@@ -15,7 +15,7 @@ export default function ExploreGrid({ list }: ExploreGridProps) {
           params={{ plantdefid: String(d.id) }}
           className="break-inside-avoid mb-4 block"
         >
-          <div className="border border-olive-300 rounded-sm overflow-hidden">
+          <div className="border border-secondary-default rounded-sm overflow-hidden">
             {d.images[0] ? (
               <img
                 src={d.images[0].filepath}
@@ -23,13 +23,15 @@ export default function ExploreGrid({ list }: ExploreGridProps) {
                 alt={`Imagen de ${d.commonName}`}
               />
             ) : (
-              <div className="aspect-square text-center content-center border border-dashed border-olive-300 text-sm text-slate-500">
+              <div className="aspect-square text-center content-center border border-dashed border-secondary-default text-sm text-neutral-strong">
                 Sin imagen
               </div>
             )}
             <div className="p-3">
-              <p className="font-semibold text-lg leading-tight">{d.commonName}</p>
-              <p className="text-sm text-slate-500">{d.authorUsername}</p>
+              <p className="font-semibold text-lg leading-tight">
+                {d.commonName}
+              </p>
+              <p className="text-sm text-neutral-strong">{d.authorUsername}</p>
             </div>
           </div>
         </Link>

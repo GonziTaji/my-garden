@@ -1,9 +1,8 @@
-import { useEffect, useId, useState, type RefObject } from "react";
+import { useEffect, useId, useState, type RefObject } from 'react'
 
 type CloseHandler = (returnValue: string | null) => void
 
-const registry: Record<string, CloseHandler> = {
-}
+const registry: Record<string, CloseHandler> = {}
 
 document.addEventListener('close', (ev: Event) => {
   if (!ev.target) {
@@ -21,10 +20,10 @@ document.addEventListener('close', (ev: Event) => {
 })
 
 interface UseDialogParams {
-  dialogRef: RefObject<HTMLDialogElement | null>,
-  onClose?: CloseHandler,
-  onBeforeClose?: () => void,
-  onShow?: () => void,
+  dialogRef: RefObject<HTMLDialogElement | null>
+  onClose?: CloseHandler
+  onBeforeClose?: () => void
+  onShow?: () => void
   onBeforeShow?: () => void
 }
 
@@ -49,7 +48,6 @@ export default function useDialog({
     if (onClose) {
       registry[dialogRef.current.id] = onClose
     }
-
   }, [dialogRef.current])
 
   function show() {
@@ -70,4 +68,3 @@ export default function useDialog({
 
   return { show, close }
 }
-

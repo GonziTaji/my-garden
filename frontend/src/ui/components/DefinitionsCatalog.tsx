@@ -1,10 +1,10 @@
-import { plantCategory } from "@/domain/plants/category/plant-category"
-import { lightLevel } from "@/domain/plants/light/light-level"
-import type { PlantDefinition } from "@/domain/plants/plant-definition"
-import { soilType } from "@/domain/plants/soil/soil-type"
-import { waterProfile } from "@/domain/plants/water/water-profile"
-import { cn } from "@sglara/cn"
-import { Link } from "@/router/components/Link"
+import { plantCategory } from '@/domain/plants/category/plant-category'
+import { lightLevel } from '@/domain/plants/light/light-level'
+import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import { soilType } from '@/domain/plants/soil/soil-type'
+import { waterProfile } from '@/domain/plants/water/water-profile'
+import { cn } from '@sglara/cn'
+import { Link } from '@/router/components/Link'
 
 export interface DefinitionsCatalogProps {
   list: PlantDefinition[]
@@ -12,7 +12,7 @@ export interface DefinitionsCatalogProps {
 
 export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
   return (
-    <nav className="grid grid-cols-2 bg-olive-50">
+    <nav className="grid grid-cols-2 bg-secondary-light">
       {list.map((d) => (
         <Link
           key={d.id}
@@ -21,9 +21,15 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
         >
           <div className="p-12 pb-0">
             {d.images[0] ? (
-              <img src={d.images[0].filepath} className="aspect-square object-cover" alt={`Imagen de ${d.commonName}`} width={150} height={150} />
+              <img
+                src={d.images[0].filepath}
+                className="aspect-square object-cover"
+                alt={`Imagen de ${d.commonName}`}
+                width={150}
+                height={150}
+              />
             ) : (
-              <div className="aspect-square text-center content-center border border-dashed border-olive-300 text-sm text-slate-500">
+              <div className="aspect-square text-center content-center border border-dashed border-secondary-default text-sm text-neutral-strong">
                 Sin imagen
               </div>
             )}
@@ -34,12 +40,20 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
             <span className="italic text-xl">{d.scientificName}</span>
 
             <div className="text-sm">
-              {d.categories?.map((c) => <span key={c.toString()}>{plantCategory.meta[c].label}</span>)}
+              {d.categories?.map((c) => (
+                <span key={c.toString()}>{plantCategory.meta[c].label}</span>
+              ))}
             </div>
 
             <div>
               {waterProfile.values.map((w, i) => (
-                <span key={w} className={cn(waterProfile.values.indexOf(d.waterProfile) < i && 'grayscale')}>
+                <span
+                  key={w}
+                  className={cn(
+                    waterProfile.values.indexOf(d.waterProfile) < i &&
+                      'grayscale'
+                  )}
+                >
                   💧
                 </span>
               ))}
@@ -47,7 +61,12 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
 
             <div>
               {lightLevel.values.map((l, i) => (
-                <span key={l} className={cn(lightLevel.values.indexOf(d.lightLevel) < i && 'grayscale')}>
+                <span
+                  key={l}
+                  className={cn(
+                    lightLevel.values.indexOf(d.lightLevel) < i && 'grayscale'
+                  )}
+                >
                   ☀️
                 </span>
               ))}
@@ -55,15 +74,21 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
 
             <div>
               {soilType.values.toReversed().map((s, i) => (
-                <span key={s} className={cn(soilType.values.indexOf(d.soilType) < i && 'grayscale')}>
+                <span
+                  key={s}
+                  className={cn(
+                    soilType.values.indexOf(d.soilType) < i && 'grayscale'
+                  )}
+                >
                   🤿
                 </span>
               ))}
             </div>
 
             {d.userPlantCount !== undefined && d.userPlantCount > 0 && (
-              <span className="text-xs text-olive-500 mt-1">
-                {d.userPlantCount} {d.userPlantCount === 1 ? 'planta' : 'plantas'}
+              <span className="text-xs text-secondary-strong mt-1">
+                {d.userPlantCount}{' '}
+                {d.userPlantCount === 1 ? 'planta' : 'plantas'}
               </span>
             )}
             {d.isQuick && (

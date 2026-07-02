@@ -1,5 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { api } from "@/api/client"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react'
+import { api } from '@/api/client'
 
 interface User {
   id: number
@@ -24,7 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    api.get<User | undefined>("/api/auth/me")
+    api
+      .get<User | undefined>('/api/auth/me')
       .then((data) => {
         if (data) setUser(data)
       })
@@ -33,21 +41,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const sendLoginEmail = useCallback(async (email: string) => {
-    await api.post("/api/auth/send-link", { email })
+    await api.post('/api/auth/send-link', { email })
   }, [])
 
   const verifyCode = useCallback(async (code: string) => {
-    const data = await api.post<User>("/api/auth/verify", { code })
+    const data = await api.post<User>('/api/auth/verify', { code })
     setUser(data)
   }, [])
 
   const logout = useCallback(async () => {
-    await api.post("/api/auth/logout")
+    await api.post('/api/auth/logout')
     setUser(null)
   }, [])
 
   return (
-    <AuthContext value={{ user, isLoading, sendLoginEmail, verifyCode, logout }}>
+    <AuthContext
+      value={{ user, isLoading, sendLoginEmail, verifyCode, logout }}
+    >
       {children}
     </AuthContext>
   )
@@ -55,6 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider")
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
   return ctx
 }

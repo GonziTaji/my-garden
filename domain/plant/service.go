@@ -148,11 +148,11 @@ func (s *Service) GetDefinition(id int64, userID int64) (*PlantDefinition, error
 }
 
 func (s *Service) ExploreDefinitions() ([]PlantDefinition, error) {
-	return s.store.ListPlantDefinitions(0)
+	return s.store.ListPlantDefinitions(0, "")
 }
 
-func (s *Service) ListDefinitions(userID int64) ([]PlantDefinition, error) {
-	return s.store.ListPlantDefinitions(userID)
+func (s *Service) ListDefinitions(userID int64, scope string) ([]PlantDefinition, error) {
+	return s.store.ListPlantDefinitions(userID, scope)
 }
 
 func (s *Service) DeleteDefinition(id int64, userID int64) error {
