@@ -247,51 +247,50 @@ export default function DefinitionView({
             )}
           </div>
 
-          {!editMode && user && record.id && linkedPlants !== undefined && (
-            <>
+          {!editMode && user && record.id && (
+            <div>
               <hr className="my-4 border-secondary-subtle" />
               <h3 className="font-semibold text-secondary-dark mb-2">
                 Mis plantas de este tipo
               </h3>
-              {linkedPlants.length > 0 ? (
-                <div className="flex flex-col gap-1 mb-4">
-                  {linkedPlants.map((plant) => (
-                    <Link
-                      key={plant.id}
-                      to="/plants/:plantid"
-                      params={{ plantid: String(plant.id) }}
-                      className="flex items-center gap-3 p-2 rounded-sm hover:bg-primary-subtle"
-                    >
-                      <div className="w-10 h-10 rounded-sm overflow-hidden bg-secondary-default shrink-0">
-                        {plant.images[0]?.filepath ? (
-                          <img
-                            src={plant.images[0].filepath}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs text-secondary-strong">
-                            ?
-                          </div>
-                        )}
-                      </div>
-                      <span>{plant.nickname}</span>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-secondary-strong mb-4">
-                  Sin plantas.{' '}
+              <div className="flex flex-col gap-1 mb-4">
+                {linkedPlants?.map((plant) => (
                   <Link
-                    to="/plants/new"
-                    search={{ plant_definition_id: String(record.id) }}
-                    className="text-primary-strong underline"
+                    key={plant.id}
+                    to="/plants/:plantid"
+                    params={{ plantid: String(plant.id) }}
+                    className="flex items-center gap-3 p-2 rounded-sm hover:bg-primary-subtle"
                   >
-                    Nueva
+                    <div className="w-10 h-10 rounded-sm overflow-hidden bg-secondary-default shrink-0">
+                      {plant.images[0]?.filepath ? (
+                        <img
+                          src={plant.images[0].filepath}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-secondary-strong">
+                          ?
+                        </div>
+                      )}
+                    </div>
+                    <span>{plant.nickname}</span>
                   </Link>
-                </p>
-              )}
+                ))}
+              </div>
+
+              <p className="text-secondary-strong mb-4">
+                {!linkedPlants?.length && <span>Sin plantas.</span>}
+
+                <Link
+                  to="/plants/new"
+                  search={{ plant_definition_id: String(record.id) }}
+                  className="text-primary-strong underline"
+                >
+                  Nueva
+                </Link>
+              </p>
               <hr className="my-4 border-secondary-subtle" />
-            </>
+            </div>
           )}
 
           <dl className="flex flex-col gap-2">
