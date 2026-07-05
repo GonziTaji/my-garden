@@ -1,0 +1,20 @@
+services:
+  my-garden:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    environment:
+      MY_GARDEN_ENV: prod
+      MY_GARDEN_ADDR: ":8080"
+      MY_GARDEN_DB: /app/data/main.db
+      MY_GARDEN_FRONTEND_FOLDER: frontend/dist
+      MY_GARDEN_ORIGIN: http://localhost:8080
+    volumes:
+      - my-garden-data:/app/data
+      - uploads:/app/public/uploads
+    restart: unless-stopped
+
+volumes:
+  my-garden-data:
+  uploads:
