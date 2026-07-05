@@ -125,8 +125,6 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
       return
     }
 
-    console.log('selected date', gridDayData.date)
-
     onDaySelect({
       plantId,
       isWatered: gridDayData.isWatered,

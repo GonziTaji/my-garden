@@ -1,8 +1,8 @@
-import { useExploreDefinitions } from '@/api/definitions'
+import { useExploreSpecies } from '@/api/species'
 import ExploreGrid from '@/ui/components/ExploreGrid'
 
 export default function Home() {
-  const { data, isLoading, error } = useExploreDefinitions()
+  const { data, isLoading, error } = useExploreSpecies()
 
   if (isLoading) {
     return (
@@ -20,9 +20,9 @@ export default function Home() {
     )
   }
 
-  const definitions = data ?? []
+  const species = data ?? []
 
-  if (definitions.length === 0) {
+  if (species.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <p className="text-neutral-strong">
@@ -34,7 +34,7 @@ export default function Home() {
 
   return (
     <div className="mx-2">
-      <ExploreGrid list={definitions} />
+      <ExploreGrid list={species} />
     </div>
   )
 }

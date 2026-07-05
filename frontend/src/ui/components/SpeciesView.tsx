@@ -7,37 +7,32 @@ import { Link } from '@/router/components/Link'
 import { useNavigate } from '@/router/provider'
 import { plantCategory } from '@/domain/plants/category/plant-category'
 import { lightLevel } from '@/domain/plants/light/light-level'
-import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { soilType } from '@/domain/plants/soil/soil-type'
 import { petToxicity } from '@/domain/plants/toxicity/pet-toxicity'
 import { waterProfile } from '@/domain/plants/water/water-profile'
 import { buttonVariants } from '@/ui/classVariants/button'
 import {
-  useCreateDefinition,
-  useUpdateDefinition,
-  useCloneDefinition,
+  useCreateSpecies,
+  useUpdateSpecies,
   useToggleFavorite,
-  uploadDefinitionImage,
-} from '@/api/definitions'
+  uploadSpeciesImage,
+} from '@/api/species'
 import { usePlants } from '@/api/plants'
 import { inputVariants } from '../classVariants/input'
 import { useAuth } from '@/auth/AuthContext'
 
-interface DefinitionViewProps {
-  record: PlantDefinition
+interface SpeciesViewProps {
+  record: PlantSpecies
   editMode: boolean
 }
 
-export default function DefinitionView({
-  record,
-  editMode,
-}: DefinitionViewProps) {
+export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
   const { user } = useAuth()
   const [isPending, startTransition] = useTransition()
   const navigate = useNavigate()
-  const createDefinition = useCreateDefinition()
-  const updateDefinition = useUpdateDefinition()
-  const cloneDefinition = useCloneDefinition()
+  const createSpecies = useCreateSpecies()
+  const updateSpecies = useUpdateSpecies()
   const toggleFavorite = useToggleFavorite()
   const [favorited, setFavorited] = useState(record.isFavorited || false)
 
@@ -67,6 +62,7 @@ export default function DefinitionView({
   }))
 
   const { data: linkedPlants } = usePlants(record.id ?? undefined)
+  const isDeleted = !!record.deletedAt
 
   const submitAction = async (fd: FormData) => {
     startTransition(async () => {
@@ -76,7 +72,7 @@ export default function DefinitionView({
         for (let pos = 0; pos < 3; pos++) {
           const fileInput = fd.get(`imagesFile_${pos}`)
           if (fileInput instanceof File && fileInput.size > 0) {
-            const filepath = await uploadDefinitionImage(fileInput)
+            const filepath = await uploadSpeciesImage(fileInput)
             images.push({ filepath, position: pos })
           } else {
             const existingPath = fd.get(`imagesExistingId_${pos}`)
@@ -105,16 +101,16 @@ export default function DefinitionView({
 
         let result: { id: number }
         if (record.id) {
-          result = await updateDefinition.mutateAsync({
+          result = await updateSpecies.mutateAsync({
             id: record.id,
             ...payload,
           })
         } else {
-          result = await createDefinition.mutateAsync(payload)
+          result = await createSpecies.mutateAsync(payload)
         }
 
-        navigate('/catalog/:plantdefid', {
-          params: { plantdefid: String(result.id) },
+        navigate('/catalog/:plantspeciesid', {
+          params: { plantspeciesid: String(result.id) },
         })
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Error al guardar')
@@ -122,14 +118,34 @@ export default function DefinitionView({
     })
   }
 
+  function handleCloneSpecies() {
+    navigate('/catalog/new', {
+      search: {
+        commonName: record.commonName,
+        scientificName: record.scientificName,
+        waterProfile: record.waterProfile,
+        lightLevel: record.lightLevel,
+        soilType: record.soilType,
+        petToxicity: record.petToxicity,
+        petToxicityNotes: record.petToxicityNotes,
+        categories: record.categories?.join(',') || '',
+      },
+    })
+  }
+
   return (
     <div className="mx-2">
       <form className="p-4 overflow-auto mb-12">
+        {isDeleted && (
+          <div className="bg-warning-soft border border-warning-strong text-warning-strong px-4 py-3 rounded-md mb-4">
+            Este tipo de planta ha sido eliminado por su creador
+          </div>
+        )}
         <input name="id" type="hidden" defaultValue={record.id || ''} />
 
         <div className="border py-8 px-8">
           <div className="flex gap-4 justify-end">
-            {editMode ? (
+            {editMode && !isDeleted ? (
               <>
                 <button
                   className={buttonVariants({ variant: 'primary' })}
@@ -140,35 +156,26 @@ export default function DefinitionView({
                   {isPending ? 'Guardando' : 'Guardar'}
                 </button>
 
-                {record.id ? (
-                  <Link
-                    to="/catalog/:plantdefid"
-                    params={{ plantdefid: String(record.id) }}
-                    className={buttonVariants({ variant: 'secondary' })}
-                  >
-                    Cancelar
-                  </Link>
-                ) : (
-                  <Link
-                    to="/catalog"
-                    className={buttonVariants({ variant: 'secondary' })}
-                  >
-                    Cancelar
-                  </Link>
-                )}
+                <Link
+                  to="back"
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
+                  Cancelar
+                </Link>
               </>
-            ) : user ? (
+            ) : user && !isDeleted ? (
               <>
                 {user.id !== record.userId && (
                   <>
                     <button
-                      onClick={() => cloneDefinition.mutate(record.id!)}
+                      type="button"
+                      onClick={handleCloneSpecies}
                       className={buttonVariants({ variant: 'secondary' })}
-                      disabled={cloneDefinition.isPending}
                     >
-                      {cloneDefinition.isPending ? 'Clonando...' : 'Clonar'}
+                      Clonar
                     </button>
                     <button
+                      type="button"
                       onClick={async () => {
                         const result = await toggleFavorite.mutateAsync(
                           record.id!
@@ -183,8 +190,8 @@ export default function DefinitionView({
                 )}
                 {user.id === record.userId && (
                   <Link
-                    to="/catalog/:plantdefid"
-                    params={{ plantdefid: String(record.id) }}
+                    to="/catalog/:plantspeciesid"
+                    params={{ plantspeciesid: String(record.id) }}
                     search={{ e: 'T' }}
                     className={buttonVariants({ variant: 'primary' })}
                   >
@@ -251,7 +258,7 @@ export default function DefinitionView({
             <div>
               <hr className="my-4 border-secondary-subtle" />
               <h3 className="font-semibold text-secondary-dark mb-2">
-                Mis plantas de este tipo
+                Mis plantas de esta especie
               </h3>
               <div className="flex flex-col gap-1 mb-4">
                 {linkedPlants?.map((plant) => (
@@ -281,13 +288,15 @@ export default function DefinitionView({
               <p className="text-secondary-strong mb-4">
                 {!linkedPlants?.length && <span>Sin plantas.</span>}
 
-                <Link
-                  to="/plants/new"
-                  search={{ plant_definition_id: String(record.id) }}
-                  className="text-primary-strong underline"
-                >
-                  Nueva
-                </Link>
+                {!isDeleted && (
+                  <Link
+                    to="/plants/new"
+                    search={{ plant_species_id: String(record.id) }}
+                    className="text-primary-strong underline"
+                  >
+                    Nueva
+                  </Link>
+                )}
               </p>
               <hr className="my-4 border-secondary-subtle" />
             </div>
@@ -363,14 +372,6 @@ export default function DefinitionView({
               )}
             </DetailListItem>
 
-            {editMode && record.id && user && (
-              <div className="text-danger-default">
-                <DetailListItem title="DANGER ZONE">
-                  <DeleteButton plantdef={record} />
-                </DetailListItem>
-              </div>
-            )}
-
             <DetailListItem title="Notas">
               {editMode ? (
                 <textarea
@@ -385,6 +386,14 @@ export default function DefinitionView({
                 </span>
               )}
             </DetailListItem>
+
+            {editMode && !isDeleted && record.id && user && (
+              <div className="text-danger-default">
+                <DetailListItem title="DANGER ZONE">
+                  <DeleteButton plantspecies={record} />
+                </DetailListItem>
+              </div>
+            )}
           </dl>
         </div>
       </form>

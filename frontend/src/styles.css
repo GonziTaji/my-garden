@@ -3,6 +3,10 @@
 @import 'styles/view-transitions.css';
 @import 'styles/selects.css';
 
+html {
+  font-size: 12px;
+}
+
 input,
 select {
   min-width: 0;

@@ -1,7 +1,7 @@
 import { cn } from '@sglara/cn'
 import type { FC } from 'react'
 import { cva } from 'class-variance-authority'
-import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import type { PlantSpecies } from '@/domain/plants/plant-species'
 
 const checkboxLabelVariants = cva(
   [
@@ -31,7 +31,7 @@ interface DetailOption {
 }
 
 type DetailChecklistKey = keyof Pick<
-  PlantDefinition,
+  PlantSpecies,
   'categories' | 'waterProfile' | 'lightLevel' | 'soilType' | 'petToxicity'
 >
 

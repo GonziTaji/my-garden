@@ -3,7 +3,7 @@ import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
 import { useNavigate } from '@/router/provider'
 import { useCreatePlant } from '@/api/plants'
-import { useCreateDefinition, useDefinitions } from '@/api/definitions'
+import { useCreateSpecies, useSpecies } from '@/api/species'
 import { cn } from '@sglara/cn'
 import { Link } from '@/router/components/Link'
 
@@ -30,36 +30,36 @@ const waterProfiles = [
 ]
 
 export interface PlantFormProps {
-  plantDefinitionId?: number
+  plantSpeciesId?: number
 }
 
-export default function PlantForm({ plantDefinitionId }: PlantFormProps) {
+export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
-  const { data: plantDefinitions } = useDefinitions()
+  const { data: plantSpecies } = useSpecies()
   const createPlant = useCreatePlant()
-  const createDefinition = useCreateDefinition()
+  const createSpecies = useCreateSpecies()
 
   const [speciesMode, setSpeciesMode] = useState<'catalog' | 'quick' | 'new'>(
     'catalog'
   )
   const [quickName, setQuickName] = useState('')
   const [quickWater, setQuickWater] = useState('dry_cycle')
-  const [selectedDefId, setSelectedDefId] = useState<number | undefined>(
-    undefined
-  )
+  const [selectedSpeciesId, setSelectedSpeciesId] = useState<
+    number | undefined
+  >(undefined)
 
-  const ownedDefinitions = useMemo(() => {
-    if (!plantDefinitions) return []
-    return plantDefinitions.filter((d) => d.userId !== undefined)
-  }, [plantDefinitions])
+  const ownedSpecies = useMemo(() => {
+    if (!plantSpecies) return []
+    return plantSpecies.filter((sp) => sp.userId !== undefined)
+  }, [plantSpecies])
 
-  const definitionName = useMemo(() => {
-    if (!plantDefinitionId || !plantDefinitions) return ''
-    const def = plantDefinitions.find((d) => d.id === plantDefinitionId)
-    return def ? def.commonName : ''
-  }, [plantDefinitionId, plantDefinitions])
+  const speciesName = useMemo(() => {
+    if (!plantSpeciesId || !plantSpecies) return ''
+    const sp = plantSpecies.find((sp) => sp.id === plantSpeciesId)
+    return sp ? sp.commonName : ''
+  }, [plantSpeciesId, plantSpecies])
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -68,28 +68,28 @@ export default function PlantForm({ plantDefinitionId }: PlantFormProps) {
 
     startTransition(async () => {
       try {
-        let defId = plantDefinitionId
+        let defId = plantSpeciesId
 
         if (!defId && speciesMode === 'quick') {
           if (!quickName.trim()) {
             setError('El nombre de la especie es requerido')
             return
           }
-          const newDef = await createDefinition.mutateAsync({
+          const newSp = await createSpecies.mutateAsync({
             common_name: quickName.trim(),
             scientific_name: '',
             water_profile: quickWater,
             is_quick: true,
           })
-          defId = newDef.id
+          defId = newSp.id
         }
 
         if (!defId && speciesMode === 'catalog') {
-          if (!selectedDefId) {
+          if (!selectedSpeciesId) {
             setError('Selecciona una especie del catálogo')
             return
           }
-          defId = selectedDefId
+          defId = selectedSpeciesId
         }
 
         if (!defId) {
@@ -103,7 +103,7 @@ export default function PlantForm({ plantDefinitionId }: PlantFormProps) {
           location: fd.get('location')?.toString() || undefined,
           acquired_at: fd.get('acquiredAt')?.toString() || undefined,
           notes: fd.get('notes')?.toString() || undefined,
-          plant_definition_id: defId,
+          plant_species_id: defId,
         })
 
         if (result?.id) {
@@ -130,15 +130,15 @@ export default function PlantForm({ plantDefinitionId }: PlantFormProps) {
 
       <fieldset>
         <div className="flex flex-col gap-2">
-          <label htmlFor="plantDefinitionId">Especie</label>
+          <label htmlFor="plantSpeciesId">Especie</label>
 
-          {plantDefinitionId ? (
+          {plantSpeciesId ? (
             <div className="border border-primary-default rounded-lg p-2 text-sm bg-primary-light">
-              {definitionName || `ID: ${plantDefinitionId}`}
+              {speciesName || `ID: ${plantSpeciesId}`}
               <input
                 type="hidden"
-                name="plantDefinitionId"
-                value={plantDefinitionId}
+                name="plantSpeciesId"
+                value={plantSpeciesId}
               />
             </div>
           ) : (
@@ -154,16 +154,16 @@ export default function PlantForm({ plantDefinitionId }: PlantFormProps) {
               </label>
               {speciesMode === 'catalog' && (
                 <select
-                  value={selectedDefId || ''}
+                  value={selectedSpeciesId || ''}
                   onChange={(e) =>
-                    setSelectedDefId(Number(e.target.value) || undefined)
+                    setSelectedSpeciesId(Number(e.target.value) || undefined)
                   }
                   className={inputVariants()}
                 >
                   <option value="">Seleccionar especie...</option>
-                  {ownedDefinitions.map((d) => (
-                    <option key={d.id} value={d.id!}>
-                      {d.commonName}
+                  {ownedSpecies.map((sp) => (
+                    <option key={sp.id} value={sp.id!}>
+                      {sp.commonName}
                     </option>
                   ))}
                 </select>
@@ -295,7 +295,7 @@ export default function PlantForm({ plantDefinitionId }: PlantFormProps) {
           className={buttonVariants({ variant: 'secondary' })}
           type="reset"
           disabled={isPending}
-          onClick={() => navigate('/plants')}
+          onClick={() => history.go(-1)}
         >
           Cancelar
         </button>

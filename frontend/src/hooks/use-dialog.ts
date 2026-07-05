@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type RefObject } from 'react'
+import { useEffect, useId, type RefObject } from 'react'
 
 type CloseHandler = (returnValue: string | null) => void
 
@@ -51,7 +51,7 @@ export default function useDialog({
   }, [dialogRef.current])
 
   function show() {
-    onBeforeShow && onBeforeShow
+    onBeforeShow && onBeforeShow()
 
     if (dialogRef.current?.popover) {
       dialogRef.current?.show()

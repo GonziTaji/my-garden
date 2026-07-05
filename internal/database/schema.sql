@@ -15,15 +15,15 @@ create table if not exists auth_tokens (
   created_at text default (datetime('now', 'localtime')) not null
 );
 
-create table if not exists plant_definition_favorites (
+create table if not exists plant_species_favorites (
   id integer primary key autoincrement not null,
   user_id integer not null references users(id),
-  plant_definition_id integer not null references plant_definitions(id) on delete cascade,
+  plant_species_id integer not null references plant_species(id) on delete cascade,
   created_at text default (datetime('now', 'localtime')) not null,
-  unique(user_id, plant_definition_id)
+  unique(user_id, plant_species_id)
 );
 
-create table if not exists plant_definitions (
+create table if not exists plant_species (
   id integer primary key autoincrement not null,
   common_name text not null,
   scientific_name text not null default '',
@@ -37,32 +37,33 @@ create table if not exists plant_definitions (
   user_id integer references users(id),
   visibility text not null default 'private',
   is_quick integer not null default 0,
+  deleted_at text default null,
   created_at text default (datetime('now', 'localtime')) not null,
   updated_at text default (datetime('now', 'localtime')) not null
 );
 
-create table if not exists plant_definition_images (
+create table if not exists plant_species_images (
   id integer primary key autoincrement not null,
-  plant_definition_id integer not null,
+  plant_species_id integer not null,
   filepath text not null,
   position integer not null,
-  foreign key (plant_definition_id) references plant_definitions(id) on delete cascade
+  foreign key (plant_species_id) references plant_species(id) on delete cascade
 );
 
-create unique index if not exists idx_pdi_definition_position
-  on plant_definition_images (plant_definition_id, position);
+create unique index if not exists idx_psi_species_position
+  on plant_species_images (plant_species_id, position);
 
 create table if not exists plants (
   id integer primary key autoincrement not null,
   nickname text not null,
   source text null,
-  plant_definition_id integer not null,
+  plant_species_id integer not null,
   acquired_at text null,
   notes text null,
   user_id integer references users(id),
   created_at text default (datetime('now', 'localtime')) not null,
   updated_at text default (datetime('now', 'localtime')) not null,
-  foreign key (plant_definition_id) references plant_definitions(id) on delete cascade
+  foreign key (plant_species_id) references plant_species(id) on delete cascade
 );
 
 create table if not exists plant_journal_entries (

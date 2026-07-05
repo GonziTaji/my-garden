@@ -55,6 +55,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <div className="flex gap-2 items-center text-sm text-secondary-dark">
             <span>{user.username}</span>
             <button
+              type="button"
               onClick={logout}
               className={buttonVariants({ variant: 'tertiary', size: 'sm' })}
             >

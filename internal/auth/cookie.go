@@ -58,9 +58,9 @@ func SetSessionCookie(c *gin.Context, userID int64) {
 	if err != nil {
 		return
 	}
-	c.SetCookie("session", signed, 86400*30, "/", "", false, true)
+	c.SetCookie("session", signed, 86400*30, "/", "", true, true)
 }
 
 func ClearSessionCookie(c *gin.Context) {
-	c.SetCookie("session", "", -1, "/", "", false, true)
+	c.SetCookie("session", "", -1, "/", "", true, true)
 }

@@ -21,30 +21,6 @@ export function useToggleWatering() {
   })
 }
 
-interface MutateQuickWaterArgs {
-  plantId: number
-  date: string
-  remove?: boolean
-}
-
-export function useQuickWater() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ plantId, date, remove }: MutateQuickWaterArgs) => {
-      if (remove) {
-        return api.del(`/api/plants/${plantId}/events/${date}`)
-      }
-      return api.post(`/api/plants/${plantId}/events`, {
-        event_type: 'watering',
-        event_date: date,
-      })
-    },
-    onSuccess: (_data, { plantId }) => {
-      qc.invalidateQueries({ queryKey: ['events', plantId] })
-    },
-  })
-}
-
 export function useLastWateredDates(plantIds: number[]) {
   return useQuery({
     queryKey: ['watering', 'last-watered', plantIds.sort().join(',')],

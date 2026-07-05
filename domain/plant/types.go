@@ -90,53 +90,55 @@ const (
 
 // Entities
 
-type PlantDefinition struct {
-	ID               int64                  `json:"id"`
-	CommonName       string                 `json:"common_name"`
-	ScientificName   string                 `json:"scientific_name"`
-	WaterProfile     WaterProfile           `json:"water_profile"`
-	LightLevel       LightLevel             `json:"light_level"`
-	SoilType         SoilType               `json:"soil_type"`
-	PetToxicity      PetToxicity            `json:"pet_toxicity"`
-	PetToxicityNotes string                 `json:"pet_toxicity_notes"`
-	CategoriesJSON   string                 `json:"categories_json"`
-	Notes            string                 `json:"notes"`
-	UserID           int64                  `json:"user_id"`
-	Visibility       string                 `json:"visibility"`
-	AuthorUsername   string                 `json:"author_username"`
-	Images           []PlantDefinitionImage `json:"images"`
-	IsFavorited      bool                   `json:"is_favorited"`
-	UserPlantCount   int                    `json:"user_plant_count"`
-	IsQuick          bool                   `json:"is_quick"`
-	CreatedAt        string                 `json:"created_at"`
-	UpdatedAt        string                 `json:"updated_at"`
+type PlantSpecies struct {
+	ID               int64                `json:"id"`
+	CommonName       string               `json:"common_name"`
+	ScientificName   string               `json:"scientific_name"`
+	WaterProfile     WaterProfile         `json:"water_profile"`
+	LightLevel       LightLevel           `json:"light_level"`
+	SoilType         SoilType             `json:"soil_type"`
+	PetToxicity      PetToxicity          `json:"pet_toxicity"`
+	PetToxicityNotes string               `json:"pet_toxicity_notes"`
+	CategoriesJSON   string               `json:"categories_json"`
+	Notes            string               `json:"notes"`
+	UserID           int64                `json:"user_id"`
+	Visibility       string               `json:"visibility"`
+	AuthorUsername   string               `json:"author_username"`
+	Images           []PlantSpeciesImage  `json:"images"`
+	IsFavorited      bool                 `json:"is_favorited"`
+	UserPlantCount   int                  `json:"user_plant_count"`
+	IsQuick          bool                 `json:"is_quick"`
+	DeletedAt        *string              `json:"deleted_at,omitempty"`
+	CreatedAt        string               `json:"created_at"`
+	UpdatedAt        string               `json:"updated_at"`
 }
 
-type PlantDefinitionImage struct {
-	ID                int64  `json:"id"`
-	PlantDefinitionID int64  `json:"plant_definition_id"`
-	Filepath          string `json:"filepath"`
-	Position          int    `json:"position"`
+type PlantSpeciesImage struct {
+	ID             int64  `json:"id"`
+	PlantSpeciesID int64  `json:"plant_species_id"`
+	Filepath       string `json:"filepath"`
+	Position       int    `json:"position"`
 }
 
 type Plant struct {
-	ID                int64      `json:"id"`
-	Nickname          string     `json:"nickname"`
-	Source            NullString `json:"source"`
-	PlantDefinitionID int64      `json:"plant_definition_id"`
-	AcquiredAt        NullString `json:"acquired_at"`
-	Notes             NullString `json:"notes"`
-	UserID            int64      `json:"user_id"`
-	CreatedAt         string     `json:"created_at"`
-	UpdatedAt         string     `json:"updated_at"`
+	ID            int64      `json:"id"`
+	Nickname      string     `json:"nickname"`
+	Source        NullString `json:"source"`
+	PlantSpeciesID int64      `json:"plant_species_id"`
+	AcquiredAt    NullString `json:"acquired_at"`
+	Notes         NullString `json:"notes"`
+	UserID        int64      `json:"user_id"`
+	CreatedAt     string     `json:"created_at"`
+	UpdatedAt     string     `json:"updated_at"`
 }
 
-type PlantDefinitionBrief struct {
-	ID             int64  `json:"id"`
-	CommonName     string `json:"common_name"`
-	ScientificName string `json:"scientific_name"`
-	UserID         int64  `json:"user_id"`
-	Visibility     string `json:"visibility"`
+type PlantSpeciesBrief struct {
+	ID             int64   `json:"id"`
+	CommonName     string  `json:"common_name"`
+	ScientificName string  `json:"scientific_name"`
+	UserID         int64   `json:"user_id"`
+	Visibility     string  `json:"visibility"`
+	DeletedAt      *string `json:"deleted_at,omitempty"`
 }
 
 type PlantImage struct {
@@ -147,17 +149,17 @@ type PlantImage struct {
 	UserID    int64  `json:"user_id"`
 }
 
-type PlantWithDefinition struct {
-	ID              int64                `json:"id"`
-	Nickname        string               `json:"nickname"`
-	Source          NullString           `json:"source"`
-	AcquiredAt      NullString           `json:"acquired_at"`
-	Location        NullString           `json:"location"`
-	Notes           NullString           `json:"notes"`
-	PlantDefinition PlantDefinitionBrief `json:"plant_definition"`
-	Images          []PlantImage         `json:"images"`
-	CreatedAt       string               `json:"created_at"`
-	UpdatedAt       string               `json:"updated_at"`
+type PlantWithSpecies struct {
+	ID            int64              `json:"id"`
+	Nickname      string             `json:"nickname"`
+	Source        NullString         `json:"source"`
+	AcquiredAt    NullString         `json:"acquired_at"`
+	Location      NullString         `json:"location"`
+	Notes         NullString         `json:"notes"`
+	PlantSpecies  PlantSpeciesBrief  `json:"plant_species"`
+	Images        []PlantImage       `json:"images"`
+	CreatedAt     string             `json:"created_at"`
+	UpdatedAt     string             `json:"updated_at"`
 }
 
 type WateringMetadata struct {

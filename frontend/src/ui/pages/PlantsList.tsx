@@ -26,6 +26,7 @@ export default function PlantsList() {
       <div className="flex gap-1 p-2">
         {(['list', 'water', 'history'] as const).map((t) => (
           <button
+            type="button"
             key={t}
             onClick={() => handleTabChange(t)}
             className={cn(

@@ -33,30 +33,30 @@ func (h *Handler) GetEnums(c *gin.Context) {
 	c.JSON(http.StatusOK, AllEnums())
 }
 
-// Plant Definitions
-func (h *Handler) ExplorePlantDefinitions(c *gin.Context) {
-	defs, err := h.service.ListDefinitions(0, "")
+// Plant Species
+func (h *Handler) ExplorePlantSpecies(c *gin.Context) {
+	species, err := h.service.ListSpecies(0, "")
 	if err != nil {
 		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})
 		return
 	}
-	c.JSON(http.StatusOK, defs)
+	c.JSON(http.StatusOK, species)
 }
 
-func (h *Handler) ListPlantDefinitions(c *gin.Context) {
+func (h *Handler) ListPlantSpecies(c *gin.Context) {
 	userID := userIDFromContext(c)
 	scope := c.Query("scope")
-	defs, err := h.service.ListDefinitions(userID, scope)
+	species, err := h.service.ListSpecies(userID, scope)
 	if err != nil {
 		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar tipos de planta"})
 		return
 	}
-	c.JSON(http.StatusOK, defs)
+	c.JSON(http.StatusOK, species)
 }
 
-func (h *Handler) GetPlantDefinition(c *gin.Context) {
+func (h *Handler) GetPlantSpecies(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
@@ -64,7 +64,7 @@ func (h *Handler) GetPlantDefinition(c *gin.Context) {
 	}
 
 	userID := userIDFromContext(c)
-	def, err := h.service.GetDefinition(id, userID)
+	sp, err := h.service.GetSpecies(id, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -75,18 +75,18 @@ func (h *Handler) GetPlantDefinition(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, def)
+	c.JSON(http.StatusOK, sp)
 }
 
-func (h *Handler) CreatePlantDefinition(c *gin.Context) {
-	var input UpsertDefinitionInput
+func (h *Handler) CreatePlantSpecies(c *gin.Context) {
+	var input UpsertSpeciesInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
 		return
 	}
 
 	userID := userIDFromContext(c)
-	def, err := h.service.CreateDefinition(input, userID)
+	sp, err := h.service.CreateSpecies(input, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -102,24 +102,24 @@ func (h *Handler) CreatePlantDefinition(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, def)
+	c.JSON(http.StatusCreated, sp)
 }
 
-func (h *Handler) UpdatePlantDefinition(c *gin.Context) {
+func (h *Handler) UpdatePlantSpecies(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
 		return
 	}
 
-	var input UpsertDefinitionInput
+	var input UpsertSpeciesInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cuerpo de solicitud invalido"})
 		return
 	}
 
 	userID := userIDFromContext(c)
-	def, err := h.service.UpdateDefinition(id, input, userID)
+	sp, err := h.service.UpdateSpecies(id, input, userID)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
@@ -135,10 +135,10 @@ func (h *Handler) UpdatePlantDefinition(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, def)
+	c.JSON(http.StatusOK, sp)
 }
 
-func (h *Handler) DeletePlantDefinition(c *gin.Context) {
+func (h *Handler) DeletePlantSpecies(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
@@ -146,7 +146,7 @@ func (h *Handler) DeletePlantDefinition(c *gin.Context) {
 	}
 
 	userID := userIDFromContext(c)
-	if err := h.service.DeleteDefinition(id, userID); err != nil {
+	if err := h.service.DeleteSpecies(id, userID); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
@@ -157,28 +157,6 @@ func (h *Handler) DeletePlantDefinition(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
-}
-
-func (h *Handler) ClonePlantDefinition(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalido"})
-		return
-	}
-
-	userID := userIDFromContext(c)
-	def, err := h.service.CloneDefinition(id, userID)
-	if err != nil {
-		var valErr *ValidationError
-		if errors.As(err, &valErr) {
-			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al clonar tipo de planta"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, def)
 }
 
 func (h *Handler) ToggleFavorite(c *gin.Context) {
@@ -264,7 +242,7 @@ func (h *Handler) UploadPlantImage(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 
-func (h *Handler) UploadPlantDefinitionImage(c *gin.Context) {
+func (h *Handler) UploadPlantSpeciesImage(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Archivo no encontrado en la solicitud"})
@@ -288,18 +266,18 @@ func (h *Handler) UploadPlantDefinitionImage(c *gin.Context) {
 // Plants
 
 func (h *Handler) ListPlants(c *gin.Context) {
-	var defID *int64
-	if s := c.Query("plant_definition_id"); s != "" {
+	var speciesID *int64
+	if s := c.Query("plant_species_id"); s != "" {
 		id, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "plant_definition_id invalido"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "plant_species_id invalido"})
 			return
 		}
-		defID = &id
+		speciesID = &id
 	}
 
 	userID := userIDFromContext(c)
-	plants, err := h.service.ListPlants(defID, userID)
+	plants, err := h.service.ListPlants(speciesID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar plantas"})
 		return

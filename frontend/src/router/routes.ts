@@ -17,7 +17,7 @@ export const routerPaths = [
   { path: '/plants/:plantid', component: PlantDetailPage },
   { path: '/catalog', component: CatalogList },
   { path: '/catalog/new', component: CatalogNew },
-  { path: '/catalog/:plantdefid', component: CatalogDetail },
-  { path: '/catalog/:plantdefid/new-plant', component: CatalogNewPlant },
+  { path: '/catalog/:plantspeciesid', component: CatalogDetail },
+  { path: '/catalog/:plantspeciesid/new-plant', component: CatalogNewPlant },
   { path: '/login', component: Login },
 ] as const

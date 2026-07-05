@@ -1,29 +1,26 @@
 import { useParams, useSearchParams, useNavigate } from '@/router/provider'
-import { useDefinition } from '@/api/definitions'
-import DefinitionView from '@/ui/components/DefinitionView'
+import { useSpeciesById } from '@/api/species'
+import SpeciesView from '@/ui/components/SpeciesView'
 
 export default function CatalogDetail() {
-  const { plantdefid } = useParams()
+  const { plantspeciesid } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const defId = Number(plantdefid)
-  console.log({ plantdefid, defId })
-
-  const { data: definition, isLoading, error } = useDefinition(defId)
+  const spId = Number(plantspeciesid)
+  const { data: species, isLoading, error } = useSpeciesById(spId)
 
   if (isLoading) {
-    console.log('isloading')
     return (
       <div className="p-8 text-center text-secondary-strong">Cargando...</div>
     )
   }
 
-  if (error || !definition) {
-    console.log({ error, definition })
+  if (error || !species) {
     return (
       <div className="p-8 text-center">
         <p className="text-danger-strong">Tipo de planta no encontrado</p>
         <button
+          type="button"
           onClick={() => navigate('/catalog')}
           className="text-primary-strong underline mt-4"
         >
@@ -33,7 +30,7 @@ export default function CatalogDetail() {
     )
   }
 
-  const editMode = searchParams.get('e') === 'T'
+  const editMode = searchParams.get('e') === 'T' && !species.deletedAt
 
-  return <DefinitionView record={definition} editMode={editMode} />
+  return <SpeciesView record={species} editMode={editMode} />
 }

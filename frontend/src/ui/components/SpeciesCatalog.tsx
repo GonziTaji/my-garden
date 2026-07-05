@@ -1,30 +1,30 @@
 import { plantCategory } from '@/domain/plants/category/plant-category'
 import { lightLevel } from '@/domain/plants/light/light-level'
-import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { soilType } from '@/domain/plants/soil/soil-type'
 import { waterProfile } from '@/domain/plants/water/water-profile'
 import { cn } from '@sglara/cn'
 import { Link } from '@/router/components/Link'
 
-export interface DefinitionsCatalogProps {
-  list: PlantDefinition[]
+export interface SpeciesCatalogProps {
+  list: PlantSpecies[]
 }
 
-export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
+export default function SpeciesCatalog({ list }: SpeciesCatalogProps) {
   return (
     <nav className="grid grid-cols-2 bg-secondary-light">
-      {list.map((d) => (
+      {list.map((sp) => (
         <Link
-          key={d.id}
-          to="/catalog/:plantdefid"
-          params={{ plantdefid: String(d.id) }}
+          key={sp.id}
+          to="/catalog/:plantspeciesid"
+          params={{ plantspeciesid: String(sp.id) }}
         >
           <div className="p-12 pb-0">
-            {d.images[0] ? (
+            {sp.images[0] ? (
               <img
-                src={d.images[0].filepath}
+                src={sp.images[0].filepath}
                 className="aspect-square object-cover"
-                alt={`Imagen de ${d.commonName}`}
+                alt={`Imagen de ${sp.commonName}`}
                 width={150}
                 height={150}
               />
@@ -36,11 +36,11 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
           </div>
 
           <div className="flex flex-col items-center text-center">
-            <span className="font-semibold text-xl">{d.commonName}</span>
-            <span className="italic text-xl">{d.scientificName}</span>
+            <span className="font-semibold text-xl">{sp.commonName}</span>
+            <span className="italic text-xl">{sp.scientificName}</span>
 
             <div className="text-sm">
-              {d.categories?.map((c) => (
+              {sp.categories?.map((c) => (
                 <span key={c.toString()}>{plantCategory.meta[c].label}</span>
               ))}
             </div>
@@ -50,7 +50,7 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
                 <span
                   key={w}
                   className={cn(
-                    waterProfile.values.indexOf(d.waterProfile) < i &&
+                    waterProfile.values.indexOf(sp.waterProfile) < i &&
                       'grayscale'
                   )}
                 >
@@ -64,7 +64,7 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
                 <span
                   key={l}
                   className={cn(
-                    lightLevel.values.indexOf(d.lightLevel) < i && 'grayscale'
+                    lightLevel.values.indexOf(sp.lightLevel) < i && 'grayscale'
                   )}
                 >
                   ☀️
@@ -77,7 +77,7 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
                 <span
                   key={s}
                   className={cn(
-                    soilType.values.indexOf(d.soilType) < i && 'grayscale'
+                    soilType.values.indexOf(sp.soilType) < i && 'grayscale'
                   )}
                 >
                   🤿
@@ -85,13 +85,13 @@ export default function DefinitionsCatalog({ list }: DefinitionsCatalogProps) {
               ))}
             </div>
 
-            {d.userPlantCount !== undefined && d.userPlantCount > 0 && (
+            {sp.userPlantCount !== undefined && sp.userPlantCount > 0 && (
               <span className="text-xs text-secondary-strong mt-1">
-                {d.userPlantCount}{' '}
-                {d.userPlantCount === 1 ? 'planta' : 'plantas'}
+                {sp.userPlantCount}{' '}
+                {sp.userPlantCount === 1 ? 'planta' : 'plantas'}
               </span>
             )}
-            {d.isQuick && (
+            {sp.isQuick && (
               <span className="text-xs bg-yellow-100 text-yellow-700 px-1 rounded mt-1">
                 Rápida
               </span>

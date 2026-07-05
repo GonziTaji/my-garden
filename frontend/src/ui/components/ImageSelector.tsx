@@ -1,8 +1,8 @@
-import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { type ChangeEventHandler, type FC, useEffect, useState } from 'react'
 
 export interface ImageSelectorProps {
-  image?: PlantDefinition['images'][number]
+  image?: PlantSpecies['images'][number]
   position: number
 }
 

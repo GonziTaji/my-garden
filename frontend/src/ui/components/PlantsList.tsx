@@ -1,21 +1,21 @@
 import { usePlants } from '@/api/plants'
 import {
   fullsearchPlants,
-  type PlantWithDefinition,
+  type PlantWithSpecies,
 } from '@/domain/plants/plant'
 import { Link } from '@/router/components/Link'
 import { useState, type ChangeEvent } from 'react'
 import { buttonVariants } from '../classVariants/button'
 import { useNavigate } from '@/router/provider'
 
-type PlantsColumnsData = [PlantWithDefinition[], PlantWithDefinition[]]
+type PlantsColumnsData = [PlantWithSpecies[], PlantWithSpecies[]]
 
 export interface PlantsListProps {}
 
 export default function PlantsList({}: PlantsListProps) {
   const { data: plants, isLoading, error } = usePlants()
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedDefinitionId, setSelectedDefinitionId] = useState('')
+  const [selectedSpeciesId, setSelectedSpeciesId] = useState('')
 
   const navigate = useNavigate()
 
@@ -24,10 +24,9 @@ export default function PlantsList({}: PlantsListProps) {
     plants || []
   )
     .filter((plant) => {
-      console.log(selectedDefinitionId)
-      if (!selectedDefinitionId) return true
+      if (!selectedSpeciesId) return true
 
-      return String(plant.definition.id) === selectedDefinitionId
+      return String(plant.species.id) === selectedSpeciesId
     })
     .reduce(
       (cols, plant, i) => {
@@ -37,10 +36,10 @@ export default function PlantsList({}: PlantsListProps) {
       [[], []] as PlantsColumnsData
     ) || [[], []]
 
-  const allDefinitions = (plants || [])
-    .flatMap((plant) => plant.definition)
+  const allSpecies = (plants || [])
+    .flatMap((plant) => plant.species)
     .filter(
-      (def, i, arr) => arr.findIndex((other) => def.id === other.id) === i
+      (sp, i, arr) => arr.findIndex((other) => sp.id === other.id) === i
     )
 
   if (isLoading) return 'Obteniendo plantas...'
@@ -50,8 +49,8 @@ export default function PlantsList({}: PlantsListProps) {
     setSearchTerm(ev.currentTarget.value)
   }
 
-  function handleDefinitionFilterChange(ev: ChangeEvent<HTMLSelectElement>) {
-    setSelectedDefinitionId(ev.currentTarget.value)
+  function handleSpeciesFilterChange(ev: ChangeEvent<HTMLSelectElement>) {
+    setSelectedSpeciesId(ev.currentTarget.value)
   }
 
   function handleCreateClick() {
@@ -69,15 +68,15 @@ export default function PlantsList({}: PlantsListProps) {
         />
 
         <select
-          onChange={handleDefinitionFilterChange}
+          onChange={handleSpeciesFilterChange}
           className="border-b border-secondary-subtle"
         >
           <option value="" className="">
             Todas
           </option>
-          {Array.from(allDefinitions).map((def) => (
-            <option key={def.id} value={def.id!} className="">
-              {def.commonName} - {def.scientificName}
+          {Array.from(allSpecies).map((sp) => (
+            <option key={sp.id} value={sp.id!} className="">
+              {sp.commonName} - {sp.scientificName}
             </option>
           ))}
         </select>
@@ -105,7 +104,7 @@ export default function PlantsList({}: PlantsListProps) {
 
                 <div className="p-2 grid items-baseline">
                   <span className="">{p.nickname}</span>
-                  <span className="text-xs">{p.definition.scientificName}</span>
+                  <span className="text-xs">{p.species.scientificName}</span>
                 </div>
               </Link>
             ))}

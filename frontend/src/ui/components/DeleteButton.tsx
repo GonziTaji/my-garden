@@ -1,17 +1,17 @@
-import type { PlantDefinition } from '@/domain/plants/plant-definition'
+import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { cn } from '@sglara/cn'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { useTransition } from 'react'
-import { useDeleteDefinition } from '@/api/definitions'
+import { useDeleteSpecies } from '@/api/species'
 import { useNavigate } from '@/router/provider'
 
 export interface DeleteButtonProps {
-  plantdef: PlantDefinition
+  plantspecies: PlantSpecies
 }
 
-export default function DeleteButton({ plantdef }: DeleteButtonProps) {
+export default function DeleteButton({ plantspecies }: DeleteButtonProps) {
   const [isPending, startTransition] = useTransition()
-  const deleteDefinition = useDeleteDefinition()
+  const deleteSpecies = useDeleteSpecies()
   const navigate = useNavigate()
 
   const handleDelete = (id: number, name: string) => {
@@ -23,7 +23,7 @@ export default function DeleteButton({ plantdef }: DeleteButtonProps) {
 
     startTransition(async () => {
       try {
-        await deleteDefinition.mutateAsync(id)
+        await deleteSpecies.mutateAsync(id)
         navigate('/catalog')
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Error al eliminar')
@@ -36,7 +36,7 @@ export default function DeleteButton({ plantdef }: DeleteButtonProps) {
       <button
         type="button"
         className={cn(buttonVariants({ variant: 'danger' }))}
-        onClick={() => handleDelete(plantdef.id!, plantdef.commonName)}
+        onClick={() => handleDelete(plantspecies.id!, plantspecies.commonName)}
         disabled={isPending}
       >
         {isPending ? 'Eliminando...' : 'Eliminar'}

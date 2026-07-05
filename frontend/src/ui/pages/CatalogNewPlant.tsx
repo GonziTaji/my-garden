@@ -1,11 +1,11 @@
-import { useParams, useNavigate } from '@/router/provider'
-import { useDefinition } from '@/api/definitions'
+import { useParams } from '@/router/provider'
+import { useSpeciesById } from '@/api/species'
 import PlantForm from '@/ui/components/PlantForm'
 
 export default function CatalogNewPlant() {
-  const { plantdefid } = useParams()
-  const defId = Number(plantdefid)
-  const { data: definition, isLoading } = useDefinition(defId)
+  const { plantspeciesid } = useParams()
+  const spId = Number(plantspeciesid)
+  const { data: species, isLoading } = useSpeciesById(spId)
 
   if (isLoading)
     return (
@@ -17,13 +17,13 @@ export default function CatalogNewPlant() {
       <h2 className="text-2xl font-bold text-center text-secondary-dark mb-4">
         Nueva planta
       </h2>
-      {definition && (
+      {species && (
         <p className="text-center text-secondary-strong mb-4 italic">
-          {definition.commonName}
-          {definition.scientificName && ` — ${definition.scientificName}`}
+          {species.commonName}
+          {species.scientificName && ` — ${species.scientificName}`}
         </p>
       )}
-      <PlantForm plantDefinitionId={defId} />
+      <PlantForm plantSpeciesId={spId} />
     </div>
   )
 }

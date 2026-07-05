@@ -1,5 +1,5 @@
-import { useDefinitions } from '@/api/definitions'
-import DefinitionsCatalog from '@/ui/components/DefinitionsCatalog'
+import { useSpecies } from '@/api/species'
+import SpeciesCatalog from '@/ui/components/SpeciesCatalog'
 import { Link } from '@/router/components/Link'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { useAuth } from '@/auth/AuthContext'
@@ -14,7 +14,7 @@ export default function CatalogList() {
   const tab = (searchParams.get('t') as Tab) || 'all'
 
   const scope = tab === 'all' ? (user ? 'mine-favorites' : undefined) : tab
-  const { data: definitions, isLoading, error } = useDefinitions(scope)
+  const { data: species, isLoading, error } = useSpecies(scope)
 
   const tabs: { key: Tab; label: string }[] = user
     ? [
@@ -55,6 +55,7 @@ export default function CatalogList() {
       <div className="flex gap-1 p-2">
         {tabs.map((t) => (
           <button
+            type="button"
             key={t.key}
             onClick={() => setSearchParams({ t: t.key === 'all' ? '' : t.key })}
             className={cn(
@@ -69,8 +70,8 @@ export default function CatalogList() {
         ))}
       </div>
 
-      {(definitions ?? []).length > 0 ? (
-        <DefinitionsCatalog list={definitions ?? []} />
+      {(species ?? []).length > 0 ? (
+        <SpeciesCatalog list={species ?? []} />
       ) : (
         <p className="text-center text-secondary-strong py-12">
           {tab === 'linked' ? (

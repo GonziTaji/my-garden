@@ -43,7 +43,7 @@ func (e *UniqueConstraintError) Error() string {
 	return e.Message
 }
 
-const uploadsDir = "public/uploads/plant-definitions"
+const uploadsDir = "public/uploads/plant-species"
 const plantUploadsDir = "public/uploads/plants"
 const maxImageSize = 8 * 1024 * 1024
 
@@ -60,30 +60,30 @@ var allowedExtensions = map[string]bool{
 	".webp": true,
 }
 
-// Definition input
+// Species input
 
-type UpsertDefinitionInput struct {
-	CommonName       string                 `json:"common_name"`
-	ScientificName   string                 `json:"scientific_name"`
-	WaterProfile     string                 `json:"water_profile"`
-	LightLevel       string                 `json:"light_level"`
-	SoilType         string                 `json:"soil_type"`
-	PetToxicity      string                 `json:"pet_toxicity"`
-	PetToxicityNotes string                 `json:"pet_toxicity_notes"`
-	Categories       []string               `json:"categories"`
-	Notes            *string                `json:"notes"`
-	Images           []DefinitionImageInput `json:"images"`
-	IsQuick          bool                   `json:"is_quick"`
+type UpsertSpeciesInput struct {
+	CommonName       string               `json:"common_name"`
+	ScientificName   string               `json:"scientific_name"`
+	WaterProfile     string               `json:"water_profile"`
+	LightLevel       string               `json:"light_level"`
+	SoilType         string               `json:"soil_type"`
+	PetToxicity      string               `json:"pet_toxicity"`
+	PetToxicityNotes string               `json:"pet_toxicity_notes"`
+	Categories       []string             `json:"categories"`
+	Notes            *string              `json:"notes"`
+	Images           []SpeciesImageInput  `json:"images"`
+	IsQuick          bool                 `json:"is_quick"`
 }
 
-type DefinitionImageInput struct {
+type SpeciesImageInput struct {
 	Filepath string `json:"filepath"`
 	Position int    `json:"position"`
 }
 
 // Validate and create
 
-func (s *Service) CreateDefinition(input UpsertDefinitionInput, userID int64) (*PlantDefinition, error) {
+func (s *Service) CreateSpecies(input UpsertSpeciesInput, userID int64) (*PlantSpecies, error) {
 	validated, err := validateUpsert(input, input.IsQuick)
 	if err != nil {
 		return nil, err
@@ -93,17 +93,17 @@ func (s *Service) CreateDefinition(input UpsertDefinitionInput, userID int64) (*
 	validated.Visibility = "public"
 	validated.IsQuick = input.IsQuick
 
-	id, err := s.store.CreatePlantDefinition(validated)
+	id, err := s.store.CreatePlantSpecies(validated)
 	if err != nil {
-		return nil, fmt.Errorf("create definition: %w", err)
+		return nil, fmt.Errorf("create species: %w", err)
 	}
 
 	validated.ID = id
-	return s.store.GetPlantDefinition(id, userID)
+	return s.store.GetPlantSpecies(id, userID)
 }
 
-func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput, userID int64) (*PlantDefinition, error) {
-	existing, err := s.store.GetPlantDefinition(id, userID)
+func (s *Service) UpdateSpecies(id int64, input UpsertSpeciesInput, userID int64) (*PlantSpecies, error) {
+	existing, err := s.store.GetPlantSpecies(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput, userID
 		return nil, err
 	}
 
-	oldFilepaths, err := s.store.GetDefinitionImageFilepaths(id)
+	oldFilepaths, err := s.store.GetSpeciesImageFilepaths(id)
 	if err != nil {
 		return nil, err
 	}
@@ -127,36 +127,32 @@ func (s *Service) UpdateDefinition(id int64, input UpsertDefinitionInput, userID
 	validated.ID = id
 	validated.UserID = userID
 	validated.Visibility = existing.Visibility
-	if err := s.store.UpdatePlantDefinition(validated); err != nil {
-		return nil, fmt.Errorf("update definition: %w", err)
+	if err := s.store.UpdatePlantSpecies(validated); err != nil {
+		return nil, fmt.Errorf("update species: %w", err)
 	}
 
 	go cleanupOrphanedFiles(s.store, oldFilepaths)
 
-	return s.store.GetPlantDefinition(id, userID)
+	return s.store.GetPlantSpecies(id, userID)
 }
 
-func (s *Service) GetDefinition(id int64, userID int64) (*PlantDefinition, error) {
-	def, err := s.store.GetPlantDefinition(id, userID)
+func (s *Service) GetSpecies(id int64, userID int64) (*PlantSpecies, error) {
+	sp, err := s.store.GetPlantSpecies(id, userID)
 	if err != nil {
 		return nil, err
 	}
-	if def == nil {
+	if sp == nil {
 		return nil, &ValidationError{Field: "id", Message: "Tipo de planta no encontrado"}
 	}
-	return def, nil
+	return sp, nil
 }
 
-func (s *Service) ExploreDefinitions() ([]PlantDefinition, error) {
-	return s.store.ListPlantDefinitions(0, "")
+func (s *Service) ListSpecies(userID int64, scope string) ([]PlantSpecies, error) {
+	return s.store.ListPlantSpecies(userID, scope)
 }
 
-func (s *Service) ListDefinitions(userID int64, scope string) ([]PlantDefinition, error) {
-	return s.store.ListPlantDefinitions(userID, scope)
-}
-
-func (s *Service) DeleteDefinition(id int64, userID int64) error {
-	existing, err := s.store.GetPlantDefinition(id, userID)
+func (s *Service) DeleteSpecies(id int64, userID int64) error {
+	existing, err := s.store.GetPlantSpecies(id, userID)
 	if err != nil {
 		return err
 	}
@@ -167,30 +163,15 @@ func (s *Service) DeleteDefinition(id int64, userID int64) error {
 		return &ValidationError{Field: "id", Message: "No tienes permiso para eliminar este tipo de planta"}
 	}
 
-	oldFilepaths, err := s.store.GetDefinitionImageFilepaths(id)
-	if err != nil {
+	if err := s.store.DeletePlantSpecies(id, userID); err != nil {
 		return err
 	}
-
-	if err := s.store.DeletePlantDefinition(id, userID); err != nil {
-		return err
-	}
-
-	go cleanupOrphanedFiles(s.store, oldFilepaths)
 
 	return nil
 }
 
-func (s *Service) CloneDefinition(defID int64, userID int64) (*PlantDefinition, error) {
-	id, err := s.store.ClonePlantDefinition(defID, userID)
-	if err != nil {
-		return nil, err
-	}
-	return s.store.GetPlantDefinition(id, userID)
-}
-
-func (s *Service) ToggleFavorite(defID int64, userID int64) (bool, error) {
-	return s.store.ToggleFavorite(userID, defID)
+func (s *Service) ToggleFavorite(speciesID int64, userID int64) (bool, error) {
+	return s.store.ToggleFavorite(userID, speciesID)
 }
 
 // Image upload
@@ -347,39 +328,39 @@ func (s *Service) UploadImage(file *multipart.FileHeader) (*UploadResult, error)
 		return nil, fmt.Errorf("write file: %w", err)
 	}
 
-	publicPath := path.Join("/uploads/plant-definitions", filename)
+	publicPath := path.Join("/uploads/plant-species", filename)
 	return &UploadResult{Filepath: publicPath}, nil
 }
 
 // Plants
 
 type CreatePlantInput struct {
-	Nickname          string  `json:"nickname"`
-	Source            *string `json:"source"`
-	PlantDefinitionID int64   `json:"plant_definition_id"`
-	AcquiredAt        *string `json:"acquired_at"`
-	Location          *string `json:"location"`
-	Notes             *string `json:"notes"`
+	Nickname       string  `json:"nickname"`
+	Source         *string `json:"source"`
+	PlantSpeciesID int64   `json:"plant_species_id"`
+	AcquiredAt     *string `json:"acquired_at"`
+	Location       *string `json:"location"`
+	Notes          *string `json:"notes"`
 }
 
-func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithDefinition, error) {
+func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithSpecies, error) {
 	nickname := strings.TrimSpace(input.Nickname)
 	if nickname == "" {
 		return nil, &ValidationError{Field: "nickname", Message: "El nombre de la planta es requerido"}
 	}
 
-	exists, err := s.store.ExistsPlantDefinition(input.PlantDefinitionID)
+	exists, err := s.store.ExistsPlantSpecies(input.PlantSpeciesID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, &ValidationError{Field: "plant_definition_id", Message: "El tipo de planta seleccionado no existe"}
+		return nil, &ValidationError{Field: "plant_species_id", Message: "El tipo de planta seleccionado no existe"}
 	}
 
 	plant := &Plant{
-		Nickname:          nickname,
-		PlantDefinitionID: input.PlantDefinitionID,
-		UserID:            userID,
+		Nickname:       nickname,
+		PlantSpeciesID: input.PlantSpeciesID,
+		UserID:         userID,
 	}
 	if input.Source != nil {
 		plant.Source = NullString{sql.NullString{String: *input.Source, Valid: true}}
@@ -417,11 +398,11 @@ func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithD
 		}
 	}
 
-	return s.store.GetPlantWithDefinition(id, userID)
+	return s.store.GetPlantWithSpecies(id, userID)
 }
 
-func (s *Service) GetPlant(id int64, userID int64) (*PlantWithDefinition, error) {
-	p, err := s.store.GetPlantWithDefinition(id, userID)
+func (s *Service) GetPlant(id int64, userID int64) (*PlantWithSpecies, error) {
+	p, err := s.store.GetPlantWithSpecies(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -431,8 +412,8 @@ func (s *Service) GetPlant(id int64, userID int64) (*PlantWithDefinition, error)
 	return p, nil
 }
 
-func (s *Service) ListPlants(definitionID *int64, userID int64) ([]PlantWithDefinition, error) {
-	return s.store.ListPlantsWithDefinition(definitionID, userID)
+func (s *Service) ListPlants(speciesID *int64, userID int64) ([]PlantWithSpecies, error) {
+	return s.store.ListPlantsWithSpecies(speciesID, userID)
 }
 
 type UpdatePlantInput struct {
@@ -442,7 +423,7 @@ type UpdatePlantInput struct {
 	Notes      *string `json:"notes"`
 }
 
-func (s *Service) UpdatePlant(id int64, input UpdatePlantInput, userID int64) (*PlantWithDefinition, error) {
+func (s *Service) UpdatePlant(id int64, input UpdatePlantInput, userID int64) (*PlantWithSpecies, error) {
 	existing, err := s.store.GetPlant(id, userID)
 	if err != nil {
 		return nil, err
@@ -472,7 +453,7 @@ func (s *Service) UpdatePlant(id int64, input UpdatePlantInput, userID int64) (*
 		return nil, fmt.Errorf("update plant: %w", err)
 	}
 
-	return s.store.GetPlantWithDefinition(id, userID)
+	return s.store.GetPlantWithSpecies(id, userID)
 }
 
 func (s *Service) DeletePlant(id int64, userID int64) error {
@@ -595,65 +576,65 @@ func (s *Service) GetCalendarEvents(plantID int64, start, end string, userID int
 
 // Internal helpers
 
-func validateUpsert(input UpsertDefinitionInput, isQuick bool) (*PlantDefinition, error) {
-	d := &PlantDefinition{}
+func validateUpsert(input UpsertSpeciesInput, isQuick bool) (*PlantSpecies, error) {
+	sp := &PlantSpecies{}
 
-	d.CommonName = strings.TrimSpace(input.CommonName)
-	if d.CommonName == "" {
+	sp.CommonName = strings.TrimSpace(input.CommonName)
+	if sp.CommonName == "" {
 		return nil, &ValidationError{Field: "common_name", Message: "El nombre comun es requerido"}
 	}
 
-	d.ScientificName = strings.TrimSpace(input.ScientificName)
+	sp.ScientificName = strings.TrimSpace(input.ScientificName)
 
-	d.WaterProfile = WaterProfile(input.WaterProfile)
-	if !isValidEnum(string(d.WaterProfile), validWaterProfiles) {
+	sp.WaterProfile = WaterProfile(input.WaterProfile)
+	if !isValidEnum(string(sp.WaterProfile), validWaterProfiles) {
 		return nil, &ValidationError{Field: "water_profile", Message: "Perfil de agua invalido"}
 	}
 
 	if isQuick {
 		if input.LightLevel != "" {
-			d.LightLevel = LightLevel(input.LightLevel)
-			if !isValidEnum(string(d.LightLevel), validLightLevels) {
+			sp.LightLevel = LightLevel(input.LightLevel)
+			if !isValidEnum(string(sp.LightLevel), validLightLevels) {
 				return nil, &ValidationError{Field: "light_level", Message: "Nivel de luz invalido"}
 			}
 		} else {
-			d.LightLevel = LightLevelIndirect
+			sp.LightLevel = LightLevelIndirect
 		}
 		if input.SoilType != "" {
-			d.SoilType = SoilType(input.SoilType)
-			if !isValidEnum(string(d.SoilType), validSoilTypes) {
+			sp.SoilType = SoilType(input.SoilType)
+			if !isValidEnum(string(sp.SoilType), validSoilTypes) {
 				return nil, &ValidationError{Field: "soil_type", Message: "Tipo de suelo invalido"}
 			}
 		} else {
-			d.SoilType = SoilTypeWellDraining
+			sp.SoilType = SoilTypeWellDraining
 		}
 		if input.PetToxicity != "" {
-			d.PetToxicity = PetToxicity(input.PetToxicity)
-			if !isValidEnum(string(d.PetToxicity), validPetToxicities) {
+			sp.PetToxicity = PetToxicity(input.PetToxicity)
+			if !isValidEnum(string(sp.PetToxicity), validPetToxicities) {
 				return nil, &ValidationError{Field: "pet_toxicity", Message: "Toxicidad invalida"}
 			}
 		} else {
-			d.PetToxicity = PetToxicityNonToxic
+			sp.PetToxicity = PetToxicityNonToxic
 		}
 	} else {
-		d.LightLevel = LightLevel(input.LightLevel)
-		if !isValidEnum(string(d.LightLevel), validLightLevels) {
+		sp.LightLevel = LightLevel(input.LightLevel)
+		if !isValidEnum(string(sp.LightLevel), validLightLevels) {
 			return nil, &ValidationError{Field: "light_level", Message: "Nivel de luz invalido"}
 		}
-		d.SoilType = SoilType(input.SoilType)
-		if !isValidEnum(string(d.SoilType), validSoilTypes) {
+		sp.SoilType = SoilType(input.SoilType)
+		if !isValidEnum(string(sp.SoilType), validSoilTypes) {
 			return nil, &ValidationError{Field: "soil_type", Message: "Tipo de suelo invalido"}
 		}
-		d.PetToxicity = PetToxicity(input.PetToxicity)
-		if !isValidEnum(string(d.PetToxicity), validPetToxicities) {
+		sp.PetToxicity = PetToxicity(input.PetToxicity)
+		if !isValidEnum(string(sp.PetToxicity), validPetToxicities) {
 			return nil, &ValidationError{Field: "pet_toxicity", Message: "Toxicidad invalida"}
 		}
 	}
 
-	d.PetToxicityNotes = input.PetToxicityNotes
+	sp.PetToxicityNotes = input.PetToxicityNotes
 
 	if input.Notes != nil {
-		d.Notes = *input.Notes
+		sp.Notes = *input.Notes
 	}
 
 	if input.Categories == nil {
@@ -670,7 +651,7 @@ func validateUpsert(input UpsertDefinitionInput, isQuick bool) (*PlantDefinition
 	if err != nil {
 		return nil, fmt.Errorf("marshal categories: %w", err)
 	}
-	d.CategoriesJSON = string(catsJSON)
+	sp.CategoriesJSON = string(catsJSON)
 
 	if len(input.Images) > 3 {
 		return nil, &ValidationError{Field: "images", Message: "No se pueden guardar mas de 3 imagenes"}
@@ -688,13 +669,13 @@ func validateUpsert(input UpsertDefinitionInput, isQuick bool) (*PlantDefinition
 		if strings.TrimSpace(img.Filepath) == "" {
 			return nil, &ValidationError{Field: "images", Message: "Filepath de imagen vacio"}
 		}
-		d.Images = append(d.Images, PlantDefinitionImage{
+		sp.Images = append(sp.Images, PlantSpeciesImage{
 			Filepath: strings.TrimSpace(img.Filepath),
 			Position: img.Position,
 		})
 	}
 
-	return d, nil
+	return sp, nil
 }
 
 func isValidEnum(value string, valid []string) bool {

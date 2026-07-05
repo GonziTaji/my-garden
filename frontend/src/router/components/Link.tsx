@@ -11,7 +11,7 @@ export function Link({
   className,
   activeClassname,
 }: {
-  to: RouterPath
+  to: RouterPath | 'back'
   params?: Record<string, string>
   search?: Record<string, string>
   children: ReactNode
@@ -19,7 +19,13 @@ export function Link({
   activeClassname?: string
 }) {
   const navigate = useNavigate()
-  const auxNavigate = () => navigate(to, { params, search })
+  const auxNavigate = () => {
+    if (to === 'back') {
+      window.history.go(-1)
+    } else {
+      navigate(to, { params, search })
+    }
+  }
 
   let href = to as string
 

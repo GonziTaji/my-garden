@@ -111,9 +111,9 @@ func (g *AppRouter) mountApiRoutes() {
 	public.Use(auth.OptionalAuth())
 	{
 		public.GET("/auth/me", userHandler.Me)
-		public.GET("/plant-definitions", plantHandler.ListPlantDefinitions)
-		public.GET("/plant-definitions/all", plantHandler.ExplorePlantDefinitions)
-		public.GET("/plant-definitions/:id", plantHandler.GetPlantDefinition)
+		public.GET("/plant-species", plantHandler.ListPlantSpecies)
+		public.GET("/plant-species/all", plantHandler.ExplorePlantSpecies)
+		public.GET("/plant-species/:id", plantHandler.GetPlantSpecies)
 		public.GET("/enums", plantHandler.GetEnums)
 	}
 
@@ -121,13 +121,12 @@ func (g *AppRouter) mountApiRoutes() {
 	protected := api.Group("")
 	protected.Use(auth.RequireAuth())
 	{
-		protected.POST("/plant-definitions", plantHandler.CreatePlantDefinition)
-		protected.PUT("/plant-definitions/:id", plantHandler.UpdatePlantDefinition)
-		protected.DELETE("/plant-definitions/:id", plantHandler.DeletePlantDefinition)
-		protected.POST("/plant-definitions/:id/clone", plantHandler.ClonePlantDefinition)
-		protected.POST("/plant-definitions/:id/favorite", plantHandler.ToggleFavorite)
+		protected.POST("/plant-species", plantHandler.CreatePlantSpecies)
+		protected.PUT("/plant-species/:id", plantHandler.UpdatePlantSpecies)
+		protected.DELETE("/plant-species/:id", plantHandler.DeletePlantSpecies)
+		protected.POST("/plant-species/:id/favorite", plantHandler.ToggleFavorite)
 
-		protected.POST("/upload/plant-definition-image", plantHandler.UploadPlantDefinitionImage)
+		protected.POST("/upload/plant-species-image", plantHandler.UploadPlantSpeciesImage)
 		protected.POST("/upload/plant-image", plantHandler.UploadPlantImage)
 
 		protected.GET("/plants", plantHandler.ListPlants)

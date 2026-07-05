@@ -20,6 +20,7 @@ export default function PlantDetailPage() {
       <div className="p-8 text-center">
         <p className="text-danger-strong">Planta no encontrada</p>
         <button
+          type="button"
           onClick={() => navigate('/plants')}
           className="text-primary-strong underline mt-4"
         >

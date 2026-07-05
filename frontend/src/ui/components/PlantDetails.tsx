@@ -1,6 +1,6 @@
 import { addPlantImage, deletePlantImage } from '@/api/plants'
 import { useCreateEvent } from '@/api/events'
-import type { PlantWithDefinition } from '@/domain/plants/plant'
+import type { PlantWithSpecies } from '@/domain/plants/plant'
 import { useState, type SyntheticEvent } from 'react'
 import { buttonVariants } from '../classVariants/button'
 import { cn } from '@sglara/cn'
@@ -9,7 +9,7 @@ import { Link } from '@/router/components/Link'
 import DateUtils from '@/utils/dates'
 
 interface PlantDetailProps {
-  plant: PlantWithDefinition
+  plant: PlantWithSpecies
 }
 
 const locationChangeActionTypes = {
@@ -97,8 +97,6 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
           notes: notes || null,
           metadata: { location },
         })
-        console.log(res)
-
         form.reset()
 
         return
@@ -110,6 +108,11 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
   return (
     <section className="plant-detail mx-3">
+      {plant.species.deletedAt && (
+        <div className="bg-warning-soft border border-warning-strong text-warning-strong px-4 py-3 rounded-md mb-4">
+          Esta planta usa un tipo de planta que ha sido eliminado por su creador
+        </div>
+      )}
       <input
         type="text"
         name="nickname"
@@ -123,8 +126,8 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
       <div className="flex justify-end mt-2">
         <Link
-          to="/catalog/:plantdefid/new-plant"
-          params={{ plantdefid: String(plant.definition.id) }}
+          to="/catalog/:plantspeciesid/new-plant"
+          params={{ plantspeciesid: String(plant.species.id) }}
           className={buttonVariants({ variant: 'secondary', size: 'sm' })}
         >
           Clonar planta
@@ -138,11 +141,11 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       <div className="text-xl grid grid-cols-[auto_1fr] gap-x-3 gap-y-6 items-center mx-auto">
         <div className="grid grid-cols-subgrid col-span-2">
           <span>Tipo:</span>
-          <Link to="/catalog" search={{ defid: String(plant.definition.id) }}>
+          <Link to="/catalog" search={{ speciesid: String(plant.species.id) }}>
             <div className="flex gap-2 items-baseline opacity-80">
-              <span className="text-xl">{plant.definition.commonName}</span>
+              <span className="text-xl">{plant.species.commonName}</span>
               <span className="italic text-xs">
-                {plant.definition.scientificName}
+                {plant.species.scientificName}
               </span>
             </div>
           </Link>
@@ -182,6 +185,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
           <span className="text-lg font-medium">Imágenes</span>
           {editingImages ? (
             <button
+              type="button"
               className={buttonVariants({ variant: 'clean', size: 'sm' })}
               onClick={() => setEditingImages(false)}
             >
@@ -189,6 +193,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
             </button>
           ) : (
             <button
+              type="button"
               className={buttonVariants({ variant: 'clean', size: 'sm' })}
               onClick={() => setEditingImages(true)}
             >
@@ -293,6 +298,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
           <div className="flex justify-between">
             <button
+              type="button"
               className={buttonVariants({ variant: 'secondary' })}
               value={locationChangeActionTypes.cancel}
               formNoValidate
@@ -300,6 +306,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
               Cancelar
             </button>
             <button
+              type="button"
               className={buttonVariants({ variant: 'primary' })}
               value={locationChangeActionTypes.submit}
             >

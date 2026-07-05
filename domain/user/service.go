@@ -13,16 +13,16 @@ import (
 )
 
 type Service struct {
-	store   *Store
-	origin  string
-	mailer  email.Mailer
+	store  *Store
+	origin string
+	mailer email.Mailer
 }
 
 func NewService(store *Store, origin string, mailer email.Mailer) *Service {
 	return &Service{store: store, origin: origin, mailer: mailer}
 }
 
-var codeCharset = []rune("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+var codeCharset = []rune("0123456789")
 
 type SendLinkResult struct {
 	Message string `json:"message"`
@@ -83,7 +83,7 @@ func generateCode(length int) (string, error) {
 		}
 		code[i] = codeCharset[n.Int64()]
 	}
-	return strings.ToUpper(string(code)), nil
+	return string(code), nil
 }
 
 type VerifyResult struct {
@@ -118,7 +118,7 @@ func (s *Service) VerifyLogin(rawToken string) (*VerifyResult, error) {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 	if user == nil {
-		username := strings.Split(tok.Email, "@")[0]
+		username, _, _ := strings.Cut(tok.Email, "@")
 		id, err := s.store.CreateUser(tok.Email, username)
 		if err != nil {
 			return nil, fmt.Errorf("create user: %w", err)

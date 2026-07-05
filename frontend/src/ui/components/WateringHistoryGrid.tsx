@@ -169,6 +169,7 @@ export default function WateringHistoryGrid() {
 
           {selectedDay.events.map((e) => (
             <button
+              type="button"
               key={e.id}
               className="py-2 px-4 rounded-md border border-secondary-subtle w-full flex justify-between"
               onClick={() => handleCalendarEntrySelect(e)}

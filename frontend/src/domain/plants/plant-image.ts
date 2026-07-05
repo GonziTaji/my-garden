@@ -1,7 +1,7 @@
-export interface PlantDefinitionImage {
+export interface PlantSpeciesImage {
   id: number | null
   filepath: string
-  plantDefinitionId: number
+  plantSpeciesId: number
   position: number
 }
 

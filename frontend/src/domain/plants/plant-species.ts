@@ -3,9 +3,9 @@ import type { LightLevel } from './light/light-level'
 import type { SoilType } from './soil/soil-type'
 import type { PlantCategory } from './category/plant-category'
 import type { PetToxicity } from './toxicity/pet-toxicity'
-import type { PlantDefinitionImage } from './plant-image'
+import type { PlantSpeciesImage } from './plant-image'
 
-export interface PlantDefinition {
+export interface PlantSpecies {
   id: number | null
 
   commonName: string
@@ -20,7 +20,7 @@ export interface PlantDefinition {
   notes: string
 
   categories?: PlantCategory[]
-  images: Omit<PlantDefinitionImage, 'plantDefinitionId'>[]
+  images: Omit<PlantSpeciesImage, 'plantSpeciesId'>[]
 
   isFavorited?: boolean
   userPlantCount?: number
@@ -32,4 +32,5 @@ export interface PlantDefinition {
 
   createdAt?: string
   updatedAt?: string
+  deletedAt?: string
 }

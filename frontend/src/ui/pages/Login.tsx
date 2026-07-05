@@ -15,8 +15,8 @@ export default function Login() {
     e.preventDefault()
     setError('')
     try {
-      await sendLoginEmail(email)
       setSent(true)
+      await sendLoginEmail(email)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al enviar el enlace')
     }
@@ -50,13 +50,14 @@ export default function Login() {
         >
           <input
             type="text"
+            inputMode="numeric"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="Ej: A3K9M2X7"
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            placeholder="Ej: 83924715"
             required
             autoFocus
             maxLength={8}
-            className="border border-secondary-default rounded-md p-2 text-center text-lg tracking-widest uppercase"
+            className="border border-secondary-default rounded-md p-2 text-center text-lg tracking-widest"
           />
           {error && <p className="text-danger-strong text-sm">{error}</p>}
           <button
@@ -67,6 +68,7 @@ export default function Login() {
           </button>
         </form>
         <button
+          type="button"
           onClick={() => {
             setSent(false)
             setCode('')

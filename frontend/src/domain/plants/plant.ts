@@ -1,4 +1,4 @@
-import type { PlantDefinition } from './plant-definition'
+import type { PlantSpecies } from './plant-species'
 import type { PlantImage } from './plant-image'
 
 export type { PlantImage }
@@ -9,7 +9,7 @@ export interface Plant {
   nickname: string
   source?: string
 
-  plantDefinitionId: number
+  plantSpeciesId: number
 
   acquiredAt?: Date
   location?: string
@@ -19,18 +19,18 @@ export interface Plant {
   images: PlantImage[]
 }
 
-export type PlantWithDefinition = Plant & {
-  definition: PlantDefinition
+export type PlantWithSpecies = Plant & {
+  species: PlantSpecies
 }
 
-function plantFullText(plant: PlantWithDefinition) {
-  return `${plant.nickname}${plant.definition.commonName}${plant.definition.scientificName}`.toLowerCase()
+function plantFullText(plant: PlantWithSpecies) {
+  return `${plant.nickname}${plant.species.commonName}${plant.species.scientificName}`.toLowerCase()
 }
 
 export function fullsearchPlants(
   term: string,
-  plants: PlantWithDefinition[]
-): PlantWithDefinition[] {
+  plants: PlantWithSpecies[]
+): PlantWithSpecies[] {
   return plants
     .map((p) => ({
       ...p,
