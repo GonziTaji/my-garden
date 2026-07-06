@@ -1,6 +1,7 @@
 package user
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -27,6 +28,7 @@ func (h *Handler) SendLink(c *gin.Context) {
 
 	result, err := h.service.RequestLogin(req.Email)
 	if err != nil {
+		log.Printf("Error: %s\n", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send link"})
 		return
 	}
