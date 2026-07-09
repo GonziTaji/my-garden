@@ -126,10 +126,10 @@ export default function WateringHistoryGrid() {
   return (
     <div className="px-2">
       <span className="text-center block text-2xl py-4">
-        Historial de riego {year}-{monthIndex}
+        Historial de riego
       </span>
 
-      <div>
+      <div className="justify-self-center mb-4">
         <button
           type="button"
           onClick={() => handleMonthChange(monthIndex - 1)}
@@ -154,20 +154,19 @@ export default function WateringHistoryGrid() {
           &gt;
         </button>
       </div>
-      <div className="overflow-auto grid grid-cols-[auto_1fr]">
+      <div className="overflow-auto grid grid-cols-[auto_1fr] gap-2">
         {plants.map((plant) => (
           <div
-            className="grid col-span-2 grid-cols-subgrid gap-4"
+            className="grid col-span-2 grid-cols-subgrid gap-4 rounded-md bg-primary-subtle  p-3"
             key={plant.nickname}
           >
-            <div className="w-min">
-              <span className="text-lg">{plant.nickname}</span>
-              <br />
+            <div className="flex flex-col max-w-32">
+              <span className="text-xl">{plant.nickname}</span>
               <span className="italic">{plant.species.commonName}</span>
               <img
                 src={plant.images[0]?.filepath}
                 alt={plant.nickname}
-                className="border border-secondary-subtle rounded-md"
+                className="border aspect-square w-full border-secondary-subtle rounded-md"
               />
             </div>
 

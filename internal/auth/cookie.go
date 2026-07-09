@@ -61,10 +61,12 @@ func SetSessionCookie(c *gin.Context, userID int64) {
 
 	// one year
 	maxAge := 60 * 60 * 24 * 365
+	secure := c.Request.TLS != nil
 
-	c.SetCookie("session", signed, maxAge, "/", "", true, true)
+	c.SetCookie("session", signed, maxAge, "/", "", secure, true)
 }
 
 func ClearSessionCookie(c *gin.Context) {
-	c.SetCookie("session", "", -1, "/", "", true, true)
+	secure := c.Request.TLS != nil
+	c.SetCookie("session", "", -1, "/", "", secure, true)
 }

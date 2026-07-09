@@ -120,9 +120,8 @@ export default function PlantCalendar({
             key={gridDay.date?.toString() || i}
             className={cn(
               'text-center m-2 w-8 rounded cursor-pointer',
-              gridDay.isToday &&
-                'border border-secondary-strong bg-primary-subtle',
-              gridDay.isWatered && 'bg-blue-400'
+              gridDay.isToday && 'border border-primary-strong font-semibold',
+              gridDay.isWatered && 'bg-cyan-400 border border-cyan-700'
             )}
           >
             {gridDay.date?.getDate() || '-'}
