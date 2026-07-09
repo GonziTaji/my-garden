@@ -45,7 +45,7 @@ func (e *UniqueConstraintError) Error() string {
 
 const uploadsDir = "public/uploads/plant-species"
 const plantUploadsDir = "public/uploads/plants"
-const maxImageSize = 8 * 1024 * 1024
+const maxImageSize = 28 * 1024 * 1024
 
 var allowedMIMETypes = map[string]bool{
 	"image/jpeg": true,
@@ -63,17 +63,17 @@ var allowedExtensions = map[string]bool{
 // Species input
 
 type UpsertSpeciesInput struct {
-	CommonName       string               `json:"common_name"`
-	ScientificName   string               `json:"scientific_name"`
-	WaterProfile     string               `json:"water_profile"`
-	LightLevel       string               `json:"light_level"`
-	SoilType         string               `json:"soil_type"`
-	PetToxicity      string               `json:"pet_toxicity"`
-	PetToxicityNotes string               `json:"pet_toxicity_notes"`
-	Categories       []string             `json:"categories"`
-	Notes            *string              `json:"notes"`
-	Images           []SpeciesImageInput  `json:"images"`
-	IsQuick          bool                 `json:"is_quick"`
+	CommonName       string              `json:"common_name"`
+	ScientificName   string              `json:"scientific_name"`
+	WaterProfile     string              `json:"water_profile"`
+	LightLevel       string              `json:"light_level"`
+	SoilType         string              `json:"soil_type"`
+	PetToxicity      string              `json:"pet_toxicity"`
+	PetToxicityNotes string              `json:"pet_toxicity_notes"`
+	Categories       []string            `json:"categories"`
+	Notes            *string             `json:"notes"`
+	Images           []SpeciesImageInput `json:"images"`
+	IsQuick          bool                `json:"is_quick"`
 }
 
 type SpeciesImageInput struct {

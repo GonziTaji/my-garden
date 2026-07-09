@@ -151,11 +151,3 @@ export function useToggleFavorite() {
       api.post<{ favorited: boolean }>(`/api/plant-species/${id}/favorite`),
   })
 }
-
-export async function uploadSpeciesImage(file: File): Promise<string> {
-  const fd = new FormData()
-  fd.append('file', file)
-  const res = await api.upload('/api/upload/plant-species-image', fd)
-  const data = await res.json()
-  return data.filepath as string
-}

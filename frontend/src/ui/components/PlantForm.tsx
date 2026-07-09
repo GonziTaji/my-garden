@@ -1,4 +1,4 @@
-import { useTransition, useState, useMemo } from 'react'
+import { useTransition, useState, useMemo, type ChangeEvent } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
 import { useNavigate } from '@/router/provider'
@@ -115,6 +115,13 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
         setError(err instanceof Error ? err.message : 'Error inesperado')
       }
     })
+  }
+
+  function handleAddImage(e: ChangeEvent<HTMLInputElement>) {
+      const file = e.currentTarget.files?.item(0)
+      if (file) {
+
+      e.currentTarget.value = ''
   }
 
   return (
@@ -238,6 +245,14 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
               required
             />
           </div>
+
+          {[0, 1, 2].map((n) => (
+            <ImageSelector
+              image={record.images[n]}
+              key={n}
+              position={n}
+            />
+          ))}
 
           <div className="flex flex-col gap-2">
             <label htmlFor="source">Fuente</label>
