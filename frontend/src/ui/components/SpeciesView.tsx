@@ -16,7 +16,6 @@ import {
   useCreateSpecies,
   useUpdateSpecies,
   useToggleFavorite,
-  uploadSpeciesImage,
 } from '@/api/species'
 import { usePlants } from '@/api/plants'
 import { inputVariants } from '../classVariants/input'
@@ -72,8 +71,8 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
         for (let pos = 0; pos < 3; pos++) {
           const fileInput = fd.get(`imagesFile_${pos}`)
           if (fileInput instanceof File && fileInput.size > 0) {
-            const filepath = await uploadSpeciesImage(fileInput)
-            images.push({ filepath, position: pos })
+            // const filepath = await uploadSpeciesImage(fileInput)
+            // images.push({ filepath, position: pos })
           } else {
             const existingPath = fd.get(`imagesExistingId_${pos}`)
             if (existingPath) {

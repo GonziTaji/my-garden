@@ -1,10 +1,9 @@
-import { useTransition, useState, useMemo, type ChangeEvent } from 'react'
+import { useTransition, useState, useMemo, type SubmitEvent } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
 import { useNavigate } from '@/router/provider'
 import { useCreatePlant } from '@/api/plants'
 import { useCreateSpecies, useSpecies } from '@/api/species'
-import { cn } from '@sglara/cn'
 import { Link } from '@/router/components/Link'
 
 const inputVariants = cva(
@@ -61,7 +60,7 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
     return sp ? sp.commonName : ''
   }, [plantSpeciesId, plantSpecies])
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     const fd = new FormData(e.currentTarget)
@@ -115,13 +114,6 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
         setError(err instanceof Error ? err.message : 'Error inesperado')
       }
     })
-  }
-
-  function handleAddImage(e: ChangeEvent<HTMLInputElement>) {
-      const file = e.currentTarget.files?.item(0)
-      if (file) {
-
-      e.currentTarget.value = ''
   }
 
   return (
@@ -246,13 +238,15 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
             />
           </div>
 
-          {[0, 1, 2].map((n) => (
-            <ImageSelector
-              image={record.images[n]}
-              key={n}
-              position={n}
-            />
-          ))}
+          {
+            // {[0, 1, 2].map((n) => (
+            //   <ImageSelector
+            //     image={record.images[n]}
+            //     key={n}
+            //     position={n}
+            //   />
+            // ))}
+          }
 
           <div className="flex flex-col gap-2">
             <label htmlFor="source">Fuente</label>

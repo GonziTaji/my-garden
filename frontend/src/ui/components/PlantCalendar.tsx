@@ -24,7 +24,8 @@ interface CalendarProps {
 interface GridDayData {
   date: Date | null
   events: PlantCalendarEntry[]
-  isWatered: boolean
+  isToday?: boolean
+  isWatered?: boolean
 }
 
 export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
@@ -52,14 +53,6 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
     return <>{error}</>
   }
 
-  if (isLoading) {
-    return <>Cargando...</>
-  }
-
-  if (!calendarData) {
-    return <>Unexpected error!</>
-  }
-
   const isWatered = (dateString: string) =>
     !!calendarData?.find(
       (d) => d.date === dateString && d.eventType === 'watering'
@@ -76,25 +69,18 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
     CALENDAR_WEEKS * CALENDAR_WEEKDAYS - blanksBefore - daysInMonth.length
 
   const grid: GridDayData[] = [
-    ...Array.from({ length: blanksBefore }, () => ({
-      date: null,
-      events: [],
-      isWatered: false,
-    })),
+    ...Array.from({ length: blanksBefore }, () => ({ date: null, events: [] })),
 
     ...daysInMonth.map((date) => ({
       date: date,
-      events: calendarData.filter(
-        (c) => c.date === DateUtils.toInputValue(date)
-      ),
+      isToday: new Date().toDateString() === date.toDateString(),
+      events:
+        calendarData?.filter((c) => c.date === DateUtils.toInputValue(date)) ||
+        [],
       isWatered: isWatered(DateUtils.toInputValue(date)),
     })),
 
-    ...Array.from({ length: blanksAfter }, () => ({
-      date: null,
-      events: [],
-      isWatered: false,
-    })),
+    ...Array.from({ length: blanksAfter }, () => ({ date: null, events: [] })),
   ]
 
   const months = Array.from({ length: 12 })
@@ -134,12 +120,13 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
   }
 
   return (
-    <div>
+    <div className={cn('transition-opacity', isLoading && 'opacity-20')}>
       <div>
         <button
           type="button"
           onClick={() => handleMonthChange(monthIndex - 1)}
           className="px-2 py-1 border border-secondary-subtle rounded-sm"
+          disabled={isLoading}
         >
           &lt;
         </button>
@@ -160,6 +147,7 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
           type="button"
           onClick={() => handleMonthChange(monthIndex + 1)}
           className="px-2 py-1 border border-secondary-subtle rounded-sm"
+          disabled={isLoading}
         >
           &gt;
         </button>
@@ -170,9 +158,14 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
           <button
             type="button"
             onClick={(e) => handleDayClick(e, gridDay)}
-            disabled={gridDay.date === null}
+            disabled={gridDay.date === null || isLoading}
             key={`${monthIndex}-${i * 100}`}
-            className={cn('text-center', gridDay.isWatered && 'bg-blue-400')}
+            className={cn(
+              'text-center m-2 w-8 rounded cursor-pointer',
+              gridDay.isToday &&
+                'border border-secondary-strong bg-primary-subtle',
+              gridDay.isWatered && 'bg-blue-400'
+            )}
           >
             {gridDay.date?.getDate() || '-'}
           </button>

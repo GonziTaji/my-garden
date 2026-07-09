@@ -112,8 +112,14 @@ export default function WateringHistoryGrid() {
             key={plant.nickname}
           >
             <div className="w-min">
-              <span>{plant.nickname}</span>
-              <img src={plant.images[0]?.filepath} alt={plant.nickname} />
+              <span className="text-lg">{plant.nickname}</span>
+              <br />
+              <span className="italic">{plant.species.commonName}</span>
+              <img
+                src={plant.images[0]?.filepath}
+                alt={plant.nickname}
+                className="border border-secondary-subtle rounded-md"
+              />
             </div>
 
             <div className="w-full">
