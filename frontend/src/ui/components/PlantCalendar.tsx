@@ -3,7 +3,7 @@ import type { Plant } from '@/domain/plants/plant'
 import type { PlantCalendarEntry } from '@/api/watering'
 import DateUtils from '@/utils/dates'
 import { cn } from '@sglara/cn'
-import { useState, type ChangeEvent, type MouseEvent } from 'react'
+import { type MouseEvent } from 'react'
 
 // calendar grid
 const CALENDAR_WEEKS = 6
@@ -18,6 +18,8 @@ export interface SelectedDay {
 
 interface CalendarProps {
   plantId: Plant['id']
+  monthIndex: number
+  year: number
   onDaySelect?: (data: SelectedDay) => void
 }
 
@@ -28,15 +30,20 @@ interface GridDayData {
   isWatered?: boolean
 }
 
-export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
-  const [monthIndex, setMonthIndex] = useState(() => new Date().getMonth())
-
+export default function PlantCalendar({
+  plantId,
+  onDaySelect,
+  monthIndex,
+  year,
+}: CalendarProps) {
   const startDate = new Date()
   startDate.setMonth(monthIndex)
+  startDate.setFullYear(year)
   startDate.setDate(1)
 
   const endDate = new Date()
   endDate.setMonth(monthIndex)
+  endDate.setFullYear(year)
   endDate.setDate(DateUtils.getMonthDays(monthIndex + 1))
 
   const {
@@ -83,26 +90,6 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
     ...Array.from({ length: blanksAfter }, () => ({ date: null, events: [] })),
   ]
 
-  const months = Array.from({ length: 12 })
-    .fill(null)
-    .map((_, i) => {
-      const d = new Date()
-      d.setMonth(i)
-
-      return {
-        label: d.toLocaleString('default', { month: 'long' }),
-        value: i,
-      }
-    })
-
-  function handleMonthChange(newMonthIndex: number) {
-    setMonthIndex(newMonthIndex)
-  }
-
-  function handleMonthSelection(ev: ChangeEvent<HTMLSelectElement>) {
-    handleMonthChange(Number(ev.currentTarget.value))
-  }
-
   function handleDayClick(
     _: MouseEvent<HTMLButtonElement>,
     gridDayData: GridDayData
@@ -120,46 +107,17 @@ export default function PlantCalendar({ plantId, onDaySelect }: CalendarProps) {
   }
 
   return (
-    <div className={cn('transition-opacity', isLoading && 'opacity-20')}>
-      <div>
-        <button
-          type="button"
-          onClick={() => handleMonthChange(monthIndex - 1)}
-          className="px-2 py-1 border border-secondary-subtle rounded-sm"
-          disabled={isLoading}
-        >
-          &lt;
-        </button>
-
-        <select
-          value={monthIndex}
-          onChange={handleMonthSelection}
-          className="border border-secondary-subtle rounded-sm px-2 py-1"
-        >
-          {months.map(({ label, value }) => (
-            <option key={`month-${value}`} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-
-        <button
-          type="button"
-          onClick={() => handleMonthChange(monthIndex + 1)}
-          className="px-2 py-1 border border-secondary-subtle rounded-sm"
-          disabled={isLoading}
-        >
-          &gt;
-        </button>
-      </div>
-
+    <div
+      // delay so opacity doesn't change in not-so-fast loads
+      className={cn('transition-opacity delay-200', isLoading && 'opacity-20')}
+    >
       <div className="grid grid-cols-7 grid-rows-6">
         {grid.map((gridDay, i) => (
           <button
             type="button"
             onClick={(e) => handleDayClick(e, gridDay)}
             disabled={gridDay.date === null || isLoading}
-            key={`${monthIndex}-${i * 100}`}
+            key={gridDay.date?.toString() || i}
             className={cn(
               'text-center m-2 w-8 rounded cursor-pointer',
               gridDay.isToday &&

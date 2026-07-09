@@ -5,12 +5,15 @@ import { plantEventType } from '@/domain/plants/plant-event'
 import useDialog from '@/hooks/use-dialog'
 import DateUtils from '@/utils/dates'
 import { cn } from '@sglara/cn'
-import { useRef, useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { Link } from '@/router/components/Link'
 import PlantCalendar, { type SelectedDay } from './PlantCalendar'
 import { buttonVariants } from '../classVariants/button'
 
 export default function WateringHistoryGrid() {
+  const [monthIndex, setMonthIndex] = useState(() => new Date().getMonth())
+  const [year, setYear] = useState(() => new Date().getFullYear())
+
   const { data: plants, isLoading: isLoadingPlants } = usePlants()
 
   const [selectedDay, setSelectedDay] = useState<SelectedDay>({
@@ -40,6 +43,27 @@ export default function WateringHistoryGrid() {
 
   const createEvent = useCreateEvent(selectedDay.plantId)
   const deleteEvent = useDeleteEvent(selectedDay.plantId)
+
+  function handleMonthChange(newMonthIndex: number) {
+    console.log({ monthIndex, newMonthIndex })
+
+    if (newMonthIndex === 12) {
+      setMonthIndex(0)
+      setYear((y) => y + 1)
+    } else if (newMonthIndex === -1) {
+      setMonthIndex(11)
+      setYear((y) => y - 1)
+    } else {
+      setMonthIndex(newMonthIndex)
+    }
+  }
+
+  function handleMonthSelection(ev: ChangeEvent<HTMLInputElement>) {
+    const [yyyy, mm] = ev.currentTarget.value.split('-')
+    console.log(ev.currentTarget.value)
+    handleMonthChange(Number(mm))
+    setYear(Number(yyyy))
+  }
 
   function handleDaySelect(data: SelectedDay) {
     if (daySummaryRef.current?.open) {
@@ -102,9 +126,34 @@ export default function WateringHistoryGrid() {
   return (
     <div className="px-2">
       <span className="text-center block text-2xl py-4">
-        Historial de riego
+        Historial de riego {year}-{monthIndex}
       </span>
 
+      <div>
+        <button
+          type="button"
+          onClick={() => handleMonthChange(monthIndex - 1)}
+          className="px-2 py-1 border border-secondary-subtle rounded-sm"
+        >
+          &lt;
+        </button>
+
+        <input
+          name="month-input"
+          type="month"
+          onChange={handleMonthSelection}
+          className="border border-secondary-subtle rounded-sm w-52 px-2 py-1"
+          value={DateUtils.toMonthInputValue(monthIndex, year)}
+        />
+
+        <button
+          type="button"
+          onClick={() => handleMonthChange(monthIndex + 1)}
+          className="px-2 py-1 border border-secondary-subtle rounded-sm"
+        >
+          &gt;
+        </button>
+      </div>
       <div className="overflow-auto grid grid-cols-[auto_1fr]">
         {plants.map((plant) => (
           <div
@@ -123,12 +172,16 @@ export default function WateringHistoryGrid() {
             </div>
 
             <div className="w-full">
-              <PlantCalendar plantId={plant.id} onDaySelect={handleDaySelect} />
+              <PlantCalendar
+                plantId={plant.id}
+                onDaySelect={handleDaySelect}
+                monthIndex={monthIndex}
+                year={year}
+              />
             </div>
           </div>
         ))}
       </div>
-
       <dialog
         ref={daySummaryRef}
         closedby="closerequest"
@@ -200,7 +253,6 @@ export default function WateringHistoryGrid() {
           </button>
         </div>
       </dialog>
-
       <dialog
         ref={eventDetailsRef}
         closedby="closerequest"

@@ -2,6 +2,7 @@ const DateUtils = {
   toInputValue,
   getMonthDays,
   toDisplayDate,
+  toMonthInputValue,
 }
 
 export default DateUtils
@@ -61,4 +62,14 @@ function getMonthDays(numericMonth: number) {
   }
 
   return 0
+}
+
+function toMonthInputValue(monthIndex: number, year: number) {
+  let month = String(monthIndex + 1)
+
+  if (Number(month) < 10) {
+    month = `0${month}`
+  }
+
+  return `${year}-${month}`
 }
