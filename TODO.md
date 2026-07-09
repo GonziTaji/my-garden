@@ -1,12 +1,8 @@
 # TODO
 
-## Listos para despliegue
-
-- cookie dura un anio
+## Pendientes para despliegue
 
 ## Ongoing
-
-### Marcar dia actual en calendario
 
 ## Pending
 
@@ -16,6 +12,11 @@
 - autosubir, en dismount si no se ha submiteado suform, se elimina
 - usar en creacion de planta ASAP y en todos los otros lugares
 
+### Cambios pequenios UI
+
+- Calendario en pagina de planta
+- Eliminar acceso a pagina de riegos mientras no se use
+- Subir tabs de mi jardin arriba del contenido de la pagina (como en mi catalogo)
 
 ### Nuevos cuidados/propiedades
 
