@@ -17,11 +17,9 @@ export default function PlantsList() {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <div className="grow">
-        {tab === 'water' && <WateringList />}
-        {tab === 'history' && <WateringHistoryGrid />}
-        {tab === 'list' && <PlantListComponent />}
-      </div>
+      <h2 className="text-2xl font-bold text-secondary-dark p-4">
+        Mis plantas
+      </h2>
 
       <div className="flex gap-1 p-2">
         {(['list', 'water', 'history'] as const).map((t) => (
@@ -41,6 +39,12 @@ export default function PlantsList() {
             {t === 'history' && 'Historial'}
           </button>
         ))}
+      </div>
+
+      <div className="grow">
+        {tab === 'water' && <WateringList />}
+        {tab === 'history' && <WateringHistoryGrid />}
+        {tab === 'list' && <PlantListComponent />}
       </div>
     </div>
   )

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"my-garden/domain/plant"
+	"my-garden/domain/upload"
 	"my-garden/domain/user"
 	"my-garden/internal/auth"
 	"my-garden/internal/email"
@@ -101,6 +102,9 @@ func (g *AppRouter) mountApiRoutes() {
 	plantService := plant.NewService(plantStore)
 	plantHandler := plant.NewHandler(plantService)
 
+	uploadService := upload.NewService()
+	uploadHandler := upload.NewHandler(uploadService)
+
 	// Fully public auth endpoints (no middleware)
 	api.POST("/auth/send-link", userHandler.SendLink)
 	api.POST("/auth/verify", userHandler.Verify)
@@ -126,17 +130,14 @@ func (g *AppRouter) mountApiRoutes() {
 		protected.DELETE("/plant-species/:id", plantHandler.DeletePlantSpecies)
 		protected.POST("/plant-species/:id/favorite", plantHandler.ToggleFavorite)
 
-		protected.POST("/upload/plant-species-image", plantHandler.UploadPlantSpeciesImage)
-		protected.POST("/upload/plant-image", plantHandler.UploadPlantImage)
+		protected.POST("/uploads", uploadHandler.UploadFile)
+		protected.DELETE("/uploads/*filepath", uploadHandler.DeleteUploadedFile)
 
 		protected.GET("/plants", plantHandler.ListPlants)
 		protected.GET("/plants/:id", plantHandler.GetPlant)
 		protected.POST("/plants", plantHandler.CreatePlant)
 		protected.PUT("/plants/:id", plantHandler.UpdatePlant)
 		protected.DELETE("/plants/:id", plantHandler.DeletePlant)
-
-		protected.POST("/plants/:id/images", plantHandler.AddPlantImage)
-		protected.DELETE("/plants/:id/images/:imageId", plantHandler.DeletePlantImage)
 
 		protected.GET("/plants/:id/events", plantHandler.ListEvents)
 		protected.POST("/plants/:id/events", plantHandler.CreateEvent)

@@ -4,17 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -41,23 +35,6 @@ type UniqueConstraintError struct {
 
 func (e *UniqueConstraintError) Error() string {
 	return e.Message
-}
-
-const uploadsDir = "public/uploads/plant-species"
-const plantUploadsDir = "public/uploads/plants"
-const maxImageSize = 28 * 1024 * 1024
-
-var allowedMIMETypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-	"image/webp": true,
-}
-
-var allowedExtensions = map[string]bool{
-	".jpg":  true,
-	".jpeg": true,
-	".png":  true,
-	".webp": true,
 }
 
 // Species input
@@ -174,173 +151,16 @@ func (s *Service) ToggleFavorite(speciesID int64, userID int64) (bool, error) {
 	return s.store.ToggleFavorite(userID, speciesID)
 }
 
-// Image upload
-
-type UploadResult struct {
-	Filepath string `json:"filepath"`
-}
-
-func (s *Service) AddPlantImage(plantID int64, file *multipart.FileHeader, userID int64) (*PlantImage, error) {
-	result, err := s.UploadPlantImage(file)
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := s.store.CreatePlantImage(plantID, result.Filepath)
-	if err != nil {
-		return nil, fmt.Errorf("create plant image: %w", err)
-	}
-
-	images, err := s.store.GetPlantImages(plantID)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range images {
-		if images[i].ID == id {
-			images[i].UserID = userID
-			return &images[i], nil
-		}
-	}
-	return nil, fmt.Errorf("plant image not found after creation")
-}
-
-func (s *Service) DeletePlantImage(imageID int64) error {
-	return s.store.DeletePlantImage(imageID)
-}
-
-func (s *Service) UploadPlantImage(file *multipart.FileHeader) (*UploadResult, error) {
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	if !allowedExtensions[ext] {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Extension de imagen no permitida (usar .jpg, .jpeg, .png o .webp)",
-		}
-	}
-
-	if file.Size > maxImageSize {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Cada imagen debe pesar maximo 8MB",
-		}
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return nil, fmt.Errorf("open uploaded file: %w", err)
-	}
-	defer src.Close()
-
-	buf := make([]byte, 512)
-	n, _ := io.ReadFull(src, buf)
-	mimeType := http.DetectContentType(buf[:n])
-
-	if !strings.HasPrefix(mimeType, "image/") {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Solo se permiten archivos de imagen",
-		}
-	}
-	if !allowedMIMETypes[mimeType] {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Formato de imagen no permitido (usar JPG, PNG o WEBP)",
-		}
-	}
-
-	if err := os.MkdirAll(plantUploadsDir, 0755); err != nil {
-		return nil, fmt.Errorf("create uploads dir: %w", err)
-	}
-
-	filename := fmt.Sprintf("%d-%s%s", time.Now().UnixMilli(), uuid.New().String(), ext)
-	targetPath := filepath.Join(plantUploadsDir, filename)
-
-	out, err := os.Create(targetPath)
-	if err != nil {
-		return nil, fmt.Errorf("create file: %w", err)
-	}
-	defer out.Close()
-
-	src.Seek(0, io.SeekStart)
-	if _, err := io.Copy(out, src); err != nil {
-		return nil, fmt.Errorf("write file: %w", err)
-	}
-
-	publicPath := path.Join("/uploads/plants", filename)
-	return &UploadResult{Filepath: publicPath}, nil
-}
-
-func (s *Service) UploadImage(file *multipart.FileHeader) (*UploadResult, error) {
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	if !allowedExtensions[ext] {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Extension de imagen no permitida (usar .jpg, .jpeg, .png o .webp)",
-		}
-	}
-
-	if file.Size > maxImageSize {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Cada imagen debe pesar maximo 8MB",
-		}
-	}
-
-	// Read first 512 bytes to detect MIME type
-	src, err := file.Open()
-	if err != nil {
-		return nil, fmt.Errorf("open uploaded file: %w", err)
-	}
-	defer src.Close()
-
-	buf := make([]byte, 512)
-	n, _ := io.ReadFull(src, buf)
-	mimeType := http.DetectContentType(buf[:n])
-
-	if !strings.HasPrefix(mimeType, "image/") {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Solo se permiten archivos de imagen",
-		}
-	}
-	if !allowedMIMETypes[mimeType] {
-		return nil, &ValidationError{
-			Field:   "file",
-			Message: "Formato de imagen no permitido (usar JPG, PNG o WEBP)",
-		}
-	}
-
-	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
-		return nil, fmt.Errorf("create uploads dir: %w", err)
-	}
-
-	filename := fmt.Sprintf("%d-%s%s", time.Now().UnixMilli(), uuid.New().String(), ext)
-	targetPath := filepath.Join(uploadsDir, filename)
-
-	out, err := os.Create(targetPath)
-	if err != nil {
-		return nil, fmt.Errorf("create file: %w", err)
-	}
-	defer out.Close()
-
-	src.Seek(0, io.SeekStart)
-	if _, err := io.Copy(out, src); err != nil {
-		return nil, fmt.Errorf("write file: %w", err)
-	}
-
-	publicPath := path.Join("/uploads/plant-species", filename)
-	return &UploadResult{Filepath: publicPath}, nil
-}
-
 // Plants
 
 type CreatePlantInput struct {
-	Nickname       string  `json:"nickname"`
-	Source         *string `json:"source"`
-	PlantSpeciesID int64   `json:"plant_species_id"`
-	AcquiredAt     *string `json:"acquired_at"`
-	Location       *string `json:"location"`
-	Notes          *string `json:"notes"`
+	Nickname       string    `json:"nickname"`
+	Source         *string   `json:"source"`
+	PlantSpeciesID int64     `json:"plant_species_id"`
+	AcquiredAt     *string   `json:"acquired_at"`
+	Images         *[]string `json:"images"`
+	Location       *string   `json:"location"`
+	Notes          *string   `json:"notes"`
 }
 
 func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithSpecies, error) {
@@ -375,6 +195,14 @@ func (s *Service) CreatePlant(input CreatePlantInput, userID int64) (*PlantWithS
 	id, err := s.store.CreatePlant(plant)
 	if err != nil {
 		return nil, fmt.Errorf("create plant: %w", err)
+	}
+
+	if input.Images != nil {
+		for _, filepath := range *input.Images {
+			if _, err := s.store.CreatePlantImage(id, filepath); err != nil {
+				return nil, fmt.Errorf("create plant image: %w", err)
+			}
+		}
 	}
 
 	if input.Location != nil && *input.Location != "" {

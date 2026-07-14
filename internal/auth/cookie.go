@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -53,6 +54,19 @@ func Verify(signed string) (int64, error) {
 	return userID, nil
 }
 
+func setCookie(c *gin.Context, value string, maxAge int) {
+	secure := c.Request.TLS != nil
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "session",
+		Value:    value,
+		MaxAge:   maxAge,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+		HttpOnly: true,
+	})
+}
+
 func SetSessionCookie(c *gin.Context, userID int64) {
 	signed, err := Sign(userID)
 	if err != nil {
@@ -61,12 +75,10 @@ func SetSessionCookie(c *gin.Context, userID int64) {
 
 	// one year
 	maxAge := 60 * 60 * 24 * 365
-	secure := c.Request.TLS != nil
 
-	c.SetCookie("session", signed, maxAge, "/", "", secure, true)
+	setCookie(c, signed, maxAge)
 }
 
 func ClearSessionCookie(c *gin.Context) {
-	secure := c.Request.TLS != nil
-	c.SetCookie("session", "", -1, "/", "", secure, true)
+	setCookie(c, "", -1)
 }

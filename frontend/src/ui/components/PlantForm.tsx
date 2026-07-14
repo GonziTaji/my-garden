@@ -2,9 +2,11 @@ import { useTransition, useState, useMemo, type SubmitEvent } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
 import { useNavigate } from '@/router/provider'
-import { useCreatePlant } from '@/api/plants'
+import { useUpsertPlant } from '@/api/plants'
 import { useCreateSpecies, useSpecies } from '@/api/species'
 import { Link } from '@/router/components/Link'
+import { ImageUploader } from './ImageUploader'
+import type { Plant } from '@/domain/plants/plant'
 
 const inputVariants = cva(
   [
@@ -30,14 +32,16 @@ const waterProfiles = [
 
 export interface PlantFormProps {
   plantSpeciesId?: number
+  plant?: Plant
 }
 
-export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
+export default function PlantForm({ plant, plantSpeciesId }: PlantFormProps) {
   const [isPending, startTransition] = useTransition()
+  const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { data: plantSpecies } = useSpecies()
-  const createPlant = useCreatePlant()
+  const upsertPlant = useUpsertPlant(plant?.id)
   const createSpecies = useCreateSpecies()
 
   const [speciesMode, setSpeciesMode] = useState<'catalog' | 'quick' | 'new'>(
@@ -62,6 +66,11 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    if (isUploading || isPending) {
+      return
+    }
+
     setError(null)
     const fd = new FormData(e.currentTarget)
 
@@ -96,13 +105,19 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
           return
         }
 
-        const result = await createPlant.mutateAsync({
+        console.log(
+          'asdfasdf',
+          fd.getAll('images').map((entry) => entry.toString())
+        )
+
+        const result = await upsertPlant.mutateAsync({
           nickname: fd.get('nickname')?.toString() || '',
           source: fd.get('source')?.toString() || '',
           location: fd.get('location')?.toString() || undefined,
           acquired_at: fd.get('acquiredAt')?.toString() || undefined,
           notes: fd.get('notes')?.toString() || undefined,
           plant_species_id: defId,
+          images: fd.getAll('images').map((entry) => entry.toString()),
         })
 
         if (result?.id) {
@@ -114,6 +129,14 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
         setError(err instanceof Error ? err.message : 'Error inesperado')
       }
     })
+  }
+
+  function handleUploadingImages() {
+    setIsUploading(true)
+  }
+
+  function handleUploadedImages() {
+    setIsUploading(false)
   }
 
   return (
@@ -131,7 +154,7 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
         <div className="flex flex-col gap-2">
           <label htmlFor="plantSpeciesId">Especie</label>
 
-          {plantSpeciesId ? (
+          {plantSpeciesId || plant?.plantSpeciesId ? (
             <div className="border border-primary-default rounded-lg p-2 text-sm bg-primary-light">
               {speciesName || `ID: ${plantSpeciesId}`}
               <input
@@ -224,6 +247,14 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
 
       {speciesMode !== 'new' && (
         <fieldset className="grid gap-8 overflow-auto">
+          <ImageUploader
+            defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
+            inputName="images"
+            maxImages={3}
+            onUploading={handleUploadingImages}
+            onUploaded={handleUploadedImages}
+          />
+
           <div className="flex flex-col gap-2">
             <label htmlFor="nickname">Nombre (apodo)</label>
             <input
@@ -237,16 +268,6 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
               required
             />
           </div>
-
-          {
-            // {[0, 1, 2].map((n) => (
-            //   <ImageSelector
-            //     image={record.images[n]}
-            //     key={n}
-            //     position={n}
-            //   />
-            // ))}
-          }
 
           <div className="flex flex-col gap-2">
             <label htmlFor="source">Fuente</label>
@@ -312,7 +333,7 @@ export default function PlantForm({ plantSpeciesId }: PlantFormProps) {
         {speciesMode !== 'new' && (
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isUploading}
             className={buttonVariants({ variant: 'primary' })}
           >
             {isPending ? 'Guardando...' : 'Guardar'}

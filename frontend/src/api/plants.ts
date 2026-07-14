@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { PlantImage, PlantWithSpecies } from '@/domain/plants/plant'
+import type { PlantWithSpecies } from '@/domain/plants/plant'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
 
 export async function deletePlantImage(
@@ -16,43 +16,14 @@ export async function deletePlantImage(
   }
 }
 
-export async function addPlantImage(
-  plantId: number,
-  file: File
-): Promise<PlantImage> {
-  const fd = new FormData()
-  fd.append('file', file)
-  const res = await fetch(`/api/plants/${plantId}/images`, {
-    method: 'POST',
-    body: fd,
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || 'Error al subir imagen')
-  }
-  const data: ApiPlantImage = await res.json()
-  return {
-    id: data.id,
-    plantId: data.plant_id,
-    filepath: data.filepath,
-    createdAt: data.created_at,
-  }
-}
-
-interface CreatePlantInput {
+interface UpsertPlantInput {
   nickname: string
   source?: string
   location?: string
   acquired_at?: string
   notes?: string
   plant_species_id?: number
-}
-
-interface ApiPlantImage {
-  id: number
-  plant_id: number
-  filepath: string
-  created_at: string
+  images: string[]
 }
 
 interface ApiPlantSpeciesBrief {
@@ -71,7 +42,7 @@ interface ApiPlantWithSpecies {
   location: string | null
   notes: string | null
   plant_species: ApiPlantSpeciesBrief
-  images: ApiPlantImage[]
+  images: string[]
   created_at: string
   updated_at: string
 }
@@ -85,13 +56,7 @@ function toDomain(p: ApiPlantWithSpecies): PlantWithSpecies {
     acquiredAt: p.acquired_at ? new Date(p.acquired_at) : undefined,
     location: p.location ?? undefined,
     notes: p.notes ?? undefined,
-    images:
-      p.images?.map((img) => ({
-        id: img.id,
-        plantId: img.plant_id,
-        filepath: img.filepath,
-        createdAt: img.created_at,
-      })) || [],
+    images: p.images || [],
     species: {
       id: p.plant_species.id,
       commonName: p.plant_species.common_name,
@@ -129,10 +94,25 @@ export function usePlant(id: number) {
   })
 }
 
-export function useCreatePlant() {
+export function useUpsertPlant(id?: number) {
+  const qc = useQueryClient()
+  const url = id ? `/api/plants/${id}` : '/api/plants'
+
+  return useMutation({
+    mutationFn: (input: UpsertPlantInput) => {
+      console.log(input)
+      return api.post<ApiPlantWithSpecies>(url, input)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plants'] })
+    },
+  })
+}
+
+export function useUpdatePlant() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: CreatePlantInput) =>
+    mutationFn: (input: UpsertPlantInput) =>
       api.post<ApiPlantWithSpecies>('/api/plants', input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plants'] })

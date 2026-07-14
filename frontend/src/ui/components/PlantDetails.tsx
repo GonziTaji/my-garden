@@ -1,4 +1,3 @@
-import { addPlantImage, deletePlantImage } from '@/api/plants'
 import { useCreateEvent } from '@/api/events'
 import type { PlantWithSpecies } from '@/domain/plants/plant'
 import { useState, type SyntheticEvent } from 'react'
@@ -7,6 +6,7 @@ import { cn } from '@sglara/cn'
 import { inputVariants } from '../classVariants/input'
 import { Link } from '@/router/components/Link'
 import DateUtils from '@/utils/dates'
+import { useImageUploads } from '@/api/uploads'
 
 interface PlantDetailProps {
   plant: PlantWithSpecies
@@ -28,11 +28,12 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   const [images, setImages] = useState(plant.images)
   const [editingImages, setEditingImages] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const { uploadImage, deleteImage } = useImageUploads()
 
-  async function handleDeleteImage(imageId: number) {
+  async function handleDeleteImage(imagePath: string) {
     try {
-      await deletePlantImage(plant.id, imageId)
-      setImages((prev) => prev.filter((img) => img.id !== imageId))
+      await deleteImage(imagePath)
+      setImages((prev) => prev.filter((img) => img === imagePath))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al eliminar imagen')
     }
@@ -41,8 +42,13 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   async function handleAddImage(file: File) {
     setUploading(true)
     try {
-      const newImage = await addPlantImage(plant.id, file)
-      setImages((prev) => [...prev, newImage])
+      const { error, filepath } = await uploadImage(file)
+      if (error) {
+        alert(error)
+        return
+      }
+
+      setImages((prev) => [...prev, filepath])
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al subir imagen')
     } finally {
@@ -97,6 +103,8 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
           notes: notes || null,
           metadata: { location },
         })
+        console.log(res)
+
         form.reset()
 
         return
@@ -205,19 +213,19 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         <div className="grid gap-2 grid-cols-3">
           {images.length > 0 ? (
             images.map((image) => (
-              <div key={image.id} className="relative">
+              <div key={image} className="relative">
                 <img
                   width="200"
                   height="200"
                   className="h-32 w-full object-cover border border-secondary-default rounded-sm"
-                  src={image.filepath}
+                  src={image}
                   alt="Imagen de planta"
                 />
                 {editingImages && (
                   <button
                     className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-danger-dark/80 text-white"
                     type="button"
-                    onClick={() => handleDeleteImage(image.id!)}
+                    onClick={() => handleDeleteImage(image)}
                   >
                     Quitar
                   </button>

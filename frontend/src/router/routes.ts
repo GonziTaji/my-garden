@@ -7,6 +7,7 @@ import Login from '@/ui/pages/Login'
 import PlantDetailPage from '@/ui/pages/PlantDetail'
 import PlantNew from '@/ui/pages/PlantNew'
 import PlantsList from '@/ui/pages/PlantsList'
+import { Sbx } from '@/ui/pages/Sbx'
 
 export type RouterPath = (typeof routerPaths)[number]['path']
 
@@ -20,4 +21,5 @@ export const routerPaths = [
   { path: '/catalog/:plantspeciesid', component: CatalogDetail },
   { path: '/catalog/:plantspeciesid/new-plant', component: CatalogNewPlant },
   { path: '/login', component: Login },
+  { path: '/sbx', component: Sbx },
 ] as const
