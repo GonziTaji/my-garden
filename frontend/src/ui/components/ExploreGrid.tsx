@@ -1,5 +1,5 @@
 import type { PlantSpecies } from '@/domain/plants/plant-species'
-import { Link } from '@/router/components/Link'
+import { Link } from '@tanstack/react-router'
 
 export interface ExploreGridProps {
   list: PlantSpecies[]
@@ -11,8 +11,8 @@ export default function ExploreGrid({ list }: ExploreGridProps) {
       {list.map((sp) => (
         <Link
           key={sp.id}
-          to="/catalog/:plantspeciesid"
-          params={{ plantspeciesid: String(sp.id) }}
+          to="/catalog/$plantspeciesid"
+          params={{ plantspeciesid: String(sp.id!) }}
           className="break-inside-avoid mb-4 block"
         >
           <div className="border border-secondary-default rounded-sm overflow-hidden">

@@ -3,7 +3,7 @@ import { useMemo, useTransition } from 'react'
 import { useLastWateredDates, useToggleWatering } from '@/api/watering'
 import { usePlants } from '@/api/plants'
 import { buttonVariants } from '../classVariants/button'
-import { useRouter } from '@/router/provider'
+import { useNavigate } from '@tanstack/react-router'
 
 export interface WateringListProps {}
 
@@ -14,7 +14,7 @@ export default function WateringList({}: WateringListProps) {
     plants?.map((p) => p.id) || []
   )
   const [_, startTransition] = useTransition()
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const lastWateredDates = useMemo(() => {
     const m = new Map<number, string>()
@@ -52,9 +52,7 @@ export default function WateringList({}: WateringListProps) {
   }
 
   const handlePlantImageClick = (plantid: Plant['id']) => {
-    router.navigate('/plants/:plantid', {
-      params: { plantid: plantid.toString() },
-    })
+    navigate({ to: '/plants/$plantid', params: { plantid: String(plantid) } })
   }
 
   return (

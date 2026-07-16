@@ -1,12 +1,12 @@
-import { useParams, useSearchParams, useNavigate } from '@/router/provider'
+import { useParams, useSearch, useNavigate } from '@tanstack/react-router'
 import { useSpeciesById } from '@/api/species'
 import SpeciesView from '@/ui/components/SpeciesView'
 
 export default function CatalogDetail() {
-  const { plantspeciesid } = useParams()
-  const [searchParams] = useSearchParams()
+  const { plantspeciesid: plantspeciesidParam } = useParams({ from: '/catalog/$plantspeciesid' })
+  const { e } = useSearch({ from: '/catalog/$plantspeciesid' })
   const navigate = useNavigate()
-  const spId = Number(plantspeciesid)
+  const spId = Number(plantspeciesidParam)
   const { data: species, isLoading, error } = useSpeciesById(spId)
 
   if (isLoading) {
@@ -21,7 +21,7 @@ export default function CatalogDetail() {
         <p className="text-danger-strong">Tipo de planta no encontrado</p>
         <button
           type="button"
-          onClick={() => navigate('/catalog')}
+          onClick={() => navigate({ to: '/catalog' })}
           className="text-primary-strong underline mt-4"
         >
           Volver al catálogo
@@ -30,7 +30,7 @@ export default function CatalogDetail() {
     )
   }
 
-  const editMode = searchParams.get('e') === 'T' && !species.deletedAt
+  const editMode = e === 'T' && !species.deletedAt
 
   return <SpeciesView record={species} editMode={editMode} />
 }

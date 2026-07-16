@@ -1,17 +1,16 @@
 import { useSpecies } from '@/api/species'
 import SpeciesCatalog from '@/ui/components/SpeciesCatalog'
-import { Link } from '@/router/components/Link'
+import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { useAuth } from '@/auth/AuthContext'
-import { useSearchParams } from '@/router/provider'
 import { cn } from '@sglara/cn'
 
 type Tab = 'mine' | 'favorites' | 'linked' | 'all'
 
 export default function CatalogList() {
   const { user } = useAuth()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const tab = (searchParams.get('t') as Tab) || 'all'
+  const navigate = useNavigate()
+  const { t: tab = 'all' } = useSearch({ from: '/catalog' })
 
   const scope = tab === 'all' ? (user ? 'mine-favorites' : undefined) : tab
   const { data: species, isLoading, error } = useSpecies(scope)
@@ -57,7 +56,7 @@ export default function CatalogList() {
           <button
             type="button"
             key={t.key}
-            onClick={() => setSearchParams({ t: t.key === 'all' ? '' : t.key })}
+            onClick={() => navigate({ to: '/catalog', search: { t: t.key === 'all' ? undefined : t.key } })}
             className={cn(
               'px-4 py-1 rounded-sm text-sm',
               tab === t.key

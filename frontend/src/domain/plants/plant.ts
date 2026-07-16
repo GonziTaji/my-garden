@@ -16,7 +16,7 @@ export interface Plant {
 
   notes?: string
 
-  images: string[]
+  images: PlantImage[]
 }
 
 export type PlantWithSpecies = Plant & {

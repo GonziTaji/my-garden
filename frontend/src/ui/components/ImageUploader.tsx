@@ -1,32 +1,39 @@
 import useDialog from '@/hooks/use-dialog'
 import { cn } from '@sglara/cn'
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type ChangeEventHandler,
-  type FC,
 } from 'react'
 import { buttonVariants } from '../classVariants/button'
 import { useImageUploads } from '@/api/uploads'
 
-export const ImageUploader: FC<{
+export interface ImageUploaderHandle {
+  getDeletedPaths: () => string[]
+  commitDeletions: () => Promise<void>
+}
+
+export const ImageUploader = forwardRef<ImageUploaderHandle, {
   defaultImagePaths?: string[]
   inputName?: string
   maxImages?: number
   onUploading?: () => void
   onUploaded?: () => void
-}> = ({
+}>(({
   defaultImagePaths,
   inputName = 'images',
   maxImages = 3,
   onUploading,
   onUploaded,
-}) => {
+}, ref) => {
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [imagePaths, setImagePaths] = useState<string[]>(
     defaultImagePaths ?? []
   )
+  const [deletedPaths, setDeletedPaths] = useState<string[]>([])
   const { uploadImage, deleteImage } = useImageUploads()
 
   const sourceSelectorDialogRef = useRef<HTMLDialogElement>(null)
@@ -52,6 +59,21 @@ export const ImageUploader: FC<{
   useEffect(() => {
     return () => previewUrls.forEach((url) => URL.revokeObjectURL(url))
   }, [])
+
+  useImperativeHandle(ref, () => ({
+    getDeletedPaths: () => deletedPaths,
+    commitDeletions: async () => {
+      const results = await Promise.all(
+        deletedPaths.map((path) => deleteImage(path))
+      )
+      const errors = results.filter((r) => r.error)
+      if (errors.length !== 0) {
+        console.error(errors)
+        alert('error deleting one or more images')
+      }
+      setDeletedPaths([])
+    },
+  }))
 
   const handleImageUpload: ChangeEventHandler<HTMLInputElement> = async (
     ev
@@ -122,14 +144,8 @@ export const ImageUploader: FC<{
     showConfirmDeleteImageDialog()
   }
 
-  const handleConfirmDeleteImage = async () => {
-    const { error } = await deleteImage(deleteTargetImagePath.current)
-
-    if (error) {
-      console.log(error)
-      alert('error deleting image')
-    }
-
+  const handleConfirmDeleteImage = () => {
+    setDeletedPaths((state) => [...state, deleteTargetImagePath.current])
     setImagePaths(
       imagePaths.filter((path) => path !== deleteTargetImagePath.current)
     )
@@ -263,4 +279,4 @@ export const ImageUploader: FC<{
       </dialog>
     </div>
   )
-}
+})

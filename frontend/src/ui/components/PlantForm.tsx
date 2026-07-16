@@ -1,12 +1,13 @@
-import { useTransition, useState, useMemo, type SubmitEvent } from 'react'
+import { useTransition, useState, useMemo, useRef, type SubmitEvent } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
-import { useNavigate } from '@/router/provider'
-import { useUpsertPlant } from '@/api/plants'
-import { useCreateSpecies, useSpecies } from '@/api/species'
-import { Link } from '@/router/components/Link'
-import { ImageUploader } from './ImageUploader'
-import type { Plant } from '@/domain/plants/plant'
+import { useNavigate, Link } from '@tanstack/react-router'
+import { cn } from '@sglara/cn'
+import { useUpsertPlant, useDeletePlant } from '@/api/plants'
+import { useSpecies } from '@/api/species'
+import { ImageUploader, type ImageUploaderHandle } from './ImageUploader'
+import type { PlantWithSpecies } from '@/domain/plants/plant'
+import DateUtils from '@/utils/dates'
 
 const inputVariants = cva(
   [
@@ -23,46 +24,37 @@ const inputVariants = cva(
   }
 )
 
-const waterProfiles = [
-  { value: 'dry_cycle', label: 'Hasta secarse' },
-  { value: 'semi_dry_cycle', label: 'Parcialmente seco' },
-  { value: 'even_moisture', label: 'Mantener húmedo' },
-  { value: 'wet', label: 'Encharcado' },
-]
+export type PlantFormProps =
+  | {
+      plantSpeciesId: number
+      plant?: never
+    }
+  | {
+      plantSpeciesId?: never
+      plant?: PlantWithSpecies
+    }
 
-export interface PlantFormProps {
-  plantSpeciesId?: number
-  plant?: Plant
-}
-
-export default function PlantForm({ plant, plantSpeciesId }: PlantFormProps) {
+export default function PlantForm({
+  plant,
+  plantSpeciesId: propsPlantSpeciesId,
+}: PlantFormProps) {
   const [isPending, startTransition] = useTransition()
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { data: plantSpecies } = useSpecies()
   const upsertPlant = useUpsertPlant(plant?.id)
-  const createSpecies = useCreateSpecies()
-
-  const [speciesMode, setSpeciesMode] = useState<'catalog' | 'quick' | 'new'>(
-    'catalog'
-  )
-  const [quickName, setQuickName] = useState('')
-  const [quickWater, setQuickWater] = useState('dry_cycle')
-  const [selectedSpeciesId, setSelectedSpeciesId] = useState<
-    number | undefined
-  >(undefined)
+  const deletePlant = useDeletePlant()
+  const imageUploaderRef = useRef<ImageUploaderHandle>(null)
 
   const ownedSpecies = useMemo(() => {
     if (!plantSpecies) return []
     return plantSpecies.filter((sp) => sp.userId !== undefined)
   }, [plantSpecies])
 
-  const speciesName = useMemo(() => {
-    if (!plantSpeciesId || !plantSpecies) return ''
-    const sp = plantSpecies.find((sp) => sp.id === plantSpeciesId)
-    return sp ? sp.commonName : ''
-  }, [plantSpeciesId, plantSpecies])
+  const [plantSpeciesId, setPlantSpeciesId] = useState(
+    () => plant?.plantSpeciesId || propsPlantSpeciesId || undefined
+  )
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -76,52 +68,22 @@ export default function PlantForm({ plant, plantSpeciesId }: PlantFormProps) {
 
     startTransition(async () => {
       try {
-        let defId = plantSpeciesId
-
-        if (!defId && speciesMode === 'quick') {
-          if (!quickName.trim()) {
-            setError('El nombre de la especie es requerido')
-            return
-          }
-          const newSp = await createSpecies.mutateAsync({
-            common_name: quickName.trim(),
-            scientific_name: '',
-            water_profile: quickWater,
-            is_quick: true,
-          })
-          defId = newSp.id
-        }
-
-        if (!defId && speciesMode === 'catalog') {
-          if (!selectedSpeciesId) {
-            setError('Selecciona una especie del catálogo')
-            return
-          }
-          defId = selectedSpeciesId
-        }
-
-        if (!defId) {
-          setError('No se ha seleccionado ninguna especie')
-          return
-        }
-
-        console.log(
-          'asdfasdf',
-          fd.getAll('images').map((entry) => entry.toString())
-        )
-
+        // TODO: validate with zod
         const result = await upsertPlant.mutateAsync({
           nickname: fd.get('nickname')?.toString() || '',
           source: fd.get('source')?.toString() || '',
           location: fd.get('location')?.toString() || undefined,
           acquired_at: fd.get('acquiredAt')?.toString() || undefined,
           notes: fd.get('notes')?.toString() || undefined,
-          plant_species_id: defId,
+          plant_species_id: plantSpeciesId,
           images: fd.getAll('images').map((entry) => entry.toString()),
         })
 
+        await imageUploaderRef.current?.commitDeletions()
+
         if (result?.id) {
-          navigate('/plants/:plantid', {
+          navigate({
+            to: '/plants/$plantid',
             params: { plantid: String(result.id) },
           })
         }
@@ -139,6 +101,24 @@ export default function PlantForm({ plant, plantSpeciesId }: PlantFormProps) {
     setIsUploading(false)
   }
 
+  function handleDelete() {
+    if (!plant?.id) return
+
+    const confirmed = confirm(
+      `Esto eliminara la planta "${plant.nickname}". ¿Continuar?`
+    )
+    if (!confirmed) return
+
+    startTransition(async () => {
+      try {
+        await deletePlant.mutateAsync(plant.id!)
+        navigate({ to: '/plants' })
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Error al eliminar')
+      }
+    })
+  }
+
   return (
     <form
       onSubmit={submit}
@@ -154,171 +134,114 @@ export default function PlantForm({ plant, plantSpeciesId }: PlantFormProps) {
         <div className="flex flex-col gap-2">
           <label htmlFor="plantSpeciesId">Especie</label>
 
-          {plantSpeciesId || plant?.plantSpeciesId ? (
-            <div className="border border-primary-default rounded-lg p-2 text-sm bg-primary-light">
-              {speciesName || `ID: ${plantSpeciesId}`}
-              <input
-                type="hidden"
-                name="plantSpeciesId"
-                value={plantSpeciesId}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="speciesMode"
-                  checked={speciesMode === 'catalog'}
-                  onChange={() => setSpeciesMode('catalog')}
-                />
-                Usar de mi catálogo
-              </label>
-              {speciesMode === 'catalog' && (
-                <select
-                  value={selectedSpeciesId || ''}
-                  onChange={(e) =>
-                    setSelectedSpeciesId(Number(e.target.value) || undefined)
-                  }
-                  className={inputVariants()}
-                >
-                  <option value="">Seleccionar especie...</option>
-                  {ownedSpecies.map((sp) => (
-                    <option key={sp.id} value={sp.id!}>
-                      {sp.commonName}
-                    </option>
-                  ))}
-                </select>
-              )}
+          <div className="flex gap-3">
+            <select
+              value={plantSpeciesId}
+              onChange={({ currentTarget: t }) =>
+                setPlantSpeciesId(Number(t.value))
+              }
+              name="plantSpecies"
+              className={inputVariants()}
+            >
+              <option value="">Seleccionar especie...</option>
+              {ownedSpecies.map((sp) => (
+                <option key={sp.id} value={sp.id!}>
+                  {sp.commonName}
+                </option>
+              ))}
+            </select>
 
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="speciesMode"
-                  checked={speciesMode === 'quick'}
-                  onChange={() => setSpeciesMode('quick')}
-                />
-                Especie rápida
-              </label>
-              {speciesMode === 'quick' && (
-                <div className="flex flex-col gap-2 ml-6">
-                  <input
-                    className={inputVariants()}
-                    type="text"
-                    placeholder="Nombre común"
-                    value={quickName}
-                    onChange={(e) => setQuickName(e.target.value)}
-                  />
-                  <select
-                    value={quickWater}
-                    onChange={(e) => setQuickWater(e.target.value)}
-                    className={inputVariants()}
-                  >
-                    {waterProfiles.map((wp) => (
-                      <option key={wp.value} value={wp.value}>
-                        {wp.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="speciesMode"
-                  checked={speciesMode === 'new'}
-                  onChange={() => setSpeciesMode('new')}
-                />
-                Crear nueva especie
-              </label>
-              {speciesMode === 'new' && (
-                <Link
-                  to="/catalog/new"
-                  className="text-primary-strong underline text-sm ml-6"
-                >
-                  Ir a crear nueva especie
-                </Link>
-              )}
-            </div>
-          )}
+            <Link
+              to="/catalog/new"
+              search={{ fromPlantForm: true }}
+              className="bg-primary-default rounded-md w-32 text-center content-center"
+            >
+              Nueva
+            </Link>
+          </div>
         </div>
       </fieldset>
 
-      {speciesMode !== 'new' && (
-        <fieldset className="grid gap-8 overflow-auto">
-          <ImageUploader
-            defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
-            inputName="images"
-            maxImages={3}
-            onUploading={handleUploadingImages}
-            onUploaded={handleUploadedImages}
+      <fieldset className="grid gap-8 overflow-auto">
+        <ImageUploader
+          ref={imageUploaderRef}
+          defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
+          inputName="images"
+          maxImages={3}
+          onUploading={handleUploadingImages}
+          onUploaded={handleUploadedImages}
+        />
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="nickname">Nombre (apodo)</label>
+          <input
+            className={inputVariants()}
+            id="nickname"
+            name="nickname"
+            type="text"
+            defaultValue={plant?.nickname ?? ''}
+            placeholder="Mi monstera del balcon"
+            minLength={1}
+            disabled={isPending}
+            required
           />
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="nickname">Nombre (apodo)</label>
-            <input
-              className={inputVariants()}
-              id="nickname"
-              name="nickname"
-              type="text"
-              placeholder="Mi monstera del balcon"
-              minLength={1}
-              disabled={isPending}
-              required
-            />
-          </div>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="source">Fuente</label>
+          <input
+            className={inputVariants()}
+            id="source"
+            name="source"
+            type="text"
+            defaultValue={plant?.source ?? ''}
+            placeholder="Regalo, compra, etc."
+            minLength={1}
+            disabled={isPending}
+            required
+          />
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="source">Fuente</label>
-            <input
-              className={inputVariants()}
-              id="source"
-              name="source"
-              type="text"
-              placeholder="Regalo, compra, etc."
-              minLength={1}
-              disabled={isPending}
-              required
-            />
-          </div>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="location">Ubicacion (opcional)</label>
+          <input
+            className={inputVariants()}
+            id="location"
+            name="location"
+            type="text"
+            defaultValue={plant?.location ?? ''}
+            placeholder="Balcon, sala, habitacion..."
+            disabled={isPending}
+          />
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="location">Ubicacion (opcional)</label>
-            <input
-              className={inputVariants()}
-              id="location"
-              name="location"
-              type="text"
-              placeholder="Balcon, sala, habitacion..."
-              disabled={isPending}
-            />
-          </div>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="acquiredAt">Fecha de adquisicion (opcional)</label>
+          <input
+            className={inputVariants()}
+            id="acquiredAt"
+            name="acquiredAt"
+            type="date"
+            defaultValue={DateUtils.toInputValue(
+              plant?.acquiredAt ?? new Date()
+            )}
+            disabled={isPending}
+          />
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="acquiredAt">Fecha de adquisicion (opcional)</label>
-            <input
-              className={inputVariants()}
-              id="acquiredAt"
-              name="acquiredAt"
-              type="date"
-              disabled={isPending}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="notes">Notas (opcional)</label>
-            <textarea
-              className={inputVariants()}
-              id="notes"
-              name="notes"
-              placeholder="Cualquier informacion adicional..."
-              disabled={isPending}
-              rows={3}
-            />
-          </div>
-        </fieldset>
-      )}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="notes">Notas (opcional)</label>
+          <textarea
+            className={inputVariants()}
+            id="notes"
+            name="notes"
+            defaultValue={plant?.notes ?? ''}
+            placeholder="Cualquier informacion adicional..."
+            disabled={isPending}
+            rows={3}
+          />
+        </div>
+      </fieldset>
 
       <div className="flex justify-end gap-4">
         <button
@@ -330,16 +253,28 @@ export default function PlantForm({ plant, plantSpeciesId }: PlantFormProps) {
           Cancelar
         </button>
 
-        {speciesMode !== 'new' && (
-          <button
-            type="submit"
-            disabled={isPending || isUploading}
-            className={buttonVariants({ variant: 'primary' })}
-          >
-            {isPending ? 'Guardando...' : 'Guardar'}
-          </button>
-        )}
+        <button
+          type="submit"
+          disabled={isPending || isUploading}
+          className={buttonVariants({ variant: 'primary' })}
+        >
+          {isPending ? 'Guardando...' : 'Guardar'}
+        </button>
       </div>
+
+      {plant && (
+        <div className="text-danger-default border-t border-secondary-subtle pt-6">
+          <h3 className="font-semibold mb-2">DANGER ZONE</h3>
+          <button
+            type="button"
+            className={cn(buttonVariants({ variant: 'danger' }))}
+            onClick={handleDelete}
+            disabled={isPending}
+          >
+            {isPending ? 'Eliminando...' : 'Eliminar planta'}
+          </button>
+        </div>
+      )}
     </form>
   )
 }

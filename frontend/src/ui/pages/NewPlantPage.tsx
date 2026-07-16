@@ -1,10 +1,8 @@
-import { useSearchParams } from '@/router/provider'
+import { useSearch } from '@tanstack/react-router'
 import PlantForm from '@/ui/components/PlantForm'
 
-export default function PlantNew() {
-  const [searchParams] = useSearchParams()
-  const spIdParam = searchParams.get('plant_species_id')
-  const plantSpeciesId = spIdParam ? Number(spIdParam) : undefined
+export default function NewPlantPage() {
+  let { plantSpeciesId } = useSearch({ from: '/plants/new' })
 
   return (
     <div className="p-4">

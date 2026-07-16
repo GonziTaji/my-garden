@@ -1,22 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type { PlantWithSpecies } from '@/domain/plants/plant'
+import type { PlantImage } from '@/domain/plants/plant-image'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
 
-export async function deletePlantImage(
-  plantId: number,
-  imageId: number
-): Promise<void> {
-  const res = await fetch(`/api/plants/${plantId}/images/${imageId}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || 'Error al eliminar imagen')
-  }
-}
-
-interface UpsertPlantInput {
+export interface UpsertPlantInput {
   nickname: string
   source?: string
   location?: string
@@ -33,16 +21,22 @@ interface ApiPlantSpeciesBrief {
   deleted_at?: string | null
 }
 
+interface ApiPlantImage {
+  id: number
+  plant_id: number
+  filepath: string
+  created_at: string
+}
+
 interface ApiPlantWithSpecies {
   id: number
   nickname: string
   source: string | null
-  plant_species_id: number
   acquired_at: string | null
   location: string | null
   notes: string | null
   plant_species: ApiPlantSpeciesBrief
-  images: string[]
+  images: ApiPlantImage[]
   created_at: string
   updated_at: string
 }
@@ -52,11 +46,16 @@ function toDomain(p: ApiPlantWithSpecies): PlantWithSpecies {
     id: p.id,
     nickname: p.nickname,
     source: p.source ?? undefined,
-    plantSpeciesId: p.plant_species_id,
+    plantSpeciesId: p.plant_species.id,
     acquiredAt: p.acquired_at ? new Date(p.acquired_at) : undefined,
     location: p.location ?? undefined,
     notes: p.notes ?? undefined,
-    images: p.images || [],
+    images: (p.images || []).map((img): PlantImage => ({
+      id: img.id,
+      plantId: img.plant_id,
+      filepath: img.filepath,
+      createdAt: img.created_at,
+    })),
     species: {
       id: p.plant_species.id,
       commonName: p.plant_species.common_name,
@@ -114,6 +113,16 @@ export function useUpdatePlant() {
   return useMutation({
     mutationFn: (input: UpsertPlantInput) =>
       api.post<ApiPlantWithSpecies>('/api/plants', input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plants'] })
+    },
+  })
+}
+
+export function useDeletePlant() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.del(`/api/plants/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plants'] })
     },

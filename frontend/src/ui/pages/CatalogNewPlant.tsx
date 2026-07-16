@@ -1,10 +1,10 @@
-import { useParams } from '@/router/provider'
+import { useParams } from '@tanstack/react-router'
 import { useSpeciesById } from '@/api/species'
 import PlantForm from '@/ui/components/PlantForm'
 
 export default function CatalogNewPlant() {
-  const { plantspeciesid } = useParams()
-  const spId = Number(plantspeciesid)
+  const { plantspeciesid: plantspeciesidParam } = useParams({ from: '/catalog/$plantspeciesid/new-plant' })
+  const spId = Number(plantspeciesidParam)
   const { data: species, isLoading } = useSpeciesById(spId)
 
   if (isLoading)

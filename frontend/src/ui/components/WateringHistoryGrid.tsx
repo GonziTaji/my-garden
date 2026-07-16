@@ -5,14 +5,20 @@ import { plantEventType } from '@/domain/plants/plant-event'
 import useDialog from '@/hooks/use-dialog'
 import DateUtils from '@/utils/dates'
 import { cn } from '@sglara/cn'
-import { useRef, useState, type ChangeEvent } from 'react'
-import { Link } from '@/router/components/Link'
+import { useRef, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import PlantCalendar, { type SelectedDay } from './PlantCalendar'
 import { buttonVariants } from '../classVariants/button'
+import { useMonthSelector } from '@/hooks/use-month-selector'
 
 export default function WateringHistoryGrid() {
-  const [monthIndex, setMonthIndex] = useState(() => new Date().getMonth())
-  const [year, setYear] = useState(() => new Date().getFullYear())
+  const {
+    monthIndex,
+    year,
+    setPreviousMonth,
+    setNextMonth,
+    handleInputMonthChange,
+  } = useMonthSelector({})
 
   const { data: plants, isLoading: isLoadingPlants } = usePlants()
 
@@ -43,27 +49,6 @@ export default function WateringHistoryGrid() {
 
   const createEvent = useCreateEvent(selectedDay.plantId)
   const deleteEvent = useDeleteEvent(selectedDay.plantId)
-
-  function handleMonthChange(newMonthIndex: number) {
-    console.log({ monthIndex, newMonthIndex })
-
-    if (newMonthIndex === 12) {
-      setMonthIndex(0)
-      setYear((y) => y + 1)
-    } else if (newMonthIndex === -1) {
-      setMonthIndex(11)
-      setYear((y) => y - 1)
-    } else {
-      setMonthIndex(newMonthIndex)
-    }
-  }
-
-  function handleMonthSelection(ev: ChangeEvent<HTMLInputElement>) {
-    const [yyyy, mm] = ev.currentTarget.value.split('-')
-    console.log(ev.currentTarget.value)
-    handleMonthChange(Number(mm))
-    setYear(Number(yyyy))
-  }
 
   function handleDaySelect(data: SelectedDay) {
     if (daySummaryRef.current?.open) {
@@ -132,7 +117,7 @@ export default function WateringHistoryGrid() {
       <div className="justify-self-center mb-4">
         <button
           type="button"
-          onClick={() => handleMonthChange(monthIndex - 1)}
+          onClick={setPreviousMonth}
           className="px-2 py-1 border border-secondary-subtle rounded-sm"
         >
           &lt;
@@ -141,14 +126,14 @@ export default function WateringHistoryGrid() {
         <input
           name="month-input"
           type="month"
-          onChange={handleMonthSelection}
+          onChange={handleInputMonthChange}
           className="border border-secondary-subtle rounded-sm w-52 px-2 py-1"
           value={DateUtils.toMonthInputValue(monthIndex, year)}
         />
 
         <button
           type="button"
-          onClick={() => handleMonthChange(monthIndex + 1)}
+          onClick={setNextMonth}
           className="px-2 py-1 border border-secondary-subtle rounded-sm"
         >
           &gt;
@@ -277,7 +262,7 @@ export default function WateringHistoryGrid() {
                 {plantOfSelectedEntry.images.length > 0 && (
                   <img
                     className="w-full aspect-square object-cover"
-                    src={plantOfSelectedEntry.images[0].filepath}
+                    src={plantOfSelectedEntry.images[0]?.filepath}
                   />
                 )}
 

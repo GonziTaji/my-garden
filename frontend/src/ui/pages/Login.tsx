@@ -1,7 +1,7 @@
 import { useState, type SubmitEvent } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 import { buttonVariants } from '@/ui/classVariants/button'
-import { useNavigate } from '@/router/provider'
+import { useNavigate } from '@tanstack/react-router'
 
 export default function Login() {
   const { sendLoginEmail, verifyCode } = useAuth()
@@ -27,7 +27,7 @@ export default function Login() {
     setError('')
     try {
       await verifyCode(code)
-      navigate('/')
+      navigate({ to: '/' })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Código inválido o expirado'

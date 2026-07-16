@@ -1,11 +1,11 @@
 import { usePlant } from '@/api/plants'
-import { useNavigate, useParams } from '@/router/provider'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import PlantDetails from '@/ui/components/PlantDetails'
 
 export default function PlantDetailPage() {
-  const params = useParams()
+  const { plantid: plantidParam } = useParams({ from: '/plants/$plantid' })
   const navigate = useNavigate()
-  const plantid = Number(params.plantid)
+  const plantid = Number(plantidParam)
 
   const { data: plant, isLoading, error } = usePlant(plantid)
 
@@ -21,7 +21,7 @@ export default function PlantDetailPage() {
         <p className="text-danger-strong">Planta no encontrada</p>
         <button
           type="button"
-          onClick={() => navigate('/plants')}
+          onClick={() => navigate({ to: '/plants' })}
           className="text-primary-strong underline mt-4"
         >
           Volver al la lista

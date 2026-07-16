@@ -1,10 +1,9 @@
 import { ImageSelector } from './ImageSelector'
 import { DetailChecklist } from './DetailChecklist'
-import DeleteButton from './DeleteButton'
 import DetailListItem from './DetailLstItem'
 import { useTransition, useState } from 'react'
-import { Link } from '@/router/components/Link'
-import { useNavigate } from '@/router/provider'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { cn } from '@sglara/cn'
 import { plantCategory } from '@/domain/plants/category/plant-category'
 import { lightLevel } from '@/domain/plants/light/light-level'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
@@ -16,6 +15,7 @@ import {
   useCreateSpecies,
   useUpdateSpecies,
   useToggleFavorite,
+  useDeleteSpecies,
 } from '@/api/species'
 import { usePlants } from '@/api/plants'
 import { inputVariants } from '../classVariants/input'
@@ -24,15 +24,23 @@ import { useAuth } from '@/auth/AuthContext'
 interface SpeciesViewProps {
   record: PlantSpecies
   editMode: boolean
+  fromPlantForm?: boolean
 }
 
-export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
+export default function SpeciesView({
+  record,
+  editMode,
+  fromPlantForm,
+}: SpeciesViewProps) {
   const { user } = useAuth()
   const [isPending, startTransition] = useTransition()
   const navigate = useNavigate()
+
   const createSpecies = useCreateSpecies()
+  const deleteSpecies = useDeleteSpecies()
   const updateSpecies = useUpdateSpecies()
   const toggleFavorite = useToggleFavorite()
+
   const [favorited, setFavorited] = useState(record.isFavorited || false)
 
   const categoriesOptions = plantCategory.options.map((opt) => ({
@@ -108,9 +116,17 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
           result = await createSpecies.mutateAsync(payload)
         }
 
-        navigate('/catalog/:plantspeciesid', {
-          params: { plantspeciesid: String(result.id) },
-        })
+        if (fromPlantForm) {
+          navigate({
+            to: '/plants/new',
+            search: { plantSpeciesId: result.id },
+          })
+        } else {
+          navigate({
+            to: '/catalog/$plantspeciesid',
+            params: { plantspeciesid: String(result.id) },
+          })
+        }
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Error al guardar')
       }
@@ -118,17 +134,25 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
   }
 
   function handleCloneSpecies() {
-    navigate('/catalog/new', {
-      search: {
-        commonName: record.commonName,
-        scientificName: record.scientificName,
-        waterProfile: record.waterProfile,
-        lightLevel: record.lightLevel,
-        soilType: record.soilType,
-        petToxicity: record.petToxicity,
-        petToxicityNotes: record.petToxicityNotes,
-        categories: record.categories?.join(',') || '',
-      },
+    if (record.id) {
+      navigate({ to: '/catalog/new', search: { clonedFrom: record.id } })
+    }
+  }
+
+  const handleDelete = (id: number, name: string) => {
+    const confirmed = confirm(
+      `Esto eliminara el tipo "${name}" y todas sus plantas asociadas. ¿Continuar?`
+    )
+
+    if (!confirmed) return
+
+    startTransition(async () => {
+      try {
+        await deleteSpecies.mutateAsync(id)
+        navigate({ to: '/catalog' })
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Error al eliminar')
+      }
     })
   }
 
@@ -155,12 +179,13 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
                   {isPending ? 'Guardando' : 'Guardar'}
                 </button>
 
-                <Link
-                  to="back"
+                <button
+                  type="button"
+                  onClick={() => history.back()}
                   className={buttonVariants({ variant: 'secondary' })}
                 >
                   Cancelar
-                </Link>
+                </button>
               </>
             ) : user && !isDeleted ? (
               <>
@@ -189,8 +214,8 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
                 )}
                 {user.id === record.userId && (
                   <Link
-                    to="/catalog/:plantspeciesid"
-                    params={{ plantspeciesid: String(record.id) }}
+                    to="/catalog/$plantspeciesid"
+                    params={{ plantspeciesid: String(record.id!) }}
                     search={{ e: 'T' }}
                     className={buttonVariants({ variant: 'primary' })}
                   >
@@ -263,7 +288,7 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
                 {linkedPlants?.map((plant) => (
                   <Link
                     key={plant.id}
-                    to="/plants/:plantid"
+                    to="/plants/$plantid"
                     params={{ plantid: String(plant.id) }}
                     className="flex items-center gap-3 p-2 rounded-sm hover:bg-primary-subtle"
                   >
@@ -290,7 +315,7 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
                 {!isDeleted && (
                   <Link
                     to="/plants/new"
-                    search={{ plant_species_id: String(record.id) }}
+                    search={{ plantSpeciesId: record.id }}
                     className="text-primary-strong underline"
                   >
                     Nueva
@@ -389,7 +414,14 @@ export default function SpeciesView({ record, editMode }: SpeciesViewProps) {
             {editMode && !isDeleted && record.id && user && (
               <div className="text-danger-default">
                 <DetailListItem title="DANGER ZONE">
-                  <DeleteButton plantspecies={record} />
+                  <button
+                    type="button"
+                    className={cn(buttonVariants({ variant: 'danger' }))}
+                    onClick={() => handleDelete(record.id!, record.commonName)}
+                    disabled={isPending}
+                  >
+                    {isPending ? 'Eliminando...' : 'Eliminar'}
+                  </button>
                 </DetailListItem>
               </div>
             )}

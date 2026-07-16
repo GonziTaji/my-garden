@@ -4,7 +4,7 @@ import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { soilType } from '@/domain/plants/soil/soil-type'
 import { waterProfile } from '@/domain/plants/water/water-profile'
 import { cn } from '@sglara/cn'
-import { Link } from '@/router/components/Link'
+import { Link } from '@tanstack/react-router'
 
 export interface SpeciesCatalogProps {
   list: PlantSpecies[]
@@ -16,8 +16,8 @@ export default function SpeciesCatalog({ list }: SpeciesCatalogProps) {
       {list.map((sp) => (
         <Link
           key={sp.id}
-          to="/catalog/:plantspeciesid"
-          params={{ plantspeciesid: String(sp.id) }}
+          to="/catalog/$plantspeciesid"
+          params={{ plantspeciesid: String(sp.id!) }}
         >
           <div className="p-12 pb-0">
             {sp.images[0] ? (

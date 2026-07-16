@@ -4,9 +4,11 @@ import { useState, type SyntheticEvent } from 'react'
 import { buttonVariants } from '../classVariants/button'
 import { cn } from '@sglara/cn'
 import { inputVariants } from '../classVariants/input'
-import { Link } from '@/router/components/Link'
+import { Link, useNavigate } from '@tanstack/react-router'
 import DateUtils from '@/utils/dates'
 import { useImageUploads } from '@/api/uploads'
+import PlantCalendar from './PlantCalendar'
+import { useMonthSelector } from '@/hooks/use-month-selector'
 
 interface PlantDetailProps {
   plant: PlantWithSpecies
@@ -29,11 +31,14 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   const [editingImages, setEditingImages] = useState(false)
   const [uploading, setUploading] = useState(false)
   const { uploadImage, deleteImage } = useImageUploads()
+  const navigate = useNavigate()
+
+  const { monthIndex, year, handleInputMonthChange } = useMonthSelector({})
 
   async function handleDeleteImage(imagePath: string) {
     try {
       await deleteImage(imagePath)
-      setImages((prev) => prev.filter((img) => img === imagePath))
+      setImages((prev) => prev.filter((img) => img.filepath !== imagePath))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al eliminar imagen')
     }
@@ -48,7 +53,10 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         return
       }
 
-      setImages((prev) => [...prev, filepath])
+      setImages((prev) => [
+        ...prev,
+        { id: null, plantId: plant.id, filepath, createdAt: '' },
+      ])
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al subir imagen')
     } finally {
@@ -115,82 +123,81 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   }
 
   return (
-    <section className="plant-detail mx-3">
+    <section className="mx-8 p-8 flex flex-col gap-8 border border-secondary-subtle">
       {plant.species.deletedAt && (
-        <div className="bg-warning-soft border border-warning-strong text-warning-strong px-4 py-3 rounded-md mb-4">
+        <div className="bg-warning-soft border border-warning-strong text-warning-strong px-4 py-3 rounded-md">
           Esta planta usa un tipo de planta que ha sido eliminado por su creador
         </div>
       )}
-      <input
-        type="text"
-        name="nickname"
-        defaultValue={plant.nickname}
-        className={inputVariants({
-          className: 'w-full text-3xl',
-          disabled: editingField !== 'nickname',
-        })}
-        onBlur={() => setEditingField('')}
-      />
 
-      <div className="flex justify-end mt-2">
-        <Link
-          to="/catalog/:plantspeciesid/new-plant"
-          params={{ plantspeciesid: String(plant.species.id) }}
-          className={buttonVariants({ variant: 'secondary', size: 'sm' })}
-        >
-          Clonar planta
+      <button
+        className={buttonVariants({ variant: 'secondary' })}
+        type="button"
+        onClick={() =>
+          navigate({
+            to: '/plants/$plantid/edit',
+            params: { plantid: String(plant.id) },
+          })
+        }
+      >
+        Editar
+      </button>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="nickname">Nombre (apodo)</label>
+        <input
+          type="text"
+          id="nickname"
+          name="nickname"
+          defaultValue={plant.nickname}
+          className={inputVariants({
+            disabled: editingField !== 'nickname',
+          })}
+          onBlur={() => setEditingField('')}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label>Tipo</label>
+        <Link to="/catalog">
+          <div className="flex gap-2 items-baseline opacity-80">
+            <span className="text-lg">{plant.species.commonName}</span>
+            <span className="italic text-xs">
+              {plant.species.scientificName}
+            </span>
+          </div>
         </Link>
       </div>
 
-      <div className="py-2">
-        <hr />
+      <div className="flex flex-col gap-2">
+        <label>Ubicacion</label>
+        <span className="flex gap-3">
+          {plant.location}
+          <button
+            className={buttonVariants({ variant: 'clean', size: 'sm' })}
+            command="show-modal"
+            commandfor="create-location-change-dialog"
+          >
+            Cambiar
+          </button>
+        </span>
       </div>
 
-      <div className="text-xl grid grid-cols-[auto_1fr] gap-x-3 gap-y-6 items-center mx-auto">
-        <div className="grid grid-cols-subgrid col-span-2">
-          <span>Tipo:</span>
-          <Link to="/catalog" search={{ speciesid: String(plant.species.id) }}>
-            <div className="flex gap-2 items-baseline opacity-80">
-              <span className="text-xl">{plant.species.commonName}</span>
-              <span className="italic text-xs">
-                {plant.species.scientificName}
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-subgrid col-span-2">
-          <span>Ubicacion: </span>
-          <span className="flex gap-3">
-            {plant.location}
-            <button
-              className={buttonVariants({ variant: 'clean', size: 'sm' })}
-              command="show-modal"
-              commandfor="create-location-change-dialog"
-            >
-              Cambiar
-            </button>
-          </span>
-        </div>
-
-        <div className="grid grid-cols-subgrid col-span-2">
-          <span>Adquirida en:</span>
-          <span>{plant.acquiredAt?.toLocaleDateString() || '-'}</span>
-        </div>
-
-        <div className="grid grid-cols-subgrid col-span-2">
-          <span>Notas: </span>
-          <span>{plant.notes || '-'}</span>
-        </div>
+      <div className="flex flex-col gap-2">
+        <label>Adquirida en</label>
+        <span>{plant.acquiredAt?.toLocaleDateString() || '-'}</span>
       </div>
 
-      <div className="py-2">
-        <hr />
+      <div className="flex flex-col gap-2">
+        <label>Notas</label>
+        <span>{plant.notes || '-'}</span>
       </div>
 
-      <div>
+      <hr className="border-secondary-subtle" />
+
+      <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-lg font-medium">Imágenes</span>
+          <label>Imágenes</label>
           {editingImages ? (
             <button
               type="button"
@@ -213,19 +220,19 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         <div className="grid gap-2 grid-cols-3">
           {images.length > 0 ? (
             images.map((image) => (
-              <div key={image} className="relative">
+              <div key={image.id ?? image.filepath} className="relative">
                 <img
                   width="200"
                   height="200"
                   className="h-32 w-full object-cover border border-secondary-default rounded-sm"
-                  src={image}
+                  src={image.filepath}
                   alt="Imagen de planta"
                 />
                 {editingImages && (
                   <button
                     className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-danger-dark/80 text-white"
                     type="button"
-                    onClick={() => handleDeleteImage(image)}
+                    onClick={() => handleDeleteImage(image.filepath)}
                   >
                     Quitar
                   </button>
@@ -240,7 +247,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         </div>
 
         {editingImages && (
-          <label className="inline-block mt-2 cursor-pointer">
+          <label className="inline-block cursor-pointer">
             <span className={buttonVariants({ variant: 'clean', size: 'sm' })}>
               {uploading ? 'Subiendo...' : 'Agregar imagen'}
             </span>
@@ -259,6 +266,16 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         )}
       </div>
 
+      <div className="flex justify-end gap-4">
+        <Link
+          to="/catalog/$plantspeciesid/new-plant"
+          params={{ plantspeciesid: String(plant.species.id) }}
+          className={buttonVariants({ variant: 'secondary' })}
+        >
+          Clonar planta
+        </Link>
+      </div>
+
       <dialog
         closedby="any"
         popover="auto"
@@ -271,38 +288,41 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         id="create-location-change-dialog"
         onClose={handleLocationChangeDialogClose}
       >
-        <form method="dialog" className="grid gap-4">
-          <label className="grid">
-            Lugar:
+        <form method="dialog" className="grid gap-8">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="new-location">Lugar</label>
             <input
               autoComplete="false"
               className={inputVariants()}
               type="text"
+              id="new-location"
               name="new-location"
               placeholder="Ventanal derecho"
               required
             />
-          </label>
+          </div>
 
-          <label className="grid">
-            Fecha cambio:
+          <div className="flex flex-col gap-2">
+            <label htmlFor="new-location-date">Fecha cambio</label>
             <input
               className={inputVariants()}
               type="date"
+              id="new-location-date"
               name="new-location-date"
               defaultValue={DateUtils.toInputValue(new Date())}
               required
             />
-          </label>
+          </div>
 
-          <label className="grid">
-            Notas:
+          <div className="flex flex-col gap-2">
+            <label htmlFor="new-location-notes">Notas</label>
             <textarea
               className={inputVariants()}
+              id="new-location-notes"
               name="new-location-notes"
               placeholder="Por cambio de temporada"
             />
-          </label>
+          </div>
 
           <div className="flex justify-between">
             <button

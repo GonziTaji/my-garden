@@ -1,6 +1,6 @@
-import { useSearchParams } from '@/router/provider'
+import { useSearch } from '@tanstack/react-router'
 import SpeciesView from '@/ui/components/SpeciesView'
-import type { PlantSpecies } from '@/domain/plants/plant-species'
+import { useSpeciesById } from '@/api/species'
 
 const emptySpecies = {
   id: null,
@@ -16,28 +16,11 @@ const emptySpecies = {
   images: [],
 }
 
-function speciesFromParams(): PlantSpecies | null {
-  const sp = new URLSearchParams(window.location.search)
-  const commonName = sp.get('commonName')
-  if (!commonName) return null
-  return {
-    id: null,
-    commonName,
-    scientificName: sp.get('scientificName') || '',
-    waterProfile: (sp.get('waterProfile') as PlantSpecies['waterProfile']) || 'dry_cycle',
-    lightLevel: (sp.get('lightLevel') as PlantSpecies['lightLevel']) || 'low',
-    soilType: (sp.get('soilType') as PlantSpecies['soilType']) || 'well_draining',
-    petToxicity: (sp.get('petToxicity') as PlantSpecies['petToxicity']) || 'non_toxic',
-    petToxicityNotes: sp.get('petToxicityNotes') || '',
-    notes: '',
-    categories: sp.get('categories')?.split(',').filter(Boolean) || [],
-    images: [],
-  }
-}
-
 export default function CatalogNew() {
-  const [searchParams] = useSearchParams()
-  const record = searchParams.has('commonName') ? speciesFromParams()! : emptySpecies
+  const { fromPlantForm, clonedFrom } = useSearch({ from: '/catalog/new' })
+
+  const { data: specie } = useSpeciesById(clonedFrom)
+  const record = clonedFrom && specie ? specie : emptySpecies
 
   return <SpeciesView record={record} editMode={true} />
 }

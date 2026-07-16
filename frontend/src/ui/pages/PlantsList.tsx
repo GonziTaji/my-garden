@@ -1,4 +1,4 @@
-import { useSearchParams } from '@/router/provider'
+import { useSearch, useNavigate } from '@tanstack/react-router'
 import PlantListComponent from '@/ui/components/PlantsList'
 import WateringList from '@/ui/components/WateringList'
 import WateringHistoryGrid from '@/ui/components/WateringHistoryGrid'
@@ -7,12 +7,11 @@ import { cn } from '@sglara/cn'
 type Tab = 'list' | 'water' | 'history'
 
 export default function PlantsList() {
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const tab = searchParams.get('t') || 'list'
+  const { t: tab = 'list' } = useSearch({ from: '/plants' })
+  const navigate = useNavigate()
 
   function handleTabChange(newTab: Tab) {
-    setSearchParams({ t: newTab })
+    navigate({ to: '/plants', search: { t: newTab } })
   }
 
   return (

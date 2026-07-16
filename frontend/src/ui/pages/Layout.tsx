@@ -1,9 +1,8 @@
-import type { ReactNode } from 'react'
-import { Link } from '@/router/components/Link'
+import { Link, Outlet } from '@tanstack/react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { buttonVariants } from '@/ui/classVariants/button'
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout() {
   const { user, isLoading, logout } = useAuth()
 
   return (
@@ -11,8 +10,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       <nav className="p-2 flex flex-wrap gap-2 text-lg bg-secondary-light border-b border-secondary-subtle items-center">
         <Link
           to="/"
+          activeOptions={{ exact: true }}
+          activeProps={{ className: 'font-bold' }}
           className="text-secondary-dark hover:text-secondary-strong"
-          activeClassname="font-bold"
         >
           Explorar
         </Link>
@@ -22,10 +22,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span className="text-secondary-default">|</span>
             <Link
               to="/plants"
+              activeProps={{ className: 'font-bold' }}
               className="text-secondary-dark hover:text-secondary-strong"
-              activeClassname="font-bold"
             >
-              Mi jardín
+              Mi jardin
             </Link>
           </>
         )}
@@ -34,10 +34,10 @@ export default function Layout({ children }: { children: ReactNode }) {
 
         <Link
           to="/catalog"
+          activeProps={{ className: 'font-bold' }}
           className="text-secondary-dark hover:text-secondary-strong"
-          activeClassname="font-bold"
         >
-          Mi Catálogo
+          Mi Catalogo
         </Link>
 
         <span className="flex-1" />
@@ -45,9 +45,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         {!isLoading && !user && (
           <Link
             to="/login"
+            activeProps={{ className: 'font-bold' }}
             className={buttonVariants({ variant: 'clean', size: 'sm' })}
           >
-            Iniciar sesión
+            Iniciar sesion
           </Link>
         )}
 
@@ -59,13 +60,15 @@ export default function Layout({ children }: { children: ReactNode }) {
               onClick={logout}
               className={buttonVariants({ variant: 'tertiary', size: 'sm' })}
             >
-              Cerrar sesión
+              Cerrar sesion
             </button>
           </div>
         )}
       </nav>
 
-      <main className="overflow-auto lg:max-w-xl">{children}</main>
+      <main className="overflow-auto lg:max-w-xl">
+        <Outlet />
+      </main>
     </div>
   )
 }

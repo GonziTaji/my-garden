@@ -3,10 +3,9 @@ import {
   fullsearchPlants,
   type PlantWithSpecies,
 } from '@/domain/plants/plant'
-import { Link } from '@/router/components/Link'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useState, type ChangeEvent } from 'react'
 import { buttonVariants } from '../classVariants/button'
-import { useNavigate } from '@/router/provider'
 
 type PlantsColumnsData = [PlantWithSpecies[], PlantWithSpecies[]]
 
@@ -54,7 +53,7 @@ export default function PlantsList({}: PlantsListProps) {
   }
 
   function handleCreateClick() {
-    navigate('/plants/new')
+    navigate({ to: '/plants/new' })
   }
 
   return (
@@ -88,8 +87,8 @@ export default function PlantsList({}: PlantsListProps) {
             {col.map((p) => (
               <Link
                 key={p.id}
-                to="/plants/:plantid"
-                params={{ plantid: String(p.id) }}
+                to="/plants/$plantid"
+                params={{ plantid: String(p.id!) }}
                 className="flex flex-col justify-end rounded py-2"
               >
                 <div className="w-full overflow-hidden rounded-lg">
