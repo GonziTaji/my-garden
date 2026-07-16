@@ -1,8 +1,4 @@
-import {
-  createRouter,
-  createRoute,
-  createRootRoute,
-} from '@tanstack/react-router'
+import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router'
 import Layout from '@/ui/pages/Layout'
 import Home from '@/ui/pages/Explore'
 import PlantsListPage from '@/ui/pages/PlantsList'

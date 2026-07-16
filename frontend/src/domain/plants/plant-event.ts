@@ -19,8 +19,7 @@ export interface LocationChangeMetadata {
   location: string
 }
 
-export type EventMetadata =
-  WateringMetadata | LocationChangeMetadata | Record<string, never>
+export type EventMetadata = WateringMetadata | LocationChangeMetadata | Record<string, never>
 
 export interface PlantEvent {
   id: number

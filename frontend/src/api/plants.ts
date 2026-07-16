@@ -99,7 +99,6 @@ export function useUpsertPlant(id?: number) {
 
   return useMutation({
     mutationFn: (input: UpsertPlantInput) => {
-      console.log(input)
       return api.post<ApiPlantWithSpecies>(url, input)
     },
     onSuccess: () => {
@@ -111,8 +110,7 @@ export function useUpsertPlant(id?: number) {
 export function useUpdatePlant() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: UpsertPlantInput) =>
-      api.post<ApiPlantWithSpecies>('/api/plants', input),
+    mutationFn: (input: UpsertPlantInput) => api.post<ApiPlantWithSpecies>('/api/plants', input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plants'] })
     },

@@ -5,20 +5,26 @@ import type { PlantSpecies } from '@/domain/plants/plant-species'
 
 const checkboxLabelVariants = cva(
   [
-    'px-1',
+    'px-3',
+    'py-2',
     'content-center',
     'block',
     'w-full',
     'min-w-24',
     'min-h-12',
-    'has-checked:border-primary-subtle',
-    'not-[:has(:checked)]:border-secondary-subtle',
+    'rounded-lg',
+    'text-sm',
+    'font-medium',
+    'transition-all',
+    'duration-200',
+    'has-checked:bg-primary-subtle has-checked:text-primary-dark has-checked:border-primary-strong has-checked:border-2',
+    'not-[:has(:checked)]:border not-[:has(:checked)]:border-neutral-subtle/60 not-[:has(:checked)]:bg-surface-raised not-[:has(:checked)]:text-neutral-strong',
   ],
   {
     variants: {
       disabled: {
-        true: 'has-checked:border-3',
-        false: 'cursor-pointer border-3',
+        true: 'has-checked:border-2 has-checked:bg-primary-light',
+        false: 'cursor-pointer hover:border-primary-default hover:bg-primary-light/50',
       },
     },
   }

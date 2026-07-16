@@ -24,16 +24,14 @@ export default function Home() {
 
   if (species.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-neutral-strong">
-          No hay tipos de planta públicos todavía.
-        </p>
+      <div className="flex justify-center items-center min-h-[50vh] px-4">
+        <p className="text-neutral-strong text-center">No hay tipos de planta públicos todavía.</p>
       </div>
     )
   }
 
   return (
-    <div className="mx-2">
+    <div>
       <ExploreGrid list={species} />
     </div>
   )

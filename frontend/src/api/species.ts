@@ -59,9 +59,7 @@ function toDomain(d: ApiSpecies): PlantSpecies {
     petToxicity: d.pet_toxicity as PlantSpecies['petToxicity'],
     petToxicityNotes: d.pet_toxicity_notes,
     notes: d.notes,
-    categories: JSON.parse(
-      d.categories_json || '[]'
-    ) as PlantSpecies['categories'],
+    categories: JSON.parse(d.categories_json || '[]') as PlantSpecies['categories'],
     images: d.images.map((img): Omit<PlantSpeciesImage, 'plantSpeciesId'> => ({
       id: img.id,
       filepath: img.filepath,
@@ -92,9 +90,7 @@ export function useSpecies(scope?: string) {
   return useQuery({
     queryKey: scope ? ['species', scope] : ['species'],
     queryFn: () => {
-      const path = scope
-        ? `/api/plant-species?scope=${scope}`
-        : '/api/plant-species'
+      const path = scope ? `/api/plant-species?scope=${scope}` : '/api/plant-species'
       return api.get<ApiSpecies[]>(path)
     },
     select: (data) => data.map(toDomain),
@@ -113,8 +109,7 @@ export function useSpeciesById(id: number) {
 export function useCreateSpecies() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: CreateSpeciesInput) =>
-      api.post<ApiSpecies>('/api/plant-species', input),
+    mutationFn: (input: CreateSpeciesInput) => api.post<ApiSpecies>('/api/plant-species', input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['species'] })
     },
@@ -124,10 +119,7 @@ export function useCreateSpecies() {
 export function useUpdateSpecies() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      id,
-      ...input
-    }: { id: number } & Partial<CreateSpeciesInput>) =>
+    mutationFn: ({ id, ...input }: { id: number } & Partial<CreateSpeciesInput>) =>
       api.put<ApiSpecies>(`/api/plant-species/${id}`, input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['species'] })

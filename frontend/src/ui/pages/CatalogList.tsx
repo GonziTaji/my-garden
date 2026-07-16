@@ -17,7 +17,7 @@ export default function CatalogList() {
 
   const tabs: { key: Tab; label: string }[] = user
     ? [
-        { key: 'mine', label: 'Creadas por mi' },
+        { key: 'mine', label: 'Creadas por mí' },
         { key: 'favorites', label: 'Favoritas' },
         { key: 'linked', label: 'De mis plantas' },
         { key: 'all', label: 'Todas' },
@@ -26,42 +26,41 @@ export default function CatalogList() {
 
   if (isLoading)
     return (
-      <div className="p-8 text-center text-secondary-strong">Cargando...</div>
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <p className="text-neutral-strong">Cargando...</p>
+      </div>
     )
   if (error)
     return (
-      <div className="p-8 text-center text-danger-strong">
-        Error al cargar el catálogo
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <p className="text-danger-strong">Error al cargar el catálogo</p>
       </div>
     )
 
   return (
     <div>
-      <div className="flex justify-between items-center p-4">
-        <h2 className="text-2xl font-bold text-secondary-dark">
-          Catálogo de plantas
-        </h2>
+      <div className="flex justify-between items-center px-4 pt-5 pb-1">
+        <h2 className="text-2xl font-bold text-neutral-dark">Catálogo de plantas</h2>
         {user && (
-          <Link
-            to="/catalog/new"
-            className={buttonVariants({ variant: 'primary' })}
-          >
+          <Link to="/catalog/new" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
             Nueva
           </Link>
         )}
       </div>
 
-      <div className="flex gap-1 p-2">
+      <div className="flex gap-1.5 px-4 py-3">
         {tabs.map((t) => (
           <button
             type="button"
             key={t.key}
-            onClick={() => navigate({ to: '/catalog', search: { t: t.key === 'all' ? undefined : t.key } })}
+            onClick={() =>
+              navigate({ to: '/catalog', search: { t: t.key === 'all' ? undefined : t.key } })
+            }
             className={cn(
-              'px-4 py-1 rounded-sm text-sm',
+              'px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200',
               tab === t.key
-                ? 'bg-primary-subtle text-primary-dark border border-primary-default'
-                : 'hover:text-secondary-dark'
+                ? 'bg-primary-strong text-white shadow-sm shadow-primary-strong/30'
+                : 'text-neutral-strong hover:text-neutral-dark hover:bg-primary-subtle/50'
             )}
           >
             {t.label}
@@ -72,19 +71,19 @@ export default function CatalogList() {
       {(species ?? []).length > 0 ? (
         <SpeciesCatalog list={species ?? []} />
       ) : (
-        <p className="text-center text-secondary-strong py-12">
+        <p className="text-center text-neutral-strong py-12 px-4">
           {tab === 'linked' ? (
-            <>
-              No tienes plantas que hagan referencia a ningun tipo de planta
-              todavia.
-            </>
+            <>No tienes plantas que hagan referencia a ningún tipo de planta todavía.</>
           ) : (
             <>No hay tipos de planta en el catálogo todavía.</>
           )}
           {user && tab === 'mine' && (
             <>
               <br />
-              <Link to="/catalog/new" className="text-primary-strong underline">
+              <Link
+                to="/catalog/new"
+                className="text-primary-dark hover:text-primary-strong hover:underline transition-colors"
+              >
                 Crear la primera
               </Link>
             </>

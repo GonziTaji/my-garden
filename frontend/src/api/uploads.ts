@@ -5,7 +5,6 @@ export function useImageUploads() {
     const res = await fetch('/api/uploads', { method: 'POST', body: fd })
 
     if (!res.ok) {
-      // TODO: handle errors
       return { error: await res.json() }
     }
 
@@ -15,10 +14,11 @@ export function useImageUploads() {
   }
 
   const deleteImage = async (imagepath: string) => {
-    const res = await fetch(`/api/uploads${imagepath.replace('/uploads', '')}`, { method: 'DELETE' })
+    const res = await fetch(`/api/uploads${imagepath.replace('/uploads', '')}`, {
+      method: 'DELETE',
+    })
 
-    if (res.ok) {
-      // TODO: handle errors
+    if (!res.ok) {
       return { error: await res.text() }
     }
 

@@ -7,13 +7,11 @@ import { useNavigate } from '@tanstack/react-router'
 
 export interface WateringListProps {}
 
-export default function WateringList({}: WateringListProps) {
+export default function WateringList(_props: WateringListProps) {
   const toggleWatering = useToggleWatering()
   const { data: plants } = usePlants()
-  const { data: lastWateredRaw } = useLastWateredDates(
-    plants?.map((p) => p.id) || []
-  )
-  const [_, startTransition] = useTransition()
+  const { data: lastWateredRaw } = useLastWateredDates(plants?.map((p) => p.id) || [])
+  const [, startTransition] = useTransition()
   const navigate = useNavigate()
 
   const lastWateredDates = useMemo(() => {
@@ -57,48 +55,44 @@ export default function WateringList({}: WateringListProps) {
 
   return (
     <div>
-      <ul className="grid gap-2 py-4 px-2">
+      <ul className="grid gap-3 py-4 px-4">
         {(plants || [])
           .map((p) => ({
             ...p,
             lastWatered: lastWateredDates.get(p.id),
             isWateredToday:
-              new Date(
-                lastWateredDates.get(p.id) ?? ''
-              ).toLocaleDateString() === new Date().toLocaleDateString(),
+              new Date(lastWateredDates.get(p.id) ?? '').toLocaleDateString() ===
+              new Date().toLocaleDateString(),
           }))
           .map((p) => (
             <li
               key={p.id}
-              className="h-28 flex items-center gap-3 border-2 rounded-md border-amber-200/20 bg-amber-100 p-2"
+              className="flex items-center gap-4 rounded-xl bg-surface-raised border border-neutral-subtle/30 shadow-sm p-3 transition-all duration-200 hover:shadow-md"
             >
               <button
-                className="h-full"
+                className="h-20 shrink-0"
                 type="button"
                 onClick={() => handlePlantImageClick(p.id)}
               >
-                <img
-                  className="h-full aspect-square object-cover rounded-md"
-                  src={p.images[0].filepath}
-                />
+                <img className="h-full w-20 object-cover rounded-lg" src={p.images[0].filepath} />
               </button>
 
-              <div className="grow flex flex-col justify-between h-full p-2">
-                <div className="flex justify-between">
-                  <span className="text-xl font-semibold ">{p.nickname}</span>
+              <div className="grow flex flex-col justify-between h-full py-1">
+                <div className="flex justify-between items-start gap-2">
+                  <span className="text-lg font-semibold text-neutral-dark">{p.nickname}</span>
 
-                  <span className="text-sm italic">
-                    Ultimo riego:{' '}
-                    {p.lastWatered ? formatWateredDate(p.lastWatered) : '-'}
+                  <span className="text-xs text-neutral-strong shrink-0">
+                    Último riego: {p.lastWatered ? formatWateredDate(p.lastWatered) : '-'}
                   </span>
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 mt-2">
                   <button
                     type="button"
                     onClick={() => handleToggleWaterPlant(p.id)}
                     className={buttonVariants({
-                      variant: p.isWateredToday ? 'secondary' : 'tertiary',
+                      variant: p.isWateredToday ? 'secondary' : 'primary',
+                      size: 'sm',
                     })}
                   >
                     {p.isWateredToday ? 'Revertir' : 'Regar'}

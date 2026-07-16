@@ -13,14 +13,14 @@ export default function DetailListItem({
     <>
       <dt
         className={cn(
-          'text-lg flex gap-4 items-center text-center',
-          'after:flex-1 after:h-px after:bg-secondary-strong',
-          'before:flex-1 before:h-px before:bg-secondary-strong'
+          'text-base font-semibold text-neutral-dark flex gap-4 items-center text-center',
+          'after:flex-1 after:h-px after:bg-neutral-subtle/40',
+          'before:flex-1 before:h-px before:bg-neutral-subtle/40'
         )}
       >
         {title}
       </dt>
-      <dd className="text-center my-2 pb-4">{children}</dd>
+      <dd className="text-center my-1 pb-3">{children}</dd>
     </>
   )
 }

@@ -1,23 +1,42 @@
-import { useTransition, useState, useMemo, useRef, type SubmitEvent } from 'react'
+import {
+  useTransition,
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  type ChangeEventHandler,
+  type SubmitEvent,
+} from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { cva } from 'class-variance-authority'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { cn } from '@sglara/cn'
 import { useUpsertPlant, useDeletePlant } from '@/api/plants'
 import { useSpecies } from '@/api/species'
-import { ImageUploader, type ImageUploaderHandle } from './ImageUploader'
+import { useImageUploads } from '@/api/uploads'
+import { useImageSource } from '@/hooks/use-image-source'
+import useDialog from '@/hooks/use-dialog'
 import type { PlantWithSpecies } from '@/domain/plants/plant'
 import DateUtils from '@/utils/dates'
 
 const inputVariants = cva(
   [
+    'transition-all',
+    'duration-200',
     'border',
-    'border-primary-default',
-    'outline-primary-default',
+    'border-neutral-subtle/60',
     'rounded-lg',
     'min-w-0',
     'w-full',
-    'p-2',
+    'p-2.5',
+    'bg-surface-raised',
+    'text-neutral-dark',
+    'placeholder:text-neutral-default',
+    'focus:outline-none',
+    'focus:border-primary-strong',
+    'focus:ring-2',
+    'focus:ring-primary-subtle',
+    'hover:border-neutral-default',
   ],
   {
     variants: {},
@@ -34,10 +53,7 @@ export type PlantFormProps =
       plant?: PlantWithSpecies
     }
 
-export default function PlantForm({
-  plant,
-  plantSpeciesId: propsPlantSpeciesId,
-}: PlantFormProps) {
+export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }: PlantFormProps) {
   const [isPending, startTransition] = useTransition()
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +61,30 @@ export default function PlantForm({
   const { data: plantSpecies } = useSpecies()
   const upsertPlant = useUpsertPlant(plant?.id)
   const deletePlant = useDeletePlant()
-  const imageUploaderRef = useRef<ImageUploaderHandle>(null)
+  const { uploadImage, deleteImage } = useImageUploads()
+  const { fileInputRef, selectImage, SourceDialog } = useImageSource()
+
+  const [imagePaths, setImagePaths] = useState<string[]>(
+    plant?.images.map(({ filepath }) => filepath) ?? []
+  )
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [deletedPaths, setDeletedPaths] = useState<string[]>([])
+
+  const deleteImageDialogRef = useRef<HTMLDialogElement>(null)
+  const { show: showConfirmDeleteImageDialog, close: closeConfirmDeleteImageDialog } = useDialog({
+    dialogRef: deleteImageDialogRef,
+  })
+
+  const deleteTargetImagePath = useRef('')
+
+  const maxImages = 3
+  const imagesCount = imagePaths.length + previewUrls.length
+  const allowUploads = imagesCount < maxImages
+
+  useEffect(() => {
+    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const ownedSpecies = useMemo(() => {
     if (!plantSpecies) return []
@@ -68,7 +107,6 @@ export default function PlantForm({
 
     startTransition(async () => {
       try {
-        // TODO: validate with zod
         const result = await upsertPlant.mutateAsync({
           nickname: fd.get('nickname')?.toString() || '',
           source: fd.get('source')?.toString() || '',
@@ -79,7 +117,12 @@ export default function PlantForm({
           images: fd.getAll('images').map((entry) => entry.toString()),
         })
 
-        await imageUploaderRef.current?.commitDeletions()
+        const results = await Promise.all(deletedPaths.map((path) => deleteImage(path)))
+        const errors = results.filter((r) => r.error)
+        if (errors.length !== 0) {
+          alert('Error al eliminar una o más imágenes')
+        }
+        setDeletedPaths([])
 
         if (result?.id) {
           navigate({
@@ -93,20 +136,51 @@ export default function PlantForm({
     })
   }
 
-  function handleUploadingImages() {
+  const handleImageUpload: ChangeEventHandler<HTMLInputElement> = async (ev) => {
+    if (!allowUploads || !ev.currentTarget.files) return
+
+    const files: File[] = [...ev.currentTarget.files].splice(0, maxImages - imagesCount)
+
+    setPreviewUrls(files.map((f) => URL.createObjectURL(f)))
     setIsUploading(true)
+
+    const ress = await Promise.all(
+      files.map(async (file, fileIndex) => {
+        const { filepath, error } = await uploadImage(file)
+        if (error) return { error }
+
+        setImagePaths((state) => [...state, filepath])
+
+        const previewUrl = previewUrls[fileIndex]
+        URL.revokeObjectURL(previewUrl)
+        setPreviewUrls((state) => state.filter((blob) => blob !== previewUrl))
+      })
+    )
+
+    const errors = ress.filter((r) => r && r.error)
+    if (errors.length !== 0) {
+      alert('Error al subir una o más imágenes')
+    }
+
+    setIsUploading(false)
   }
 
-  function handleUploadedImages() {
-    setIsUploading(false)
+  const handleRequestDeleteImage = (imagePath: string) => {
+    deleteTargetImagePath.current = imagePath
+    showConfirmDeleteImageDialog()
+  }
+
+  const handleConfirmDeleteImage = () => {
+    setDeletedPaths((state) => [...state, deleteTargetImagePath.current])
+    setImagePaths(imagePaths.filter((path) => path !== deleteTargetImagePath.current))
+    deleteTargetImagePath.current = ''
+    closeConfirmDeleteImageDialog()
   }
 
   function handleDelete() {
     if (!plant?.id) return
 
-    const confirmed = confirm(
-      `Esto eliminara la planta "${plant.nickname}". ¿Continuar?`
-    )
+    const confirmed = confirm(`Esto eliminara la planta "${plant.nickname}". ¿Continuar?`)
     if (!confirmed) return
 
     startTransition(async () => {
@@ -122,24 +196,27 @@ export default function PlantForm({
   return (
     <form
       onSubmit={submit}
-      className="mx-8 p-8 flex flex-col gap-8 border border-secondary-subtle"
+      className="mx-4 my-4 p-6 flex flex-col gap-6 bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30"
     >
       {error && (
-        <div className="form-error" role="alert">
+        <div
+          className="bg-danger-light border border-danger-subtle text-danger-strong px-4 py-3 rounded-lg text-sm"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       <fieldset>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="plantSpeciesId">Especie</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="plantSpeciesId" className="text-sm font-medium text-neutral-strong">
+            Especie
+          </label>
 
           <div className="flex gap-3">
             <select
               value={plantSpeciesId}
-              onChange={({ currentTarget: t }) =>
-                setPlantSpeciesId(Number(t.value))
-              }
+              onChange={({ currentTarget: t }) => setPlantSpeciesId(Number(t.value))}
               name="plantSpecies"
               className={inputVariants()}
             >
@@ -154,7 +231,7 @@ export default function PlantForm({
             <Link
               to="/catalog/new"
               search={{ fromPlantForm: true }}
-              className="bg-primary-default rounded-md w-32 text-center content-center"
+              className="bg-primary-subtle text-primary-dark rounded-lg w-32 text-center content-center font-medium hover:bg-primary-default transition-colors"
             >
               Nueva
             </Link>
@@ -162,33 +239,81 @@ export default function PlantForm({
         </div>
       </fieldset>
 
-      <fieldset className="grid gap-8 overflow-auto">
-        <ImageUploader
-          ref={imageUploaderRef}
-          defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
-          inputName="images"
-          maxImages={3}
-          onUploading={handleUploadingImages}
-          onUploaded={handleUploadedImages}
-        />
+      <fieldset className="grid gap-6 overflow-auto">
+        <div className="flex gap-4">
+          {allowUploads && (
+            <>
+              <button
+                type="button"
+                onClick={() => selectImage(null)}
+                className="aspect-3/4 h-48 border-2 border-dashed border-primary-default/60 rounded-xl flex items-center justify-center text-neutral-strong hover:border-primary-strong hover:bg-primary-light/50 transition-all duration-200 disabled:opacity-10"
+              >
+                <span className="text-center text-sm">Seleccionar imagen</span>
+              </button>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="nickname">Nombre (apodo)</label>
+              <input
+                onChange={handleImageUpload}
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+              />
+            </>
+          )}
+
+          {[...previewUrls, ...imagePaths].map((url) => (
+            <div
+              key={url}
+              className="aspect-3/4 h-48 border border-neutral-subtle/30 rounded-xl overflow-hidden"
+            >
+              {url.startsWith('blob') ? (
+                <div className="h-full w-full grid grid-cols-1 grid-rows-1">
+                  <img src={url} alt="image" className="col-1 row-1 object-cover" />
+                  <span
+                    className={cn(
+                      'text-white bg-neutral-dark/60 h-full w-full font-semibold text-center content-center',
+                      'col-1 row-1 text-sm self-center justify-self-center backdrop-blur-sm'
+                    )}
+                  >
+                    Cargando
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="h-full w-full"
+                  onClick={() => handleRequestDeleteImage(url)}
+                >
+                  <img src={url} alt="image" className="object-cover w-full h-full" />
+                  <input name="images" value={url} type="hidden" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="nickname" className="text-sm font-medium text-neutral-strong">
+            Nombre (apodo)
+          </label>
           <input
             className={inputVariants()}
             id="nickname"
             name="nickname"
             type="text"
             defaultValue={plant?.nickname ?? ''}
-            placeholder="Mi monstera del balcon"
+            placeholder="Mi monstera del balcón"
             minLength={1}
             disabled={isPending}
             required
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="source">Fuente</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="source" className="text-sm font-medium text-neutral-strong">
+            Fuente
+          </label>
           <input
             className={inputVariants()}
             id="source"
@@ -202,48 +327,52 @@ export default function PlantForm({
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="location">Ubicacion (opcional)</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="location" className="text-sm font-medium text-neutral-strong">
+            Ubicación (opcional)
+          </label>
           <input
             className={inputVariants()}
             id="location"
             name="location"
             type="text"
             defaultValue={plant?.location ?? ''}
-            placeholder="Balcon, sala, habitacion..."
+            placeholder="Balcón, sala, habitación..."
             disabled={isPending}
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="acquiredAt">Fecha de adquisicion (opcional)</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="acquiredAt" className="text-sm font-medium text-neutral-strong">
+            Fecha de adquisición (opcional)
+          </label>
           <input
             className={inputVariants()}
             id="acquiredAt"
             name="acquiredAt"
             type="date"
-            defaultValue={DateUtils.toInputValue(
-              plant?.acquiredAt ?? new Date()
-            )}
+            defaultValue={DateUtils.toInputValue(plant?.acquiredAt ?? new Date())}
             disabled={isPending}
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="notes">Notas (opcional)</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="notes" className="text-sm font-medium text-neutral-strong">
+            Notas (opcional)
+          </label>
           <textarea
             className={inputVariants()}
             id="notes"
             name="notes"
             defaultValue={plant?.notes ?? ''}
-            placeholder="Cualquier informacion adicional..."
+            placeholder="Cualquier información adicional..."
             disabled={isPending}
             rows={3}
           />
         </div>
       </fieldset>
 
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-3">
         <button
           className={buttonVariants({ variant: 'secondary' })}
           type="reset"
@@ -263,8 +392,8 @@ export default function PlantForm({
       </div>
 
       {plant && (
-        <div className="text-danger-default border-t border-secondary-subtle pt-6">
-          <h3 className="font-semibold mb-2">DANGER ZONE</h3>
+        <div className="text-danger-default border-t border-neutral-subtle/40 pt-6">
+          <h3 className="font-semibold mb-3 text-danger-strong">Zona de peligro</h3>
           <button
             type="button"
             className={cn(buttonVariants({ variant: 'danger' }))}
@@ -275,6 +404,37 @@ export default function PlantForm({
           </button>
         </div>
       )}
+
+      {SourceDialog}
+
+      <dialog
+        ref={deleteImageDialogRef}
+        className="max-w-xl top-1/3 py-8 px-8 bg-surface-raised rounded-2xl"
+      >
+        <div className="flex flex-col gap-8">
+          <span className="text-xl text-center font-medium text-neutral-dark">
+            ¿Quieres eliminar esta foto?
+          </span>
+
+          <div className="flex gap-6 justify-center">
+            <button
+              className={buttonVariants({ variant: 'primary' })}
+              type="button"
+              onClick={handleConfirmDeleteImage}
+            >
+              Confirmar
+            </button>
+
+            <button
+              type="button"
+              onClick={closeConfirmDeleteImageDialog}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </dialog>
     </form>
   )
 }

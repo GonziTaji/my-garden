@@ -20,8 +20,8 @@ export default function EditPlantPage() {
   }
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold text-center text-secondary-dark mb-4">
+    <div className="px-4 pt-5">
+      <h2 className="text-2xl font-bold text-center text-neutral-dark mb-4">
         Editando {plant.nickname}
       </h2>
       <PlantForm plant={plant} />

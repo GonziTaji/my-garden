@@ -7,37 +7,37 @@ export default function Layout() {
 
   return (
     <div className="h-full w-full grid grid-rows-[auto_1fr]">
-      <nav className="p-2 flex flex-wrap gap-2 text-lg bg-secondary-light border-b border-secondary-subtle items-center">
+      <nav className="px-4 py-3 flex flex-wrap gap-3 items-center bg-surface-raised border-b border-neutral-subtle/40 shadow-sm">
         <Link
           to="/"
           activeOptions={{ exact: true }}
-          activeProps={{ className: 'font-bold' }}
-          className="text-secondary-dark hover:text-secondary-strong"
+          activeProps={{ className: 'font-bold text-primary-dark' }}
+          className="text-neutral-dark hover:text-primary-dark transition-colors duration-200"
         >
           Explorar
         </Link>
 
         {user && (
           <>
-            <span className="text-secondary-default">|</span>
+            <span className="text-neutral-subtle">·</span>
             <Link
               to="/plants"
-              activeProps={{ className: 'font-bold' }}
-              className="text-secondary-dark hover:text-secondary-strong"
+              activeProps={{ className: 'font-bold text-primary-dark' }}
+              className="text-neutral-dark hover:text-primary-dark transition-colors duration-200"
             >
-              Mi jardin
+              Mi jardín
             </Link>
           </>
         )}
 
-        <span className="text-secondary-default">|</span>
+        <span className="text-neutral-subtle">·</span>
 
         <Link
           to="/catalog"
-          activeProps={{ className: 'font-bold' }}
-          className="text-secondary-dark hover:text-secondary-strong"
+          activeProps={{ className: 'font-bold text-primary-dark' }}
+          className="text-neutral-dark hover:text-primary-dark transition-colors duration-200"
         >
-          Mi Catalogo
+          Catálogo
         </Link>
 
         <span className="flex-1" />
@@ -46,27 +46,27 @@ export default function Layout() {
           <Link
             to="/login"
             activeProps={{ className: 'font-bold' }}
-            className={buttonVariants({ variant: 'clean', size: 'sm' })}
+            className={buttonVariants({ variant: 'primary', size: 'sm' })}
           >
-            Iniciar sesion
+            Iniciar sesión
           </Link>
         )}
 
         {!isLoading && user && (
-          <div className="flex gap-2 items-center text-sm text-secondary-dark">
-            <span>{user.username}</span>
+          <div className="flex gap-3 items-center text-sm">
+            <span className="text-neutral-strong">{user.username}</span>
             <button
               type="button"
               onClick={logout}
-              className={buttonVariants({ variant: 'tertiary', size: 'sm' })}
+              className={buttonVariants({ variant: 'clean', size: 'sm' })}
             >
-              Cerrar sesion
+              Salir
             </button>
           </div>
         )}
       </nav>
 
-      <main className="overflow-auto lg:max-w-xl">
+      <main className="overflow-auto lg:max-w-xl lg:mx-auto lg:w-full">
         <Outlet />
       </main>
     </div>

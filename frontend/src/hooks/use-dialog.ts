@@ -36,9 +36,11 @@ export default function useDialog({
 }: UseDialogParams) {
   const id = useId()
 
-  if (dialogRef.current && !dialogRef.current?.id) {
-    dialogRef.current.id = id
-  }
+  useEffect(() => {
+    if (dialogRef.current && !dialogRef.current.id) {
+      dialogRef.current.id = id
+    }
+  }, [dialogRef, id])
 
   useEffect(() => {
     if (!dialogRef.current) {
@@ -48,7 +50,7 @@ export default function useDialog({
     if (onClose) {
       registry[dialogRef.current.id] = onClose
     }
-  }, [dialogRef.current])
+  }, [dialogRef, onClose])
 
   function show() {
     onBeforeShow && onBeforeShow()

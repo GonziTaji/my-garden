@@ -17,6 +17,10 @@ export default defineConfig([
       'react-refresh': reactRefresh,
     },
     languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
       globals: {
         ...globals.browser,
       },
@@ -27,6 +31,35 @@ export default defineConfig([
       ...reactHooks.configs.flat.recommended.rules,
       ...reactRefresh.configs.vite.rules,
       ...tanstackQuery.configs['flat/recommended-strict'].rules,
+
+      'no-undef': 'off',
+
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+  {
+    files: ['src/router/routeTree.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/types/**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 ])

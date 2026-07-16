@@ -4,23 +4,31 @@ export const buttonVariants = cva(
   [
     'inline-block',
     'text-center',
-    'rounded-md',
+    'rounded-xl',
     'cursor-pointer',
     'content-center',
+    'font-medium',
+    'transition-all',
+    'duration-200',
+    'ease-out',
+    'active:scale-[0.97]',
   ],
   {
     variants: {
       variant: {
-        primary: 'bg-primary-default',
+        primary:
+          'bg-primary-strong text-white shadow-sm shadow-primary-strong/30 hover:bg-primary-dark hover:shadow-md hover:shadow-primary-dark/30',
         secondary:
-          'disabled:bg-secondary-subtle disabled:text-secondary-dark bg-secondary-default text-secondary-dark',
-        tertiary: 'border-primary-default/40 bg-primary-default/10',
-        danger: 'bg-danger-default text-white',
-        clean: 'bg-primary-default/10',
+          'bg-surface-raised text-neutral-dark border border-neutral-subtle/60 shadow-sm hover:bg-primary-light hover:border-primary-default hover:shadow-md',
+        tertiary:
+          'bg-primary-subtle/50 text-primary-dark border border-primary-default/40 hover:bg-primary-subtle hover:border-primary-strong/50',
+        danger:
+          'bg-danger-strong text-white shadow-sm shadow-danger-strong/30 hover:bg-danger-dark hover:shadow-md',
+        clean: 'bg-transparent text-primary-dark hover:bg-primary-subtle/60',
       },
       size: {
-        md: ['leading-0', 'border-2', 'h-8', 'min-w-24', 'px-3', 'py-1'],
-        sm: ['text-sm', 'p-1'],
+        md: ['leading-0', 'h-10', 'min-w-28', 'px-5', 'py-2'],
+        sm: ['text-sm', 'h-8', 'px-3', 'py-1'],
       },
     },
 

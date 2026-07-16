@@ -10,9 +10,7 @@ export default function CatalogDetail() {
   const { data: species, isLoading, error } = useSpeciesById(spId)
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-center text-secondary-strong">Cargando...</div>
-    )
+    return <div className="p-8 text-center text-neutral-strong">Cargando...</div>
   }
 
   if (error || !species) {
@@ -22,7 +20,7 @@ export default function CatalogDetail() {
         <button
           type="button"
           onClick={() => navigate({ to: '/catalog' })}
-          className="text-primary-strong underline mt-4"
+          className="text-primary-dark hover:text-primary-strong underline mt-4 transition-colors"
         >
           Volver al catálogo
         </button>

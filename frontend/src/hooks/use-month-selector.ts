@@ -5,16 +5,9 @@ export interface UseMonthSelectorParams {
   defaultYear?: number
 }
 
-export function useMonthSelector({
-  defaultMonthIndex,
-  defaultYear,
-}: UseMonthSelectorParams) {
-  const [monthIndex, setMonthIndex] = useState(
-    () => defaultMonthIndex || new Date().getMonth()
-  )
-  const [year, setYear] = useState(
-    () => defaultYear || new Date().getFullYear()
-  )
+export function useMonthSelector({ defaultMonthIndex, defaultYear }: UseMonthSelectorParams) {
+  const [monthIndex, setMonthIndex] = useState(() => defaultMonthIndex || new Date().getMonth())
+  const [year, setYear] = useState(() => defaultYear || new Date().getFullYear())
 
   function setNextMonth() {
     if (monthIndex === 11) {
@@ -33,20 +26,6 @@ export function useMonthSelector({
       setMonthIndex((state) => state - 1)
     }
   }
-
-  // function changeMonth(newMonthIndex: number, newYear?: number) {
-  //   if (newMonthIndex === 12) {
-  //     setMonthIndex(0)
-  //   } else if (newMonthIndex === -1) {
-  //     setMonthIndex(11)
-  //   } else {
-  //     setMonthIndex(newMonthIndex)
-  //   }
-  //
-  //   if (newYear) {
-  //     setYear(newYear)
-  //   }
-  // }
 
   const handleInputMonthChange: ChangeEventHandler<HTMLInputElement> = (ev) => {
     const [yyyy, mm] = ev.currentTarget.value.split('-')

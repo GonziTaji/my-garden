@@ -40,11 +40,7 @@ export interface PlantCalendarEntry {
   eventType: PlantEventType
 }
 
-export function usePlantCalendar(
-  plantId: Plant['id'],
-  startDate: string,
-  endDate: string
-) {
+export function usePlantCalendar(plantId: Plant['id'], startDate: string, endDate: string) {
   return useQuery({
     queryKey: ['plant', 'watering', plantId],
     queryFn: () =>

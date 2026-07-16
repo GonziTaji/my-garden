@@ -1,29 +1,34 @@
 @theme {
-  /* ── Primary — Rose ── */
-  --color-primary-light: var(--color-rose-50);
-  --color-primary-subtle: var(--color-rose-100);
-  --color-primary-default: var(--color-rose-200);
-  --color-primary-strong: var(--color-rose-400);
-  --color-primary-dark: var(--color-rose-700);
+  /* ── Surface — Warm Off-White ── */
+  --color-surface: #fffbf7;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #fff0e6;
 
-  /* ── Secondary — Olive ── */
-  --color-secondary-light: var(--color-olive-50);
-  --color-secondary-subtle: var(--color-olive-200);
-  --color-secondary-default: var(--color-olive-300);
-  --color-secondary-strong: var(--color-olive-500);
-  --color-secondary-dark: var(--color-olive-700);
+  /* ── Primary — Peach ── */
+  --color-primary-light: #fff9f3;
+  --color-primary-subtle: #ffe8d6;
+  --color-primary-default: #ffdcc2;
+  --color-primary-strong: #ffaa6e;
+  --color-primary-dark: #b85e20;
+
+  /* ── Secondary — Rose ── */
+  --color-secondary-light: #fff5f7;
+  --color-secondary-subtle: #ffe8ed;
+  --color-secondary-default: #ffd4de;
+  --color-secondary-strong: #ff96ad;
+  --color-secondary-dark: #b8405e;
 
   /* ── Danger — Red ── */
-  --color-danger-light: var(--color-red-50);
-  --color-danger-subtle: var(--color-red-100);
-  --color-danger-default: var(--color-red-400);
-  --color-danger-strong: var(--color-red-500);
-  --color-danger-dark: var(--color-red-700);
+  --color-danger-light: #fff5f5;
+  --color-danger-subtle: #ffe3e3;
+  --color-danger-default: #ff8787;
+  --color-danger-strong: #f03e3e;
+  --color-danger-dark: #c92a2a;
 
-  /* ── Neutral — Slate ── */
-  --color-neutral-light: var(--color-slate-100);
-  --color-neutral-subtle: var(--color-slate-300);
-  --color-neutral-default: var(--color-slate-400);
-  --color-neutral-strong: var(--color-slate-500);
-  --color-neutral-dark: var(--color-slate-900);
+  /* ── Neutral — Warm ── */
+  --color-neutral-light: #faf8f6;
+  --color-neutral-subtle: #d6cfc7;
+  --color-neutral-default: #ada59c;
+  --color-neutral-strong: #8a8078;
+  --color-neutral-dark: #3d3530;
 }

@@ -7,8 +7,6 @@ import { inputVariants } from '../classVariants/input'
 import { Link, useNavigate } from '@tanstack/react-router'
 import DateUtils from '@/utils/dates'
 import { useImageUploads } from '@/api/uploads'
-import PlantCalendar from './PlantCalendar'
-import { useMonthSelector } from '@/hooks/use-month-selector'
 
 interface PlantDetailProps {
   plant: PlantWithSpecies
@@ -24,16 +22,12 @@ type LocationChangeActionType = keyof typeof locationChangeActionTypes
 export default function PlantDetails({ plant }: PlantDetailProps) {
   const createEvent = useCreateEvent(plant.id)
 
-  const [editingField, setEditingField] = useState<
-    '' | 'nickname' | 'acquiredAt' | 'notes'
-  >('')
+  const [editingField, setEditingField] = useState<'' | 'nickname' | 'acquiredAt' | 'notes'>('')
   const [images, setImages] = useState(plant.images)
   const [editingImages, setEditingImages] = useState(false)
   const [uploading, setUploading] = useState(false)
   const { uploadImage, deleteImage } = useImageUploads()
   const navigate = useNavigate()
-
-  const { monthIndex, year, handleInputMonthChange } = useMonthSelector({})
 
   async function handleDeleteImage(imagePath: string) {
     try {
@@ -49,14 +43,11 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
     try {
       const { error, filepath } = await uploadImage(file)
       if (error) {
-        alert(error)
+        alert(typeof error === 'string' ? error : error?.error || 'Error al subir imagen')
         return
       }
 
-      setImages((prev) => [
-        ...prev,
-        { id: null, plantId: plant.id, filepath, createdAt: '' },
-      ])
+      setImages((prev) => [...prev, { id: null, plantId: plant.id, filepath, createdAt: '' }])
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al subir imagen')
     } finally {
@@ -64,13 +55,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
     }
   }
 
-  //native dialog to change the location
-  //dialog should ask for the new location name, the date of the change (default current date) and any notes.
-  //to submit the dialog the location name and date must be populated
-
-  async function handleLocationChangeDialogClose(
-    e: SyntheticEvent<HTMLDialogElement, Event>
-  ) {
+  async function handleLocationChangeDialogClose(e: SyntheticEvent<HTMLDialogElement, Event>) {
     e.preventDefault()
 
     const ct = e.currentTarget
@@ -85,10 +70,9 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
     switch (action) {
       case 'cancel':
         form.reset()
-        // do something here?
         return
 
-      case 'submit':
+      case 'submit': {
         const fd = new FormData(form)
 
         const location = fd.get('new-location')?.toString() || ''
@@ -105,17 +89,17 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
           return
         }
 
-        const res = await createEvent.mutateAsync({
+        await createEvent.mutateAsync({
           event_type: 'location_change',
           event_date: registeredAt,
           notes: notes || null,
           metadata: { location },
         })
-        console.log(res)
 
         form.reset()
 
         return
+      }
 
       default:
         break
@@ -123,9 +107,9 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   }
 
   return (
-    <section className="mx-8 p-8 flex flex-col gap-8 border border-secondary-subtle">
+    <section className="mx-4 my-4 p-6 flex flex-col gap-6 bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30">
       {plant.species.deletedAt && (
-        <div className="bg-warning-soft border border-warning-strong text-warning-strong px-4 py-3 rounded-md">
+        <div className="bg-danger-light border border-danger-subtle text-danger-strong px-4 py-3 rounded-lg text-sm">
           Esta planta usa un tipo de planta que ha sido eliminado por su creador
         </div>
       )}
@@ -143,8 +127,10 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         Editar
       </button>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="nickname">Nombre (apodo)</label>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="nickname" className="text-sm font-medium text-neutral-strong">
+          Nombre (apodo)
+        </label>
         <input
           type="text"
           id="nickname"
@@ -157,22 +143,24 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label>Tipo</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-neutral-strong">Tipo</label>
         <Link to="/catalog">
-          <div className="flex gap-2 items-baseline opacity-80">
-            <span className="text-lg">{plant.species.commonName}</span>
-            <span className="italic text-xs">
+          <div className="flex gap-2 items-baseline group">
+            <span className="text-lg font-medium text-neutral-dark group-hover:text-primary-dark transition-colors">
+              {plant.species.commonName}
+            </span>
+            <span className="italic text-xs text-neutral-strong">
               {plant.species.scientificName}
             </span>
           </div>
         </Link>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label>Ubicacion</label>
-        <span className="flex gap-3">
-          {plant.location}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-neutral-strong">Ubicación</label>
+        <span className="flex gap-3 items-center">
+          <span className="text-neutral-dark">{plant.location}</span>
           <button
             className={buttonVariants({ variant: 'clean', size: 'sm' })}
             command="show-modal"
@@ -183,21 +171,21 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         </span>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label>Adquirida en</label>
-        <span>{plant.acquiredAt?.toLocaleDateString() || '-'}</span>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-neutral-strong">Adquirida en</label>
+        <span className="text-neutral-dark">{plant.acquiredAt?.toLocaleDateString() || '-'}</span>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label>Notas</label>
-        <span>{plant.notes || '-'}</span>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-neutral-strong">Notas</label>
+        <span className="text-neutral-dark">{plant.notes || '-'}</span>
       </div>
 
-      <hr className="border-secondary-subtle" />
+      <hr className="border-neutral-subtle/40" />
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <label>Imágenes</label>
+          <label className="text-sm font-medium text-neutral-strong">Imágenes</label>
           {editingImages ? (
             <button
               type="button"
@@ -220,17 +208,17 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         <div className="grid gap-2 grid-cols-3">
           {images.length > 0 ? (
             images.map((image) => (
-              <div key={image.id ?? image.filepath} className="relative">
+              <div key={image.id ?? image.filepath} className="relative rounded-lg overflow-hidden">
                 <img
                   width="200"
                   height="200"
-                  className="h-32 w-full object-cover border border-secondary-default rounded-sm"
+                  className="h-32 w-full object-cover border border-neutral-subtle/30 rounded-lg"
                   src={image.filepath}
                   alt="Imagen de planta"
                 />
                 {editingImages && (
                   <button
-                    className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-danger-dark/80 text-white"
+                    className="absolute left-0 bottom-0 text-sm w-full px-2 py-1.5 bg-danger-dark/80 text-white backdrop-blur-sm rounded-b-lg"
                     type="button"
                     onClick={() => handleDeleteImage(image.filepath)}
                   >
@@ -240,9 +228,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
               </div>
             ))
           ) : (
-            <span className="text-sm text-neutral-default col-span-3">
-              Sin imágenes
-            </span>
+            <span className="text-sm text-neutral-default col-span-3">Sin imágenes</span>
           )}
         </div>
 
@@ -280,7 +266,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         closedby="any"
         popover="auto"
         className={cn(
-          'mt-8 mx-auto p-4 shadow-lg rounded-md',
+          'mt-8 mx-auto p-6 rounded-2xl',
           'transition-discrete transition-all duration-300',
           '-translate-y-32 opacity-0 open:translate-y-0 open:opacity-100',
           'starting:open:opacity-0 starting:open:-translate-y-32'
@@ -288,9 +274,11 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         id="create-location-change-dialog"
         onClose={handleLocationChangeDialogClose}
       >
-        <form method="dialog" className="grid gap-8">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="new-location">Lugar</label>
+        <form method="dialog" className="grid gap-6">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="new-location" className="text-sm font-medium text-neutral-strong">
+              Lugar
+            </label>
             <input
               autoComplete="false"
               className={inputVariants()}
@@ -302,8 +290,10 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="new-location-date">Fecha cambio</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="new-location-date" className="text-sm font-medium text-neutral-strong">
+              Fecha cambio
+            </label>
             <input
               className={inputVariants()}
               type="date"
@@ -314,8 +304,10 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="new-location-notes">Notas</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="new-location-notes" className="text-sm font-medium text-neutral-strong">
+              Notas
+            </label>
             <textarea
               className={inputVariants()}
               id="new-location-notes"

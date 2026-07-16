@@ -1,4 +1,5 @@
 import type { PlantSpecies } from '@/domain/plants/plant-species'
+import { useImageSource } from '@/hooks/use-image-source'
 import { type ChangeEventHandler, type FC, useEffect, useState } from 'react'
 
 export interface ImageSelectorProps {
@@ -8,9 +9,11 @@ export interface ImageSelectorProps {
 
 export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
   const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? '')
+  const { fileInputRef, selectImage, SourceDialog } = useImageSource()
 
   useEffect(() => {
     return () => URL.revokeObjectURL(previewUrl)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleRemoveImage = () => {
@@ -30,13 +33,8 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
   }
 
   return (
-    <div className="flex flex-col gap-2 p-2 rounded-sm">
-      <input
-        type="hidden"
-        name={`imagesExistingId_${position}`}
-        value={image?.id ?? ''}
-        readOnly
-      />
+    <div className="flex flex-col gap-2 p-2 rounded-xl">
+      <input type="hidden" name={`imagesExistingId_${position}`} value={image?.id ?? ''} readOnly />
       <input
         type="hidden"
         name={`imagesIsRemoved_${position}`}
@@ -44,15 +42,20 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
         readOnly
       />
 
-      <label role="button" className="relative h-36 cursor-pointer">
-        <input
-          name={`imagesFile_${position}`}
-          className="hidden"
-          type="file"
-          accept="image/*"
-          onChange={handleOnChangeImage}
-        />
+      <input
+        ref={fileInputRef}
+        name={`imagesFile_${position}`}
+        className="hidden"
+        type="file"
+        accept="image/*"
+        onChange={handleOnChangeImage}
+      />
 
+      <div
+        role="button"
+        className="relative h-36 cursor-pointer rounded-xl overflow-hidden"
+        onClick={previewUrl ? undefined : selectImage}
+      >
         {previewUrl ? (
           <>
             <img
@@ -64,7 +67,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
             />
 
             <button
-              className="absolute left-0 bottom-0 text-sm w-full px-2 py-1 bg-neutral-dark/60 text-white"
+              className="absolute left-0 bottom-0 text-sm w-full px-2 py-1.5 bg-neutral-dark/70 text-white backdrop-blur-sm rounded-b-xl"
               type="button"
               onClick={handleRemoveImage}
             >
@@ -72,11 +75,13 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
             </button>
           </>
         ) : (
-          <div className="h-full text-center w-full border border-dashed border-secondary-default grid place-content-center text-sm text-neutral-strong">
+          <div className="h-full text-center w-full border border-dashed border-primary-default/60 rounded-xl grid place-content-center text-sm text-neutral-strong hover:border-primary-strong hover:bg-primary-light/50 transition-all">
             Agregar imagen
           </div>
         )}
-      </label>
+      </div>
+
+      {SourceDialog}
     </div>
   )
 }

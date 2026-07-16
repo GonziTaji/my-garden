@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { api } from '@/api/client'
 
 interface User {
@@ -55,14 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext
-      value={{ user, isLoading, sendLoginEmail, verifyCode, logout }}
-    >
+    <AuthContext value={{ user, isLoading, sendLoginEmail, verifyCode, logout }}>
       {children}
     </AuthContext>
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider')

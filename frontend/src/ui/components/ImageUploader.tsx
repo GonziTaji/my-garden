@@ -16,23 +16,18 @@ export interface ImageUploaderHandle {
   commitDeletions: () => Promise<void>
 }
 
-export const ImageUploader = forwardRef<ImageUploaderHandle, {
-  defaultImagePaths?: string[]
-  inputName?: string
-  maxImages?: number
-  onUploading?: () => void
-  onUploaded?: () => void
-}>(({
-  defaultImagePaths,
-  inputName = 'images',
-  maxImages = 3,
-  onUploading,
-  onUploaded,
-}, ref) => {
+export const ImageUploader = forwardRef<
+  ImageUploaderHandle,
+  {
+    defaultImagePaths?: string[]
+    inputName?: string
+    maxImages?: number
+    onUploading?: () => void
+    onUploaded?: () => void
+  }
+>(({ defaultImagePaths, inputName = 'images', maxImages = 3, onUploading, onUploaded }, ref) => {
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [imagePaths, setImagePaths] = useState<string[]>(
-    defaultImagePaths ?? []
-  )
+  const [imagePaths, setImagePaths] = useState<string[]>(defaultImagePaths ?? [])
   const [deletedPaths, setDeletedPaths] = useState<string[]>([])
   const { uploadImage, deleteImage } = useImageUploads()
 
@@ -42,10 +37,7 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
   })
 
   const deleteImageDialogRef = useRef<HTMLDialogElement>(null)
-  const {
-    show: showConfirmDeleteImageDialog,
-    close: closeConfirmDeleteImageDialog,
-  } = useDialog({
+  const { show: showConfirmDeleteImageDialog, close: closeConfirmDeleteImageDialog } = useDialog({
     dialogRef: deleteImageDialogRef,
   })
 
@@ -58,26 +50,22 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
 
   useEffect(() => {
     return () => previewUrls.forEach((url) => URL.revokeObjectURL(url))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useImperativeHandle(ref, () => ({
     getDeletedPaths: () => deletedPaths,
     commitDeletions: async () => {
-      const results = await Promise.all(
-        deletedPaths.map((path) => deleteImage(path))
-      )
+      const results = await Promise.all(deletedPaths.map((path) => deleteImage(path)))
       const errors = results.filter((r) => r.error)
       if (errors.length !== 0) {
-        console.error(errors)
-        alert('error deleting one or more images')
+        alert('Error al eliminar una o más imágenes')
       }
       setDeletedPaths([])
     },
   }))
 
-  const handleImageUpload: ChangeEventHandler<HTMLInputElement> = async (
-    ev
-  ) => {
+  const handleImageUpload: ChangeEventHandler<HTMLInputElement> = async (ev) => {
     if (!allowUploads) {
       return
     }
@@ -86,10 +74,7 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
       return
     }
 
-    const files: File[] = [...ev.currentTarget.files].splice(
-      0,
-      uploadsAllowedCount
-    )
+    const files: File[] = [...ev.currentTarget.files].splice(0, uploadsAllowedCount)
 
     closeSourceDialog()
     setPreviewUrls(files.map((f) => URL.createObjectURL(f)))
@@ -116,9 +101,7 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
     const errors = ress.filter((r) => r && r.error)
 
     if (errors.length !== 0) {
-      // TODO: better message
-      console.log(errors)
-      alert('one or more errors occured')
+      alert('Error al subir una o más imágenes')
     }
 
     onUploaded && onUploaded()
@@ -146,9 +129,7 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
 
   const handleConfirmDeleteImage = () => {
     setDeletedPaths((state) => [...state, deleteTargetImagePath.current])
-    setImagePaths(
-      imagePaths.filter((path) => path !== deleteTargetImagePath.current)
-    )
+    setImagePaths(imagePaths.filter((path) => path !== deleteTargetImagePath.current))
 
     deleteTargetImagePath.current = ''
     closeConfirmDeleteImageDialog()
@@ -169,9 +150,9 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
           <button
             type="button"
             onClick={showSourceDialog}
-            className="aspect-3/4 h-48 border-2 border-dotted border-primary-default disabled:opacity-10"
+            className="aspect-3/4 h-48 border-2 border-dashed border-primary-default/60 rounded-xl flex items-center justify-center text-neutral-strong hover:border-primary-strong hover:bg-primary-light/50 transition-all duration-200 disabled:opacity-10"
           >
-            <span className="text-center">Seleccionar imagen</span>
+            <span className="text-center text-sm">Seleccionar imagen</span>
           </button>
 
           <input
@@ -188,16 +169,16 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
       {[...previewUrls, ...imagePaths].map((url) => (
         <div
           key={url}
-          className="aspect-3/4 h-48 border-2 border-dotted border-primary-default"
+          className="aspect-3/4 h-48 border border-neutral-subtle/30 rounded-xl overflow-hidden"
         >
           {`${url}`.startsWith('blob') ? (
             <div className="h-full w-full grid grid-cols-1 grid-rows-1">
-              <img src={url} alt="image" className="col-1 row-1" />
+              <img src={url} alt="image" className="col-1 row-1 object-cover" />
 
               <span
                 className={cn(
-                  'text-white bg-black/60 h-full w-full font-semibold text-center content-center',
-                  'col-1 row-1 text-xl self-center justify-self-center'
+                  'text-white bg-neutral-dark/60 h-full w-full font-semibold text-center content-center',
+                  'col-1 row-1 text-sm self-center justify-self-center backdrop-blur-sm'
                 )}
               >
                 Cargando
@@ -210,7 +191,7 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
                 className="h-full w-full"
                 onClick={() => handleRequestDeleteImage(url)}
               >
-                <img src={url} alt="image" />
+                <img src={url} alt="image" className="object-cover w-full h-full" />
                 <input name={inputName} value={url} type="hidden" />
               </button>
             </>
@@ -222,7 +203,7 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
         ref={sourceSelectorDialogRef}
         closedby="any"
         className={cn(
-          'fixed text-xl bg-primary-subtle gap-1 p-1',
+          'fixed text-lg bg-surface-raised gap-1 p-1',
           'min-w-screen self-end lg:max-w-xl',
           'grid grid-cols-[1fr_auto_1fr]',
           'transition-all transition-discrete',
@@ -233,32 +214,32 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, {
         <button
           type="button"
           onClick={() => handleOpenCamera()}
-          className={cn('h-full')}
+          className="h-full hover:bg-primary-subtle rounded-xl transition-colors font-medium"
         >
-          Camara
+          Cámara
         </button>
 
-        <div className="w-1 bg-secondary-default/60 rounded-full h-3/4 self-center" />
+        <div className="w-1 bg-neutral-subtle/60 rounded-full h-3/4 self-center" />
 
         <button
           type="button"
           onClick={() => handleOpenGallery()}
-          className={cn('h-full')}
+          className="h-full hover:bg-primary-subtle rounded-xl transition-colors font-medium"
         >
-          Galeria
+          Galería
         </button>
       </dialog>
 
       <dialog
         ref={deleteImageDialogRef}
-        className={cn('-10 max-w-xl top-1/3 py-8 px-8')}
+        className="max-w-xl top-1/3 py-8 px-8 bg-surface-raised rounded-2xl"
       >
-        <div className="flex flex-col gap-10">
-          <span className="text-2xl text-center">
-            Quieres eliminar esta foto?
+        <div className="flex flex-col gap-8">
+          <span className="text-xl text-center font-medium text-neutral-dark">
+            ¿Quieres eliminar esta foto?
           </span>
 
-          <div className="flex gap-8 justify-center">
+          <div className="flex gap-6 justify-center">
             <button
               className={buttonVariants({ variant: 'primary' })}
               type="button"

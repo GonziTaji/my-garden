@@ -3,11 +3,23 @@ select,
   appearance: base-select;
 }
 
-/* could not do this with tailwind :/ */
 ::picker(select) {
   border-color: var(--color-primary-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 10px 25px -5px rgb(0 0 0 / 0.1),
+    0 8px 10px -6px rgb(0 0 0 / 0.1);
+  background-color: var(--color-surface-raised);
+  padding: 0.25rem;
+}
+
+::picker(select) option {
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  padding: 0.5rem 0.75rem;
+}
+
+::picker(select) option:hover {
+  background-color: var(--color-primary-subtle);
 }
 
 ::picker-icon {

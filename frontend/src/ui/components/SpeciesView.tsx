@@ -18,6 +18,7 @@ import {
   useDeleteSpecies,
 } from '@/api/species'
 import { usePlants } from '@/api/plants'
+import { useImageUploads } from '@/api/uploads'
 import { inputVariants } from '../classVariants/input'
 import { useAuth } from '@/auth/AuthContext'
 
@@ -27,11 +28,7 @@ interface SpeciesViewProps {
   fromPlantForm?: boolean
 }
 
-export default function SpeciesView({
-  record,
-  editMode,
-  fromPlantForm,
-}: SpeciesViewProps) {
+export default function SpeciesView({ record, editMode, fromPlantForm }: SpeciesViewProps) {
   const { user } = useAuth()
   const [isPending, startTransition] = useTransition()
   const navigate = useNavigate()
@@ -40,6 +37,7 @@ export default function SpeciesView({
   const deleteSpecies = useDeleteSpecies()
   const updateSpecies = useUpdateSpecies()
   const toggleFavorite = useToggleFavorite()
+  const { uploadImage } = useImageUploads()
 
   const [favorited, setFavorited] = useState(record.isFavorited || false)
 
@@ -79,8 +77,11 @@ export default function SpeciesView({
         for (let pos = 0; pos < 3; pos++) {
           const fileInput = fd.get(`imagesFile_${pos}`)
           if (fileInput instanceof File && fileInput.size > 0) {
-            // const filepath = await uploadSpeciesImage(fileInput)
-            // images.push({ filepath, position: pos })
+            const { error, filepath } = await uploadImage(fileInput)
+            if (error) {
+              throw new Error('Error al subir imagen')
+            }
+            images.push({ filepath, position: pos })
           } else {
             const existingPath = fd.get(`imagesExistingId_${pos}`)
             if (existingPath) {
@@ -157,17 +158,17 @@ export default function SpeciesView({
   }
 
   return (
-    <div className="mx-2">
-      <form className="p-4 overflow-auto mb-12">
+    <div className="mx-4 my-4">
+      <form className="p-6 overflow-auto bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30">
         {isDeleted && (
-          <div className="bg-warning-soft border border-warning-strong text-warning-strong px-4 py-3 rounded-md mb-4">
+          <div className="bg-danger-light border border-danger-subtle text-danger-strong px-4 py-3 rounded-lg text-sm mb-4">
             Este tipo de planta ha sido eliminado por su creador
           </div>
         )}
         <input name="id" type="hidden" defaultValue={record.id || ''} />
 
-        <div className="border py-8 px-8">
-          <div className="flex gap-4 justify-end">
+        <div className="pb-6">
+          <div className="flex gap-3 justify-end mb-6">
             {editMode && !isDeleted ? (
               <>
                 <button
@@ -176,7 +177,7 @@ export default function SpeciesView({
                   type="submit"
                   disabled={isPending}
                 >
-                  {isPending ? 'Guardando' : 'Guardar'}
+                  {isPending ? 'Guardando...' : 'Guardar'}
                 </button>
 
                 <button
@@ -201,9 +202,7 @@ export default function SpeciesView({
                     <button
                       type="button"
                       onClick={async () => {
-                        const result = await toggleFavorite.mutateAsync(
-                          record.id!
-                        )
+                        const result = await toggleFavorite.mutateAsync(record.id!)
                         setFavorited(result.favorited)
                       }}
                       className={buttonVariants({ variant: 'clean' })}
@@ -245,31 +244,27 @@ export default function SpeciesView({
               })}
               type="text"
               name="scientificName"
-              placeholder="Nombre scientifico"
+              placeholder="Nombre científico"
               defaultValue={record.scientificName}
               disabled={!editMode}
             />
           </div>
 
-          <div>
+          <div className="mt-4">
             {editMode ? (
-              <div className="grid gap-2 grid-cols-3">
+              <div className="grid gap-3 grid-cols-3">
                 {[0, 1, 2].map((n) => (
-                  <ImageSelector
-                    image={record.images[n]}
-                    key={n}
-                    position={n}
-                  />
+                  <ImageSelector image={record.images[n]} key={n} position={n} />
                 ))}
               </div>
             ) : (
-              <div className="grid gap-2 grid-cols-3">
+              <div className="grid gap-3 grid-cols-3">
                 {record.images.map((image) => (
                   <img
                     width="200"
                     height="200"
                     key={image.id}
-                    className="h-32 w-full object-cover border border-secondary-default rounded-sm"
+                    className="h-32 w-full object-cover border border-neutral-subtle/30 rounded-xl"
                     src={image.filepath}
                     alt="Imagen de planta"
                   />
@@ -280,53 +275,51 @@ export default function SpeciesView({
 
           {!editMode && user && record.id && (
             <div>
-              <hr className="my-4 border-secondary-subtle" />
-              <h3 className="font-semibold text-secondary-dark mb-2">
-                Mis plantas de esta especie
-              </h3>
+              <hr className="my-6 border-neutral-subtle/40" />
+              <h3 className="font-semibold text-neutral-dark mb-3">Mis plantas de esta especie</h3>
               <div className="flex flex-col gap-1 mb-4">
                 {linkedPlants?.map((plant) => (
                   <Link
                     key={plant.id}
                     to="/plants/$plantid"
                     params={{ plantid: String(plant.id) }}
-                    className="flex items-center gap-3 p-2 rounded-sm hover:bg-primary-subtle"
+                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-primary-subtle/50 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-sm overflow-hidden bg-secondary-default shrink-0">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-primary-light shrink-0">
                       {plant.images[0]?.filepath ? (
                         <img
                           src={plant.images[0].filepath}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-secondary-strong">
+                        <div className="w-full h-full flex items-center justify-center text-xs text-neutral-default">
                           ?
                         </div>
                       )}
                     </div>
-                    <span>{plant.nickname}</span>
+                    <span className="text-neutral-dark">{plant.nickname}</span>
                   </Link>
                 ))}
               </div>
 
-              <p className="text-secondary-strong mb-4">
+              <p className="text-neutral-strong mb-4">
                 {!linkedPlants?.length && <span>Sin plantas.</span>}
 
                 {!isDeleted && (
                   <Link
                     to="/plants/new"
                     search={{ plantSpeciesId: record.id }}
-                    className="text-primary-strong underline"
+                    className="text-primary-dark hover:text-primary-strong hover:underline transition-colors ml-1"
                   >
                     Nueva
                   </Link>
                 )}
               </p>
-              <hr className="my-4 border-secondary-subtle" />
+              <hr className="my-6 border-neutral-subtle/40" />
             </div>
           )}
 
-          <dl className="flex flex-col gap-2">
+          <dl className="flex flex-col gap-4">
             <DetailListItem title="Tipo de planta">
               <DetailChecklist
                 options={categoriesOptions}
@@ -365,7 +358,7 @@ export default function SpeciesView({
 
             <DetailListItem title="Pet friendly?">
               {editMode ? (
-                <div className="grid grid-cols-[max-content_1fr] justify-between">
+                <div className="grid grid-cols-[max-content_1fr] justify-between gap-4">
                   <DetailChecklist
                     className="flex-col"
                     options={petToxicityOptions}
@@ -375,9 +368,11 @@ export default function SpeciesView({
                   />
 
                   <label className="grow text-start flex flex-col">
-                    <span className="block p-1 text-center">Notas:</span>
+                    <span className="block p-1 text-center text-sm font-medium text-neutral-strong">
+                      Notas:
+                    </span>
                     <textarea
-                      className="border disabled:border-0 border-neutral-subtle rounded-sm not-disabled:w-full p-2 grow"
+                      className="border border-neutral-subtle/60 rounded-lg not-disabled:w-full p-2 grow bg-surface-raised text-neutral-dark placeholder:text-neutral-default focus:outline-none focus:border-primary-strong focus:ring-2 focus:ring-primary-subtle transition-all"
                       name="petToxicityNotes"
                       disabled={!editMode}
                       defaultValue={record.petToxicityNotes}
@@ -387,9 +382,11 @@ export default function SpeciesView({
                 </div>
               ) : (
                 <div className="text-start!">
-                  <span>{petToxicity.meta[record.petToxicity].label}.</span>
+                  <span className="text-neutral-dark">
+                    {petToxicity.meta[record.petToxicity].label}.
+                  </span>
                   <br />
-                  <span className="text-sm italic">
+                  <span className="text-sm italic text-neutral-strong">
                     {record.petToxicityNotes}
                   </span>
                 </div>
@@ -399,13 +396,13 @@ export default function SpeciesView({
             <DetailListItem title="Notas">
               {editMode ? (
                 <textarea
-                  className="border border-neutral-subtle rounded-sm w-full p-2"
+                  className="border border-neutral-subtle/60 rounded-lg w-full p-2.5 bg-surface-raised text-neutral-dark placeholder:text-neutral-default focus:outline-none focus:border-primary-strong focus:ring-2 focus:ring-primary-subtle transition-all"
                   name="notes"
                   defaultValue={record.notes}
                   placeholder="Notas adicionales sobre el tipo de planta"
                 ></textarea>
               ) : (
-                <span className="text-sm italic whitespace-pre-wrap">
+                <span className="text-sm italic whitespace-pre-wrap text-neutral-dark">
                   {record.notes}
                 </span>
               )}
@@ -413,7 +410,7 @@ export default function SpeciesView({
 
             {editMode && !isDeleted && record.id && user && (
               <div className="text-danger-default">
-                <DetailListItem title="DANGER ZONE">
+                <DetailListItem title="Zona de peligro">
                   <button
                     type="button"
                     className={cn(buttonVariants({ variant: 'danger' }))}

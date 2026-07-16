@@ -10,9 +10,7 @@ export default function PlantDetailPage() {
   const { data: plant, isLoading, error } = usePlant(plantid)
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-center text-secondary-strong">Cargando...</div>
-    )
+    return <div className="p-8 text-center text-neutral-strong">Cargando...</div>
   }
 
   if (error || !plant) {
@@ -22,9 +20,9 @@ export default function PlantDetailPage() {
         <button
           type="button"
           onClick={() => navigate({ to: '/plants' })}
-          className="text-primary-strong underline mt-4"
+          className="text-primary-dark hover:text-primary-strong underline mt-4 transition-colors"
         >
-          Volver al la lista
+          Volver a la lista
         </button>
       </div>
     )

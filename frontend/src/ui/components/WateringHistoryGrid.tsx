@@ -12,13 +12,8 @@ import { buttonVariants } from '../classVariants/button'
 import { useMonthSelector } from '@/hooks/use-month-selector'
 
 export default function WateringHistoryGrid() {
-  const {
-    monthIndex,
-    year,
-    setPreviousMonth,
-    setNextMonth,
-    handleInputMonthChange,
-  } = useMonthSelector({})
+  const { monthIndex, year, setPreviousMonth, setNextMonth, handleInputMonthChange } =
+    useMonthSelector({})
 
   const { data: plants, isLoading: isLoadingPlants } = usePlants()
 
@@ -33,9 +28,7 @@ export default function WateringHistoryGrid() {
     selectedDay.plantId,
     selectedEntryId ?? 0
   )
-  const plantOfSelectedEntry = plants?.find(
-    (p) => p.id === selectedEntry?.plantId
-  )
+  const plantOfSelectedEntry = plants?.find((p) => p.id === selectedEntry?.plantId)
 
   const daySummaryRef = useRef<HTMLDialogElement>(null)
   const { close: closeDaySummary, show: showDaySummary } = useDialog({
@@ -95,13 +88,21 @@ export default function WateringHistoryGrid() {
     setSelectedEntryId(Number(entry.id))
   }
 
-  if (isLoadingPlants) return <>Cargando...</>
+  if (isLoadingPlants)
+    return (
+      <div className="flex justify-center items-center min-h-[40vh]">
+        <p className="text-neutral-strong">Cargando...</p>
+      </div>
+    )
 
   if (!plants || plants.length === 0) {
     return (
-      <p className="text-center py-8">
-        <span>No hay plantas en tu jardin</span>
-        <Link to="/plants/new" className="hover:underline ml-1">
+      <p className="text-center py-12 text-neutral-strong">
+        <span>No hay plantas en tu jardín</span>
+        <Link
+          to="/plants/new"
+          className="text-primary-dark hover:text-primary-strong hover:underline ml-1 transition-colors"
+        >
           Agregar planta
         </Link>
       </p>
@@ -109,16 +110,16 @@ export default function WateringHistoryGrid() {
   }
 
   return (
-    <div className="px-2">
-      <span className="text-center block text-2xl py-4">
+    <div className="px-4">
+      <span className="text-center block text-xl font-semibold text-neutral-dark py-4">
         Historial de riego
       </span>
 
-      <div className="justify-self-center mb-4">
+      <div className="justify-self-center mb-4 flex items-center gap-2">
         <button
           type="button"
           onClick={setPreviousMonth}
-          className="px-2 py-1 border border-secondary-subtle rounded-sm"
+          className="px-3 py-1.5 border border-neutral-subtle/60 rounded-lg bg-surface-raised hover:bg-primary-subtle transition-colors text-sm"
         >
           &lt;
         </button>
@@ -127,31 +128,31 @@ export default function WateringHistoryGrid() {
           name="month-input"
           type="month"
           onChange={handleInputMonthChange}
-          className="border border-secondary-subtle rounded-sm w-52 px-2 py-1"
+          className="border border-neutral-subtle/60 rounded-lg w-52 px-3 py-1.5 bg-surface-raised text-sm focus:outline-none focus:border-primary-strong focus:ring-2 focus:ring-primary-subtle transition-all"
           value={DateUtils.toMonthInputValue(monthIndex, year)}
         />
 
         <button
           type="button"
           onClick={setNextMonth}
-          className="px-2 py-1 border border-secondary-subtle rounded-sm"
+          className="px-3 py-1.5 border border-neutral-subtle/60 rounded-lg bg-surface-raised hover:bg-primary-subtle transition-colors text-sm"
         >
           &gt;
         </button>
       </div>
-      <div className="overflow-auto grid grid-cols-[auto_1fr] gap-2">
+      <div className="overflow-auto grid grid-cols-[auto_1fr] gap-3">
         {plants.map((plant) => (
           <div
-            className="grid col-span-2 grid-cols-subgrid gap-4 rounded-md bg-primary-subtle  p-3"
+            className="grid col-span-2 grid-cols-subgrid gap-4 rounded-xl bg-surface-raised p-4 border border-neutral-subtle/30 shadow-sm"
             key={plant.nickname}
           >
-            <div className="flex flex-col max-w-32">
-              <span className="text-xl">{plant.nickname}</span>
-              <span className="italic">{plant.species.commonName}</span>
+            <div className="flex flex-col max-w-32 gap-1">
+              <span className="text-lg font-semibold text-neutral-dark">{plant.nickname}</span>
+              <span className="text-sm italic text-neutral-strong">{plant.species.commonName}</span>
               <img
                 src={plant.images[0]?.filepath}
                 alt={plant.nickname}
-                className="border aspect-square w-full border-secondary-subtle rounded-md"
+                className="border aspect-square w-full border-neutral-subtle/30 rounded-lg object-cover mt-1"
               />
             </div>
 
@@ -170,7 +171,7 @@ export default function WateringHistoryGrid() {
         ref={daySummaryRef}
         closedby="closerequest"
         className={cn(
-          'rounded-t-4xl h-1/2 min-w-screen lg:max-w-xl overflow-auto',
+          'rounded-t-3xl h-1/2 min-w-screen lg:max-w-xl overflow-auto bg-surface-raised',
 
           'transition-all transition-discrete duration-500',
           'top-full starting:top-full starting:open:top-full open:top-1/2',
@@ -179,9 +180,9 @@ export default function WateringHistoryGrid() {
           'backdrop:opacity-0 starting:open:backdrop:opacity-0 open:backdrop:opacity-100'
         )}
       >
-        <div className="px-4 flex flex-col gap-2">
+        <div className="px-4 flex flex-col gap-3">
           <div className="flex justify-between items-start align-bottom pt-2">
-            <span className="text-center text-lg pt-4">
+            <span className="text-center text-lg font-medium text-neutral-dark pt-4">
               {Intl.DateTimeFormat('default', {
                 weekday: 'long',
                 month: 'long',
@@ -193,7 +194,7 @@ export default function WateringHistoryGrid() {
             <button
               type="button"
               onClick={closeDaySummary}
-              className="font-semibold text-xl w-8 align-top"
+              className="font-semibold text-xl w-8 align-top text-neutral-strong hover:text-neutral-dark transition-colors"
             >
               &times;
             </button>
@@ -206,7 +207,7 @@ export default function WateringHistoryGrid() {
               className={buttonVariants({ variant: 'primary' })}
               disabled={createEvent.isPending || deleteEvent.isPending}
             >
-              riego rapido
+              Riego rápido
             </button>
           )}
 
@@ -214,11 +215,11 @@ export default function WateringHistoryGrid() {
             <button
               type="button"
               key={e.id}
-              className="py-2 px-4 rounded-md border border-secondary-subtle w-full flex justify-between"
+              className="py-2.5 px-4 rounded-lg border border-neutral-subtle/30 bg-surface-raised w-full flex justify-between items-center hover:bg-primary-subtle/50 hover:border-primary-default transition-all"
               onClick={() => handleCalendarEntrySelect(e)}
             >
-              <span>{plantEventType.meta[e.eventType].label}</span>{' '}
-              <span>&gt;</span>
+              <span className="text-neutral-dark">{plantEventType.meta[e.eventType].label}</span>
+              <span className="text-neutral-default">&gt;</span>
             </button>
           ))}
 
@@ -230,7 +231,7 @@ export default function WateringHistoryGrid() {
               variant: 'primary',
               size: 'sm',
               className:
-                'rounded-full! absolute bottom-0 right-0 m-4 w-12 h-12',
+                'rounded-full! fixed bottom-6 right-6 w-14 h-14 text-xl shadow-lg shadow-primary-strong/40 z-10',
             })}
           >
             +
@@ -241,50 +242,53 @@ export default function WateringHistoryGrid() {
         ref={eventDetailsRef}
         closedby="closerequest"
         className={cn(
-          'w-11/12 h-3/4 rounded-4xl m-auto',
-          // transitions
+          'w-11/12 h-3/4 rounded-3xl m-auto bg-surface-raised',
           'transition-[transform_opacity] transition-discrete duration-500',
-          // translate
           'translate-x-full starting:translate-x-full open:starting:translate-x-full open:translate-0',
-          // opacity
           'opacity-0 starting:opacity-0 open:starting:opacity-0 open:opacity-100',
-          // backdrop opacity
           'backdrop:transition-opacity backdrop:duration-500',
           'backdrop:opacity-0 open:backdrop:opacity-100 starting:open:backdrop:opacity-0'
         )}
       >
         <div className="grid mx-4 h-full">
-          {isLoadingJE && 'Cargando...'}
+          {isLoadingJE && (
+            <div className="flex justify-center items-center min-h-[40vh]">
+              <span className="text-neutral-strong">Cargando...</span>
+            </div>
+          )}
 
           {selectedEntry && plantOfSelectedEntry && (
-            <div className="p-4 flex flex-col gap-8">
-              <div className="grid grid-cols-2 gap-8">
+            <div className="p-4 flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 {plantOfSelectedEntry.images.length > 0 && (
                   <img
-                    className="w-full aspect-square object-cover"
+                    className="w-full aspect-square object-cover rounded-xl"
                     src={plantOfSelectedEntry.images[0]?.filepath}
                   />
                 )}
 
-                <div className="flex flex-col">
-                  <span>{plantOfSelectedEntry.nickname}</span>
-
-                  <span>{plantEventType.meta[selectedEntry?.type].label}</span>
-
-                  <span>
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold text-neutral-dark">
+                    {plantOfSelectedEntry.nickname}
+                  </span>
+                  <span className="text-primary-dark font-medium">
+                    {plantEventType.meta[selectedEntry?.type].label}
+                  </span>
+                  <span className="text-neutral-strong text-sm">
                     {DateUtils.toDisplayDate(new Date(selectedEntry.eventDate))}
                   </span>
-
-                  <span>{selectedEntry.notes || 'Sin notas'}</span>
+                  <span className="text-neutral-strong text-sm italic">
+                    {selectedEntry.notes || 'Sin notas'}
+                  </span>
                 </div>
               </div>
 
               {selectedEntry.images.length > 0 ? (
                 selectedEntry.images.map((imgSrc) => (
-                  <img key={imgSrc} className="h-48" src={imgSrc} />
+                  <img key={imgSrc} className="h-48 rounded-xl object-cover" src={imgSrc} />
                 ))
               ) : (
-                <span className="">Sin imagenes</span>
+                <span className="text-neutral-default">Sin imágenes</span>
               )}
 
               <div className="grow">&nbsp;</div>
@@ -296,7 +300,7 @@ export default function WateringHistoryGrid() {
                   onClick={handleDeleteEvent}
                   disabled={deleteEvent.isPending}
                 >
-                  Elimiar evento
+                  Eliminar evento
                 </button>
 
                 <button

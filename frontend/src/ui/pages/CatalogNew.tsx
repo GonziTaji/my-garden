@@ -17,7 +17,7 @@ const emptySpecies = {
 }
 
 export default function CatalogNew() {
-  const { fromPlantForm, clonedFrom } = useSearch({ from: '/catalog/new' })
+  const { clonedFrom } = useSearch({ from: '/catalog/new' })
 
   const { data: specie } = useSpeciesById(clonedFrom)
   const record = clonedFrom && specie ? specie : emptySpecies

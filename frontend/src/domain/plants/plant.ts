@@ -27,10 +27,7 @@ function plantFullText(plant: PlantWithSpecies) {
   return `${plant.nickname}${plant.species.commonName}${plant.species.scientificName}`.toLowerCase()
 }
 
-export function fullsearchPlants(
-  term: string,
-  plants: PlantWithSpecies[]
-): PlantWithSpecies[] {
+export function fullsearchPlants(term: string, plants: PlantWithSpecies[]): PlantWithSpecies[] {
   return plants
     .map((p) => ({
       ...p,
@@ -38,5 +35,5 @@ export function fullsearchPlants(
     }))
     .filter((p) => p.weight > 0)
     .toSorted((a, b) => a.weight - b.weight)
-    .map(({ weight: _, ...plant }) => plant)
+    .map(({ weight: _w, ...plant }) => plant)
 }

@@ -5,7 +5,6 @@ import DateUtils from '@/utils/dates'
 import { cn } from '@sglara/cn'
 import { type MouseEvent } from 'react'
 
-// calendar grid
 const CALENDAR_WEEKS = 6
 const CALENDAR_WEEKDAYS = 7
 
@@ -30,12 +29,7 @@ interface GridDayData {
   isWatered?: boolean
 }
 
-export default function PlantCalendar({
-  plantId,
-  onDaySelect,
-  monthIndex,
-  year,
-}: CalendarProps) {
+export default function PlantCalendar({ plantId, onDaySelect, monthIndex, year }: CalendarProps) {
   const startDate = new Date()
   startDate.setMonth(monthIndex)
   startDate.setFullYear(year)
@@ -50,20 +44,14 @@ export default function PlantCalendar({
     data: calendarData,
     error,
     isLoading,
-  } = useCalendarEvents(
-    plantId,
-    DateUtils.toInputValue(startDate),
-    DateUtils.toInputValue(endDate)
-  )
+  } = useCalendarEvents(plantId, DateUtils.toInputValue(startDate), DateUtils.toInputValue(endDate))
 
   if (error) {
     return <>{error}</>
   }
 
   const isWatered = (dateString: string) =>
-    !!calendarData?.find(
-      (d) => d.date === dateString && d.eventType === 'watering'
-    )
+    !!calendarData?.find((d) => d.date === dateString && d.eventType === 'watering')
 
   const daysInMonth = Array.from({ length: endDate.getDate() }, (_, i) => {
     const d = new Date(startDate)
@@ -72,8 +60,7 @@ export default function PlantCalendar({
   })
 
   const blanksBefore = startDate.getDay()
-  const blanksAfter =
-    CALENDAR_WEEKS * CALENDAR_WEEKDAYS - blanksBefore - daysInMonth.length
+  const blanksAfter = CALENDAR_WEEKS * CALENDAR_WEEKDAYS - blanksBefore - daysInMonth.length
 
   const grid: GridDayData[] = [
     ...Array.from({ length: blanksBefore }, () => ({ date: null, events: [] })),
@@ -81,19 +68,14 @@ export default function PlantCalendar({
     ...daysInMonth.map((date) => ({
       date: date,
       isToday: new Date().toDateString() === date.toDateString(),
-      events:
-        calendarData?.filter((c) => c.date === DateUtils.toInputValue(date)) ||
-        [],
+      events: calendarData?.filter((c) => c.date === DateUtils.toInputValue(date)) || [],
       isWatered: isWatered(DateUtils.toInputValue(date)),
     })),
 
     ...Array.from({ length: blanksAfter }, () => ({ date: null, events: [] })),
   ]
 
-  function handleDayClick(
-    _: MouseEvent<HTMLButtonElement>,
-    gridDayData: GridDayData
-  ) {
+  function handleDayClick(_: MouseEvent<HTMLButtonElement>, gridDayData: GridDayData) {
     if (!gridDayData.date || !onDaySelect) {
       return
     }
@@ -107,10 +89,7 @@ export default function PlantCalendar({
   }
 
   return (
-    <div
-      // delay so opacity doesn't change in not-so-fast loads
-      className={cn('transition-opacity delay-200', isLoading && 'opacity-20')}
-    >
+    <div className={cn('transition-opacity delay-200', isLoading && 'opacity-20')}>
       <div className="grid grid-cols-7 grid-rows-6">
         {grid.map((gridDay, i) => (
           <button
@@ -119,9 +98,16 @@ export default function PlantCalendar({
             disabled={gridDay.date === null || isLoading}
             key={gridDay.date?.toString() || i}
             className={cn(
-              'text-center m-2 w-8 rounded cursor-pointer',
-              gridDay.isToday && 'border border-primary-strong font-semibold',
-              gridDay.isWatered && 'bg-cyan-400 border border-cyan-700'
+              'text-center m-1.5 w-8 h-8 rounded-lg cursor-pointer text-sm transition-all duration-150',
+              gridDay.date === null && 'cursor-default',
+              gridDay.isToday &&
+                !gridDay.isWatered &&
+                'border-2 border-primary-strong font-semibold text-primary-dark',
+              gridDay.isWatered && 'bg-primary-strong text-white font-medium',
+              !gridDay.isToday &&
+                !gridDay.isWatered &&
+                gridDay.date !== null &&
+                'hover:bg-primary-subtle'
             )}
           >
             {gridDay.date?.getDate() || '-'}

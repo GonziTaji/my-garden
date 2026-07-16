@@ -16,21 +16,19 @@ export default function PlantsList() {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <h2 className="text-2xl font-bold text-secondary-dark p-4">
-        Mis plantas
-      </h2>
+      <h2 className="text-2xl font-bold text-neutral-dark px-4 pt-5 pb-1">Mis plantas</h2>
 
-      <div className="flex gap-1 p-2">
+      <div className="flex gap-1.5 px-4 py-3">
         {(['list', 'water', 'history'] as const).map((t) => (
           <button
             type="button"
             key={t}
             onClick={() => handleTabChange(t)}
             className={cn(
-              'px-4 py-1 rounded-sm text-sm',
+              'px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200',
               tab === t
-                ? 'bg-primary-subtle text-primary-dark border border-primary-default border-b-white'
-                : 'hover:text-secondary-dark'
+                ? 'bg-primary-strong text-white shadow-sm shadow-primary-strong/30'
+                : 'text-neutral-strong hover:text-neutral-dark hover:bg-primary-subtle/50'
             )}
           >
             {t === 'list' && 'Mi Jardín'}
