@@ -72,11 +72,8 @@ func SetSessionCookie(c *gin.Context, userID int64) {
 	if err != nil {
 		return
 	}
-
-	// one year
-	maxAge := 60 * 60 * 24 * 365
-
-	setCookie(c, signed, maxAge)
+	secure := c.Request.Header.Get("X-Forwarded-Proto") == "https"
+	c.SetCookie("session", signed, 86400*30, "/", "", secure, true)
 }
 
 func ClearSessionCookie(c *gin.Context) {

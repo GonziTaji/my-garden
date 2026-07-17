@@ -4,6 +4,8 @@ import { api } from './client'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
 import type { PlantSpeciesImage } from '@/domain/plants/plant-image'
 
+const base = import.meta.env.BASE_URL
+
 interface CreateSpeciesInput {
   common_name: string
   scientific_name: string
@@ -62,7 +64,7 @@ function toDomain(d: ApiSpecies): PlantSpecies {
     categories: JSON.parse(d.categories_json || '[]') as PlantSpecies['categories'],
     images: d.images.map((img): Omit<PlantSpeciesImage, 'plantSpeciesId'> => ({
       id: img.id,
-      filepath: img.filepath,
+      filepath: base + img.filepath,
       position: img.position,
     })),
     isFavorited: d.is_favorited,

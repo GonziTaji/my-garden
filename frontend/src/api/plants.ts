@@ -1,8 +1,46 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { PlantWithSpecies } from '@/domain/plants/plant'
-import type { PlantImage } from '@/domain/plants/plant-image'
+
+const base = import.meta.env.BASE_URL
+
+import type { PlantImage, PlantWithSpecies } from '@/domain/plants/plant'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
+
+export async function deletePlantImage(
+  plantId: number,
+  imageId: number
+): Promise<void> {
+  const res = await fetch(`${base}api/plants/${plantId}/images/${imageId}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || 'Error al eliminar imagen')
+  }
+}
+
+export async function addPlantImage(
+  plantId: number,
+  file: File
+): Promise<PlantImage> {
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await fetch(`${base}api/plants/${plantId}/images`, {
+    method: 'POST',
+    body: fd,
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || 'Error al subir imagen')
+  }
+  const data: ApiPlantImage = await res.json()
+  return {
+    id: data.id,
+    plantId: data.plant_id,
+    filepath: base + data.filepath,
+    createdAt: data.created_at,
+  }
+}
 
 export interface UpsertPlantInput {
   nickname: string
