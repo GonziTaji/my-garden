@@ -1,10 +1,13 @@
+SMTP_PASS := $(shell cat ~/.secrets/mygarden-google-secret | tr -d ' \n')
+SESSION_SECRET := $(shell cat ~/.secrets/mygarden-google-secret | tr -d ' \n')
+
 export MY_GARDEN_SMTP_HOST := smtp.gmail.com
 export MY_GARDEN_SMTP_PORT := 587
 export MY_GARDEN_SMTP_USER := gonzalo.tajmuch@gmail.com
-export MY_GARDEN_SMTP_PASS := tyuxbasoaisxxsmy
+export MY_GARDEN_SMTP_PASS := $(SMTP_PASS)
 export MY_GARDEN_SMTP_FROM := gonzalo.tajmuch@gmail.com
 
-export MY_GARDEN_SESSION_SECRET := ajkdsfkalsdhlkf
+export MY_GARDEN_SESSION_SECRET := $(SESSION_SECRET)
 
 dev:
 	MY_GARDEN_ORIGIN=http://192.168.1.8:5173 \
