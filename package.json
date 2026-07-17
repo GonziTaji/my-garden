@@ -1,0 +1,9 @@
+{
+  "name": "my-garden",
+  "private": true,
+  "scripts": {
+    "seed": "bash internal/database/test-data/seed.sh",
+    "seed:species": "sqlite3 internal/database/databases/main.db < internal/database/test-data/plant-species-popular.sql",
+    "seed:images": "bash internal/database/test-data/seed-species-images.sh"
+  }
+}
