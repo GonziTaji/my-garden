@@ -1,32 +1,27 @@
+import { useMutation } from '@tanstack/react-query'
+import { api } from './client'
+
 export function useImageUploads() {
-  const uploadImage = async (file: File) => {
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/uploads', { method: 'POST', body: fd })
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await api.upload('/api/uploads', fd)
+      const data = await res.json()
+      return data.filepath as string
+    },
+  })
 
-    if (!res.ok) {
-      return { error: await res.json() }
-    }
-
-    const { filepath } = await res.json()
-
-    return { error: null, filepath }
-  }
-
-  const deleteImage = async (imagepath: string) => {
-    const res = await fetch(`/api/uploads${imagepath.replace('/uploads', '')}`, {
-      method: 'DELETE',
-    })
-
-    if (!res.ok) {
-      return { error: await res.text() }
-    }
-
-    return { error: null }
-  }
+  const deleteMutation = useMutation({
+    mutationFn: async (imagepath: string) => {
+      await api.del(`/api/uploads${imagepath.replace('/uploads', '')}`)
+    },
+  })
 
   return {
-    uploadImage,
-    deleteImage,
+    uploadImage: uploadMutation.mutateAsync,
+    deleteImage: deleteMutation.mutateAsync,
+    isUploading: uploadMutation.isPending,
+    isDeleting: deleteMutation.isPending,
   }
 }

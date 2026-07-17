@@ -1,5 +1,5 @@
 import { useSearch, useNavigate } from '@tanstack/react-router'
-import PlantListComponent from '@/ui/components/PlantsList'
+import PlantGrid from '@/ui/components/PlantGrid'
 import WateringList from '@/ui/components/WateringList'
 import WateringHistoryGrid from '@/ui/components/WateringHistoryGrid'
 import { cn } from '@sglara/cn'
@@ -41,7 +41,7 @@ export default function PlantsList() {
       <div className="grow">
         {tab === 'water' && <WateringList />}
         {tab === 'history' && <WateringHistoryGrid />}
-        {tab === 'list' && <PlantListComponent />}
+        {tab === 'list' && <PlantGrid />}
       </div>
     </div>
   )

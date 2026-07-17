@@ -1,6 +1,7 @@
 import { useParams, useSearch, useNavigate } from '@tanstack/react-router'
 import { useSpeciesById } from '@/api/species'
 import SpeciesView from '@/ui/components/SpeciesView'
+import { QueryState } from '@/ui/components/QueryState'
 
 export default function CatalogDetail() {
   const { plantspeciesid: plantspeciesidParam } = useParams({ from: '/catalog/$plantspeciesid' })
@@ -8,10 +9,6 @@ export default function CatalogDetail() {
   const navigate = useNavigate()
   const spId = Number(plantspeciesidParam)
   const { data: species, isLoading, error } = useSpeciesById(spId)
-
-  if (isLoading) {
-    return <div className="p-8 text-center text-neutral-strong">Cargando...</div>
-  }
 
   if (error || !species) {
     return (
@@ -30,5 +27,9 @@ export default function CatalogDetail() {
 
   const editMode = e === 'T' && !species.deletedAt
 
-  return <SpeciesView record={species} editMode={editMode} />
+  return (
+    <QueryState isLoading={isLoading}>
+      <SpeciesView record={species} editMode={editMode} />
+    </QueryState>
+  )
 }

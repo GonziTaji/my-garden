@@ -1,4 +1,4 @@
-import { useEffect, useId, type RefObject } from 'react'
+import { useEffect, useId, useCallback, type RefObject } from 'react'
 
 type CloseHandler = (returnValue: string | null) => void
 
@@ -50,23 +50,28 @@ export default function useDialog({
     if (onClose) {
       registry[dialogRef.current.id] = onClose
     }
-  }, [dialogRef, onClose])
 
-  function show() {
-    onBeforeShow && onBeforeShow()
+    return () => {
+      if (dialogRef.current) {
+        delete registry[dialogRef.current.id]
+      }
+    }
+  }, [onClose])
 
+  const show = useCallback(() => {
+    onBeforeShow?.()
     if (dialogRef.current?.popover) {
-      dialogRef.current?.show()
+      dialogRef.current.show()
     } else {
       dialogRef.current?.showModal()
     }
-    onShow && onShow()
-  }
+    onShow?.()
+  }, [onBeforeShow, onShow])
 
-  function close() {
-    onBeforeClose && onBeforeClose()
+  const close = useCallback(() => {
+    onBeforeClose?.()
     dialogRef.current?.close()
-  }
+  }, [onBeforeClose])
 
   return { show, close }
 }

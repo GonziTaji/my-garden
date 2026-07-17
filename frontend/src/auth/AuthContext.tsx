@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { api } from '@/api/client'
 
-interface User {
+export interface User {
   id: number
   email: string
   username: string

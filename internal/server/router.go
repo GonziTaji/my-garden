@@ -10,9 +10,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"my-garden/domain/plant"
-	"my-garden/domain/upload"
-	"my-garden/domain/user"
+	"my-garden/internal/domain/plantevents"
+	"my-garden/internal/domain/plants"
+	"my-garden/internal/domain/plantspecies"
+	"my-garden/internal/domain/upload"
+	"my-garden/internal/domain/users"
 	"my-garden/internal/auth"
 	"my-garden/internal/email"
 )
@@ -80,7 +82,7 @@ func (g *AppRouter) mountApiRoutes() {
 	}
 
 	// Initialize domains
-	userStore := user.NewStore(g.cfg.DB)
+	userStore := users.NewStore(g.cfg.DB)
 
 	var mailer email.Mailer
 	if g.cfg.SMTPHost != "" {
@@ -95,12 +97,20 @@ func (g *AppRouter) mountApiRoutes() {
 		mailer = &email.ConsoleMailer{}
 	}
 
-	userService := user.NewService(userStore, origin, mailer)
-	userHandler := user.NewHandler(userService, userStore)
+	userService := users.NewService(userStore, origin, mailer)
+	userHandler := users.NewHandler(userService, userStore)
 
-	plantStore := plant.NewStore(g.cfg.DB)
-	plantService := plant.NewService(plantStore)
-	plantHandler := plant.NewHandler(plantService)
+	plantsStore := plants.NewStore(g.cfg.DB)
+	plantspeciesStore := plantspecies.NewStore(g.cfg.DB)
+	planteventsStore := plantevents.NewStore(g.cfg.DB)
+
+	plantspeciesService := plantspecies.NewService(plantspeciesStore)
+	planteventsService := plantevents.NewService(planteventsStore)
+	plantsService := plants.NewService(plantsStore, plantspeciesStore, planteventsStore)
+
+	plantspeciesHandler := plantspecies.NewHandler(plantspeciesService)
+	planteventsHandler := plantevents.NewHandler(planteventsService)
+	plantsHandler := plants.NewHandler(plantsService)
 
 	uploadService := upload.NewService()
 	uploadHandler := upload.NewHandler(uploadService)
@@ -115,37 +125,37 @@ func (g *AppRouter) mountApiRoutes() {
 	public.Use(auth.OptionalAuth())
 	{
 		public.GET("/auth/me", userHandler.Me)
-		public.GET("/plant-species", plantHandler.ListPlantSpecies)
-		public.GET("/plant-species/all", plantHandler.ExplorePlantSpecies)
-		public.GET("/plant-species/:id", plantHandler.GetPlantSpecies)
-		public.GET("/enums", plantHandler.GetEnums)
+		public.GET("/plant-species", plantspeciesHandler.ListPlantSpecies)
+		public.GET("/plant-species/all", plantspeciesHandler.ExplorePlantSpecies)
+		public.GET("/plant-species/:id", plantspeciesHandler.GetPlantSpecies)
+		public.GET("/enums", plantspeciesHandler.GetEnums)
 	}
 
 	// Protected group (rejects with 401 if no valid session)
 	protected := api.Group("")
 	protected.Use(auth.RequireAuth())
 	{
-		protected.POST("/plant-species", plantHandler.CreatePlantSpecies)
-		protected.PUT("/plant-species/:id", plantHandler.UpdatePlantSpecies)
-		protected.DELETE("/plant-species/:id", plantHandler.DeletePlantSpecies)
-		protected.POST("/plant-species/:id/favorite", plantHandler.ToggleFavorite)
+		protected.POST("/plant-species", plantspeciesHandler.CreatePlantSpecies)
+		protected.PUT("/plant-species/:id", plantspeciesHandler.UpdatePlantSpecies)
+		protected.DELETE("/plant-species/:id", plantspeciesHandler.DeletePlantSpecies)
+		protected.POST("/plant-species/:id/favorite", plantspeciesHandler.ToggleFavorite)
 
 		protected.POST("/uploads", uploadHandler.UploadFile)
 		protected.DELETE("/uploads/*filepath", uploadHandler.DeleteUploadedFile)
 
-		protected.GET("/plants", plantHandler.ListPlants)
-		protected.GET("/plants/:id", plantHandler.GetPlant)
-		protected.POST("/plants", plantHandler.CreatePlant)
-		protected.PUT("/plants/:id", plantHandler.UpdatePlant)
-		protected.DELETE("/plants/:id", plantHandler.DeletePlant)
+		protected.GET("/plants", plantsHandler.ListPlants)
+		protected.GET("/plants/:id", plantsHandler.GetPlant)
+		protected.POST("/plants", plantsHandler.CreatePlant)
+		protected.PUT("/plants/:id", plantsHandler.UpdatePlant)
+		protected.DELETE("/plants/:id", plantsHandler.DeletePlant)
 
-		protected.GET("/plants/:id/events", plantHandler.ListEvents)
-		protected.POST("/plants/:id/events", plantHandler.CreateEvent)
-		protected.GET("/plants/:id/events/:eventId", plantHandler.GetEventHandler)
-		protected.DELETE("/plants/:id/events/:eventId", plantHandler.DeleteEvent)
-		protected.GET("/plants/:id/events/calendar/:start/:end", plantHandler.GetCalendarEvents)
-		protected.POST("/events/range", plantHandler.GetEventsRange)
-		protected.POST("/plants/last-event", plantHandler.GetLastEventDates)
+		protected.GET("/plants/:id/events", planteventsHandler.ListEvents)
+		protected.POST("/plants/:id/events", planteventsHandler.CreateEvent)
+		protected.GET("/plants/:id/events/:eventId", planteventsHandler.GetEventHandler)
+		protected.DELETE("/plants/:id/events/:eventId", planteventsHandler.DeleteEvent)
+		protected.GET("/plants/:id/events/calendar/:start/:end", planteventsHandler.GetCalendarEvents)
+		protected.POST("/events/range", planteventsHandler.GetEventsRange)
+		protected.POST("/plants/last-event", planteventsHandler.GetLastEventDates)
 	}
 }
 

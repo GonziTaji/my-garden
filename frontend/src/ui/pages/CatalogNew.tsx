@@ -1,8 +1,9 @@
 import { useSearch } from '@tanstack/react-router'
 import SpeciesView from '@/ui/components/SpeciesView'
 import { useSpeciesById } from '@/api/species'
+import type { PlantSpecies } from '@/domain/plants/plant-species'
 
-const emptySpecies = {
+const emptySpecies: PlantSpecies = {
   id: null,
   commonName: '',
   scientificName: '',

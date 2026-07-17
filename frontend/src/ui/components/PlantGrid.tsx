@@ -1,8 +1,9 @@
 import { usePlants } from '@/api/plants'
 import { fullsearchPlants, type PlantWithSpecies } from '@/domain/plants/plant'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useState, type ChangeEvent } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
 import { buttonVariants } from '../classVariants/button'
+import { QueryState } from './QueryState'
 
 type PlantsColumnsData = [PlantWithSpecies[], PlantWithSpecies[]]
 
@@ -13,36 +14,30 @@ export default function PlantsList() {
 
   const navigate = useNavigate()
 
-  const plantsColumns: PlantsColumnsData = fullsearchPlants(searchTerm, plants || [])
-    .filter((plant) => {
-      if (!selectedSpeciesId) return true
+  const plantsColumns: PlantsColumnsData = useMemo(
+    () =>
+      fullsearchPlants(searchTerm, plants || [])
+        .filter((plant) => {
+          if (!selectedSpeciesId) return true
+          return String(plant.species.id) === selectedSpeciesId
+        })
+        .reduce(
+          (cols, plant, i) => {
+            cols[i % 2].push(plant)
+            return cols
+          },
+          [[], []] as PlantsColumnsData
+        ) || [[], []],
+    [searchTerm, plants, selectedSpeciesId]
+  )
 
-      return String(plant.species.id) === selectedSpeciesId
-    })
-    .reduce(
-      (cols, plant, i) => {
-        cols[i % 2].push(plant)
-        return cols
-      },
-      [[], []] as PlantsColumnsData
-    ) || [[], []]
-
-  const allSpecies = (plants || [])
-    .flatMap((plant) => plant.species)
-    .filter((sp, i, arr) => arr.findIndex((other) => sp.id === other.id) === i)
-
-  if (isLoading)
-    return (
-      <div className="flex justify-center items-center min-h-[40vh]">
-        <p className="text-neutral-strong">Obteniendo plantas...</p>
-      </div>
-    )
-  if (error)
-    return (
-      <div className="flex justify-center items-center min-h-[40vh]">
-        <p className="text-danger-strong">Error obteniendo plantas</p>
-      </div>
-    )
+  const allSpecies = useMemo(
+    () =>
+      (plants || [])
+        .flatMap((plant) => plant.species)
+        .filter((sp, i, arr) => arr.findIndex((other) => sp.id === other.id) === i),
+    [plants]
+  )
 
   function handleSearchChange(ev: ChangeEvent<HTMLInputElement>) {
     setSearchTerm(ev.currentTarget.value)
@@ -57,6 +52,7 @@ export default function PlantsList() {
   }
 
   return (
+    <QueryState isLoading={isLoading} error={error} loadingText="Obteniendo plantas...">
     <div className="relative">
       <div className="grid grid-cols-2 p-4 gap-3">
         <input
@@ -127,5 +123,6 @@ export default function PlantsList() {
         +
       </button>
     </div>
+    </QueryState>
   )
 }

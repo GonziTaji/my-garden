@@ -1,6 +1,7 @@
 import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { useImageSource } from '@/hooks/use-image-source'
-import { type ChangeEventHandler, type FC, useEffect, useState } from 'react'
+import { ImageSourceDialog } from '@/ui/components/ImageSourceDialog'
+import { type ChangeEventHandler, type FC, useEffect, useRef, useState } from 'react'
 
 export interface ImageSelectorProps {
   image?: PlantSpecies['images'][number]
@@ -9,11 +10,20 @@ export interface ImageSelectorProps {
 
 export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
   const [previewUrl, setPreviewUrl] = useState<string>(image?.filepath ?? '')
-  const { fileInputRef, selectImage, SourceDialog } = useImageSource()
+  const { fileInputRef, selectImage, sourceSelectorDialogRef } = useImageSource()
+
+  const previewUrlRef = useRef(previewUrl)
 
   useEffect(() => {
-    return () => URL.revokeObjectURL(previewUrl)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    previewUrlRef.current = previewUrl
+  })
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+    }
   }, [])
 
   const handleRemoveImage = () => {
@@ -54,7 +64,7 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
       <div
         role="button"
         className="relative h-36 cursor-pointer rounded-xl overflow-hidden"
-        onClick={previewUrl ? undefined : selectImage}
+        onClick={previewUrl ? undefined : () => selectImage(null)}
       >
         {previewUrl ? (
           <>
@@ -81,7 +91,11 @@ export const ImageSelector: FC<ImageSelectorProps> = ({ image, position }) => {
         )}
       </div>
 
-      {SourceDialog}
+      <ImageSourceDialog
+        dialogRef={sourceSelectorDialogRef}
+        onSelectCapture={() => selectImage('environment')}
+        onSelectGallery={() => selectImage(null)}
+      />
     </div>
   )
 }

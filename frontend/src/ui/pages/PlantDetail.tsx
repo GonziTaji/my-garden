@@ -1,6 +1,7 @@
 import { usePlant } from '@/api/plants'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import PlantDetails from '@/ui/components/PlantDetails'
+import { QueryState } from '@/ui/components/QueryState'
 
 export default function PlantDetailPage() {
   const { plantid: plantidParam } = useParams({ from: '/plants/$plantid' })
@@ -8,10 +9,6 @@ export default function PlantDetailPage() {
   const plantid = Number(plantidParam)
 
   const { data: plant, isLoading, error } = usePlant(plantid)
-
-  if (isLoading) {
-    return <div className="p-8 text-center text-neutral-strong">Cargando...</div>
-  }
 
   if (error || !plant) {
     return (
@@ -28,5 +25,9 @@ export default function PlantDetailPage() {
     )
   }
 
-  return <PlantDetails plant={plant} />
+  return (
+    <QueryState isLoading={isLoading}>
+      <PlantDetails plant={plant} />
+    </QueryState>
+  )
 }

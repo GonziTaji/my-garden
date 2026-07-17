@@ -8,7 +8,6 @@ import CatalogNew from '@/ui/pages/CatalogNew'
 import CatalogDetail from '@/ui/pages/CatalogDetail'
 import CatalogNewPlant from '@/ui/pages/CatalogNewPlant'
 import Login from '@/ui/pages/Login'
-import { Sbx } from '@/ui/pages/Sbx'
 import NewPlantPage from '@/ui/pages/NewPlantPage'
 import EditPlantPage from '@/ui/pages/EditPlantPage'
 
@@ -130,12 +129,6 @@ const loginRoute = createRoute({
   component: Login,
 })
 
-const sbxRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/sbx',
-  component: Sbx,
-})
-
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '$',
@@ -153,7 +146,6 @@ const routeTree = rootRoute.addChildren([
   catalogDetailRoute,
   catalogNewPlantRoute,
   loginRoute,
-  sbxRoute,
   notFoundRoute,
 ])
 

@@ -4,10 +4,9 @@ import { useLastWateredDates, useToggleWatering } from '@/api/watering'
 import { usePlants } from '@/api/plants'
 import { buttonVariants } from '../classVariants/button'
 import { useNavigate } from '@tanstack/react-router'
+import DateUtils from '@/utils/dates'
 
-export interface WateringListProps {}
-
-export default function WateringList(_props: WateringListProps) {
+export default function WateringList() {
   const toggleWatering = useToggleWatering()
   const { data: plants } = usePlants()
   const { data: lastWateredRaw } = useLastWateredDates(plants?.map((p) => p.id) || [])
@@ -33,21 +32,7 @@ export default function WateringList(_props: WateringListProps) {
     })
   }
 
-  const formatWateredDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0) return 'Hoy'
-    if (diffDays === 1) return 'Ayer'
-    if (diffDays < 7) return `Hace ${diffDays} días`
-
-    return date.toLocaleDateString(undefined, {
-      day: 'numeric',
-      month: 'short',
-    })
-  }
+  const formatWateredDate = DateUtils.formatRelativeDate
 
   const handlePlantImageClick = (plantid: Plant['id']) => {
     navigate({ to: '/plants/$plantid', params: { plantid: String(plantid) } })
@@ -74,7 +59,11 @@ export default function WateringList(_props: WateringListProps) {
                 type="button"
                 onClick={() => handlePlantImageClick(p.id)}
               >
-                <img className="h-full w-20 object-cover rounded-lg" src={p.images[0].filepath} />
+                {p.images[0]?.filepath ? (
+                  <img className="h-full w-20 object-cover rounded-lg" src={p.images[0].filepath} />
+                ) : (
+                  <div className="h-full w-20 rounded-lg bg-primary-light flex items-center justify-center text-xs text-neutral-default">?</div>
+                )}
               </button>
 
               <div className="grow flex flex-col justify-between h-full py-1">

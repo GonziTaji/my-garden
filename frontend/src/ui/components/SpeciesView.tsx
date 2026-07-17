@@ -1,8 +1,9 @@
 import { ImageSelector } from './ImageSelector'
 import { DetailChecklist } from './DetailChecklist'
-import DetailListItem from './DetailLstItem'
-import { useTransition, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import DetailListItem from './DetailListItem'
+import { SpeciesHeader } from './SpeciesHeader'
+import { SpeciesPlantLinks } from './SpeciesPlantLinks'
+import { useSpeciesSubmit } from '@/hooks/use-species-submit'
 import { cn } from '@sglara/cn'
 import { plantCategory } from '@/domain/plants/category/plant-category'
 import { lightLevel } from '@/domain/plants/light/light-level'
@@ -11,16 +12,11 @@ import { soilType } from '@/domain/plants/soil/soil-type'
 import { petToxicity } from '@/domain/plants/toxicity/pet-toxicity'
 import { waterProfile } from '@/domain/plants/water/water-profile'
 import { buttonVariants } from '@/ui/classVariants/button'
-import {
-  useCreateSpecies,
-  useUpdateSpecies,
-  useToggleFavorite,
-  useDeleteSpecies,
-} from '@/api/species'
-import { usePlants } from '@/api/plants'
-import { useImageUploads } from '@/api/uploads'
+import { useDeleteSpecies } from '@/api/species'
 import { inputVariants } from '../classVariants/input'
 import { useAuth } from '@/auth/AuthContext'
+import { useMemo, useState, useTransition } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 interface SpeciesViewProps {
   record: PlantSpecies
@@ -30,117 +26,62 @@ interface SpeciesViewProps {
 
 export default function SpeciesView({ record, editMode, fromPlantForm }: SpeciesViewProps) {
   const { user } = useAuth()
-  const [isPending, startTransition] = useTransition()
   const navigate = useNavigate()
+  const [isPending, startTransition] = useTransition()
 
-  const createSpecies = useCreateSpecies()
   const deleteSpecies = useDeleteSpecies()
-  const updateSpecies = useUpdateSpecies()
-  const toggleFavorite = useToggleFavorite()
-  const { uploadImage } = useImageUploads()
-
   const [favorited, setFavorited] = useState(record.isFavorited || false)
 
-  const categoriesOptions = plantCategory.options.map((opt) => ({
-    ...opt,
-    selected: record.categories?.includes(opt.value) || false,
-  }))
+  const { submitAction, isPending: isSubmitting } = useSpeciesSubmit({ record, fromPlantForm })
 
-  const waterProfileOptions = waterProfile.options.map((opt) => ({
-    ...opt,
-    selected: record.waterProfile === opt.value,
-  }))
+  const categoriesOptions = useMemo(
+    () =>
+      plantCategory.options.map((opt) => ({
+        ...opt,
+        selected: record.categories?.includes(opt.value) || false,
+      })),
+    [record.categories]
+  )
 
-  const lightLevelOptions = lightLevel.options.map((opt) => ({
-    ...opt,
-    selected: record.lightLevel === opt.value,
-  }))
+  const waterProfileOptions = useMemo(
+    () =>
+      waterProfile.options.map((opt) => ({
+        ...opt,
+        selected: record.waterProfile === opt.value,
+      })),
+    [record.waterProfile]
+  )
 
-  const soilTypeOptions = soilType.options.map((opt) => ({
-    ...opt,
-    selected: record.soilType === opt.value,
-  }))
+  const lightLevelOptions = useMemo(
+    () =>
+      lightLevel.options.map((opt) => ({
+        ...opt,
+        selected: record.lightLevel === opt.value,
+      })),
+    [record.lightLevel]
+  )
 
-  const petToxicityOptions = petToxicity.options.map((opt) => ({
-    ...opt,
-    selected: record.petToxicity === opt.value,
-  }))
+  const soilTypeOptions = useMemo(
+    () =>
+      soilType.options.map((opt) => ({
+        ...opt,
+        selected: record.soilType === opt.value,
+      })),
+    [record.soilType]
+  )
 
-  const { data: linkedPlants } = usePlants(record.id ?? undefined)
+  const petToxicityOptions = useMemo(
+    () =>
+      petToxicity.options.map((opt) => ({
+        ...opt,
+        selected: record.petToxicity === opt.value,
+      })),
+    [record.petToxicity]
+  )
+
   const isDeleted = !!record.deletedAt
 
-  const submitAction = async (fd: FormData) => {
-    startTransition(async () => {
-      try {
-        const images: { filepath: string; position: number }[] = []
-
-        for (let pos = 0; pos < 3; pos++) {
-          const fileInput = fd.get(`imagesFile_${pos}`)
-          if (fileInput instanceof File && fileInput.size > 0) {
-            const { error, filepath } = await uploadImage(fileInput)
-            if (error) {
-              throw new Error('Error al subir imagen')
-            }
-            images.push({ filepath, position: pos })
-          } else {
-            const existingPath = fd.get(`imagesExistingId_${pos}`)
-            if (existingPath) {
-              images.push({ filepath: String(existingPath), position: pos })
-            }
-          }
-        }
-
-        const categories = fd.getAll('categories') as string[]
-
-        const getStrValue = (key: string) => fd.get(key)?.toString() ?? ''
-
-        const payload = {
-          common_name: getStrValue('commonName'),
-          scientific_name: getStrValue('scientificName'),
-          water_profile: getStrValue('waterProfile'),
-          light_level: getStrValue('lightLevel'),
-          soil_type: getStrValue('soilType'),
-          pet_toxicity: getStrValue('petToxicity'),
-          pet_toxicity_notes: getStrValue('petToxicityNotes'),
-          notes: getStrValue('notes'),
-          categories,
-          images,
-        }
-
-        let result: { id: number }
-        if (record.id) {
-          result = await updateSpecies.mutateAsync({
-            id: record.id,
-            ...payload,
-          })
-        } else {
-          result = await createSpecies.mutateAsync(payload)
-        }
-
-        if (fromPlantForm) {
-          navigate({
-            to: '/plants/new',
-            search: { plantSpeciesId: result.id },
-          })
-        } else {
-          navigate({
-            to: '/catalog/$plantspeciesid',
-            params: { plantspeciesid: String(result.id) },
-          })
-        }
-      } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al guardar')
-      }
-    })
-  }
-
-  function handleCloneSpecies() {
-    if (record.id) {
-      navigate({ to: '/catalog/new', search: { clonedFrom: record.id } })
-    }
-  }
-
-  const handleDelete = (id: number, name: string) => {
+  function handleDelete(id: number, name: string) {
     const confirmed = confirm(
       `Esto eliminara el tipo "${name}" y todas sus plantas asociadas. ¿Continuar?`
     )
@@ -159,7 +100,10 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
 
   return (
     <div className="mx-4 my-4">
-      <form className="p-6 overflow-auto bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30">
+      <form
+        action={submitAction}
+        className="p-6 overflow-auto bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30"
+      >
         {isDeleted && (
           <div className="bg-danger-light border border-danger-subtle text-danger-strong px-4 py-3 rounded-lg text-sm mb-4">
             Este tipo de planta ha sido eliminado por su creador
@@ -168,62 +112,15 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
         <input name="id" type="hidden" defaultValue={record.id || ''} />
 
         <div className="pb-6">
-          <div className="flex gap-3 justify-end mb-6">
-            {editMode && !isDeleted ? (
-              <>
-                <button
-                  className={buttonVariants({ variant: 'primary' })}
-                  formAction={submitAction}
-                  type="submit"
-                  disabled={isPending}
-                >
-                  {isPending ? 'Guardando...' : 'Guardar'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => history.back()}
-                  className={buttonVariants({ variant: 'secondary' })}
-                >
-                  Cancelar
-                </button>
-              </>
-            ) : user && !isDeleted ? (
-              <>
-                {user.id !== record.userId && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleCloneSpecies}
-                      className={buttonVariants({ variant: 'secondary' })}
-                    >
-                      Clonar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const result = await toggleFavorite.mutateAsync(record.id!)
-                        setFavorited(result.favorited)
-                      }}
-                      className={buttonVariants({ variant: 'clean' })}
-                    >
-                      {favorited ? '♥' : '♡'}
-                    </button>
-                  </>
-                )}
-                {user.id === record.userId && (
-                  <Link
-                    to="/catalog/$plantspeciesid"
-                    params={{ plantspeciesid: String(record.id!) }}
-                    search={{ e: 'T' }}
-                    className={buttonVariants({ variant: 'primary' })}
-                  >
-                    Editar
-                  </Link>
-                )}
-              </>
-            ) : null}
-          </div>
+          <SpeciesHeader
+            editMode={editMode}
+            isPending={isPending || isSubmitting}
+            isDeleted={isDeleted}
+            record={record}
+            user={user}
+            favorited={favorited}
+            onToggleFavorite={setFavorited}
+          />
 
           <div className="flex flex-col min-w-0">
             <input
@@ -274,49 +171,7 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
           </div>
 
           {!editMode && user && record.id && (
-            <div>
-              <hr className="my-6 border-neutral-subtle/40" />
-              <h3 className="font-semibold text-neutral-dark mb-3">Mis plantas de esta especie</h3>
-              <div className="flex flex-col gap-1 mb-4">
-                {linkedPlants?.map((plant) => (
-                  <Link
-                    key={plant.id}
-                    to="/plants/$plantid"
-                    params={{ plantid: String(plant.id) }}
-                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-primary-subtle/50 transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-primary-light shrink-0">
-                      {plant.images[0]?.filepath ? (
-                        <img
-                          src={plant.images[0].filepath}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-neutral-default">
-                          ?
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-neutral-dark">{plant.nickname}</span>
-                  </Link>
-                ))}
-              </div>
-
-              <p className="text-neutral-strong mb-4">
-                {!linkedPlants?.length && <span>Sin plantas.</span>}
-
-                {!isDeleted && (
-                  <Link
-                    to="/plants/new"
-                    search={{ plantSpeciesId: record.id }}
-                    className="text-primary-dark hover:text-primary-strong hover:underline transition-colors ml-1"
-                  >
-                    Nueva
-                  </Link>
-                )}
-              </p>
-              <hr className="my-6 border-neutral-subtle/40" />
-            </div>
+            <SpeciesPlantLinks recordId={record.id} isDeleted={isDeleted} />
           )}
 
           <dl className="flex flex-col gap-4">

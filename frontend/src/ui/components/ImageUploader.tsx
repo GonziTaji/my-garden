@@ -1,147 +1,61 @@
 import useDialog from '@/hooks/use-dialog'
 import { cn } from '@sglara/cn'
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-  type ChangeEventHandler,
-} from 'react'
+import { useRef, type ChangeEventHandler } from 'react'
 import { buttonVariants } from '../classVariants/button'
-import { useImageUploads } from '@/api/uploads'
+import { useImageManager } from '@/hooks/use-image-manager'
 
-export interface ImageUploaderHandle {
-  getDeletedPaths: () => string[]
-  commitDeletions: () => Promise<void>
+export interface ImageUploaderProps {
+  defaultImagePaths?: string[]
+  inputName?: string
+  maxImages?: number
+  onUploading?: () => void
+  onUploaded?: () => void
 }
 
-export const ImageUploader = forwardRef<
-  ImageUploaderHandle,
-  {
-    defaultImagePaths?: string[]
-    inputName?: string
-    maxImages?: number
-    onUploading?: () => void
-    onUploaded?: () => void
-  }
->(({ defaultImagePaths, inputName = 'images', maxImages = 3, onUploading, onUploaded }, ref) => {
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [imagePaths, setImagePaths] = useState<string[]>(defaultImagePaths ?? [])
-  const [deletedPaths, setDeletedPaths] = useState<string[]>([])
-  const { uploadImage, deleteImage } = useImageUploads()
+export function ImageUploader({
+  defaultImagePaths,
+  inputName = 'images',
+  maxImages = 3,
+  onUploading,
+  onUploaded,
+}: ImageUploaderProps) {
+  const {
+    imagePaths,
+    previewUrls,
+    allowUploads,
+    handleImageUpload: rawHandleImageUpload,
+    handleRequestDelete,
+    handleConfirmDelete,
+    closeConfirmDelete,
+    deleteDialogRef,
+  } = useImageManager({ defaultImagePaths, maxImages })
 
   const sourceSelectorDialogRef = useRef<HTMLDialogElement>(null)
   const { show: showSourceDialog, close: closeSourceDialog } = useDialog({
     dialogRef: sourceSelectorDialogRef,
   })
 
-  const deleteImageDialogRef = useRef<HTMLDialogElement>(null)
-  const { show: showConfirmDeleteImageDialog, close: closeConfirmDeleteImageDialog } = useDialog({
-    dialogRef: deleteImageDialogRef,
-  })
-
   const uploadFilesInputRef = useRef<HTMLInputElement>(null)
-  const deleteTargetImagePath = useRef('')
-
-  const imagesCount = imagePaths.length + previewUrls.length
-  const uploadsAllowedCount = maxImages - imagesCount
-  const allowUploads = uploadsAllowedCount > 0
-
-  useEffect(() => {
-    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useImperativeHandle(ref, () => ({
-    getDeletedPaths: () => deletedPaths,
-    commitDeletions: async () => {
-      const results = await Promise.all(deletedPaths.map((path) => deleteImage(path)))
-      const errors = results.filter((r) => r.error)
-      if (errors.length !== 0) {
-        alert('Error al eliminar una o más imágenes')
-      }
-      setDeletedPaths([])
-    },
-  }))
 
   const handleImageUpload: ChangeEventHandler<HTMLInputElement> = async (ev) => {
-    if (!allowUploads) {
-      return
-    }
-
-    if (!ev.currentTarget.files) {
-      return
-    }
-
-    const files: File[] = [...ev.currentTarget.files].splice(0, uploadsAllowedCount)
-
+    onUploading?.()
     closeSourceDialog()
-    setPreviewUrls(files.map((f) => URL.createObjectURL(f)))
-
-    onUploading && onUploading()
-
-    const ress = await Promise.all(
-      files.map(async (file, fileIndex) => {
-        const { filepath, error } = await uploadImage(file)
-
-        if (error) {
-          return { error }
-        }
-
-        setImagePaths((state) => [...state, filepath])
-
-        const previewUrl = previewUrls[fileIndex]
-        URL.revokeObjectURL(previewUrl)
-
-        setPreviewUrls((state) => state.filter((blob) => blob === previewUrl))
-      })
-    )
-
-    const errors = ress.filter((r) => r && r.error)
-
-    if (errors.length !== 0) {
-      alert('Error al subir una o más imágenes')
-    }
-
-    onUploaded && onUploaded()
+    await rawHandleImageUpload(ev)
+    onUploaded?.()
   }
 
   const requestSource = (capture: string | null) => {
-    if (!uploadFilesInputRef.current) {
-      return
-    }
-
+    if (!uploadFilesInputRef.current) return
     if (capture) {
       uploadFilesInputRef.current.capture = capture
     } else {
       uploadFilesInputRef.current.removeAttribute('capture')
     }
-
     uploadFilesInputRef.current.click()
   }
 
-  const handleRequestDeleteImage = (imagePath: string) => {
-    deleteTargetImagePath.current = imagePath
-
-    showConfirmDeleteImageDialog()
-  }
-
-  const handleConfirmDeleteImage = () => {
-    setDeletedPaths((state) => [...state, deleteTargetImagePath.current])
-    setImagePaths(imagePaths.filter((path) => path !== deleteTargetImagePath.current))
-
-    deleteTargetImagePath.current = ''
-    closeConfirmDeleteImageDialog()
-  }
-
-  const handleOpenGallery = () => {
-    requestSource(null)
-  }
-
-  const handleOpenCamera = () => {
-    requestSource('environment')
-  }
+  const handleOpenGallery = () => requestSource(null)
+  const handleOpenCamera = () => requestSource('environment')
 
   return (
     <div className="flex gap-4">
@@ -189,7 +103,7 @@ export const ImageUploader = forwardRef<
               <button
                 type="button"
                 className="h-full w-full"
-                onClick={() => handleRequestDeleteImage(url)}
+                onClick={() => handleRequestDelete(url)}
               >
                 <img src={url} alt="image" className="object-cover w-full h-full" />
                 <input name={inputName} value={url} type="hidden" />
@@ -213,7 +127,7 @@ export const ImageUploader = forwardRef<
       >
         <button
           type="button"
-          onClick={() => handleOpenCamera()}
+          onClick={handleOpenCamera}
           className="h-full hover:bg-primary-subtle rounded-xl transition-colors font-medium"
         >
           Cámara
@@ -223,7 +137,7 @@ export const ImageUploader = forwardRef<
 
         <button
           type="button"
-          onClick={() => handleOpenGallery()}
+          onClick={handleOpenGallery}
           className="h-full hover:bg-primary-subtle rounded-xl transition-colors font-medium"
         >
           Galería
@@ -231,7 +145,7 @@ export const ImageUploader = forwardRef<
       </dialog>
 
       <dialog
-        ref={deleteImageDialogRef}
+        ref={deleteDialogRef}
         className="max-w-xl top-1/3 py-8 px-8 bg-surface-raised rounded-2xl"
       >
         <div className="flex flex-col gap-8">
@@ -243,14 +157,14 @@ export const ImageUploader = forwardRef<
             <button
               className={buttonVariants({ variant: 'primary' })}
               type="button"
-              onClick={handleConfirmDeleteImage}
+              onClick={handleConfirmDelete}
             >
               Confirmar
             </button>
 
             <button
               type="button"
-              onClick={closeConfirmDeleteImageDialog}
+              onClick={closeConfirmDelete}
               className={buttonVariants({ variant: 'secondary' })}
             >
               Cancelar
@@ -260,4 +174,4 @@ export const ImageUploader = forwardRef<
       </dialog>
     </div>
   )
-})
+}

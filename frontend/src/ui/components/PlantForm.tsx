@@ -1,47 +1,15 @@
-import {
-  useTransition,
-  useState,
-  useMemo,
-  useRef,
-  useEffect,
-  type ChangeEventHandler,
-  type SubmitEvent,
-} from 'react'
+import { useTransition, useState, useMemo, type SubmitEvent } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
-import { cva } from 'class-variance-authority'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { cn } from '@sglara/cn'
 import { useUpsertPlant, useDeletePlant } from '@/api/plants'
 import { useSpecies } from '@/api/species'
-import { useImageUploads } from '@/api/uploads'
 import { useImageSource } from '@/hooks/use-image-source'
-import useDialog from '@/hooks/use-dialog'
+import { ImageSourceDialog } from '@/ui/components/ImageSourceDialog'
+import { useImageManager } from '@/hooks/use-image-manager'
 import type { PlantWithSpecies } from '@/domain/plants/plant'
 import DateUtils from '@/utils/dates'
-
-const inputVariants = cva(
-  [
-    'transition-all',
-    'duration-200',
-    'border',
-    'border-neutral-subtle/60',
-    'rounded-lg',
-    'min-w-0',
-    'w-full',
-    'p-2.5',
-    'bg-surface-raised',
-    'text-neutral-dark',
-    'placeholder:text-neutral-default',
-    'focus:outline-none',
-    'focus:border-primary-strong',
-    'focus:ring-2',
-    'focus:ring-primary-subtle',
-    'hover:border-neutral-default',
-  ],
-  {
-    variants: {},
-  }
-)
+import { inputVariants } from '@/ui/classVariants/input'
 
 export type PlantFormProps =
   | {
@@ -55,36 +23,27 @@ export type PlantFormProps =
 
 export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }: PlantFormProps) {
   const [isPending, startTransition] = useTransition()
-  const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { data: plantSpecies } = useSpecies()
   const upsertPlant = useUpsertPlant(plant?.id)
   const deletePlant = useDeletePlant()
-  const { uploadImage, deleteImage } = useImageUploads()
-  const { fileInputRef, selectImage, SourceDialog } = useImageSource()
+  const { fileInputRef, selectImage, sourceSelectorDialogRef } = useImageSource()
 
-  const [imagePaths, setImagePaths] = useState<string[]>(
-    plant?.images.map(({ filepath }) => filepath) ?? []
-  )
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [deletedPaths, setDeletedPaths] = useState<string[]>([])
-
-  const deleteImageDialogRef = useRef<HTMLDialogElement>(null)
-  const { show: showConfirmDeleteImageDialog, close: closeConfirmDeleteImageDialog } = useDialog({
-    dialogRef: deleteImageDialogRef,
+  const {
+    imagePaths,
+    previewUrls,
+    allowUploads,
+    handleImageUpload,
+    handleRequestDelete,
+    handleConfirmDelete,
+    commitDeletions,
+    closeConfirmDelete,
+    deleteDialogRef,
+    isUploading,
+  } = useImageManager({
+    defaultImagePaths: plant?.images.map(({ filepath }) => filepath),
   })
-
-  const deleteTargetImagePath = useRef('')
-
-  const maxImages = 3
-  const imagesCount = imagePaths.length + previewUrls.length
-  const allowUploads = imagesCount < maxImages
-
-  useEffect(() => {
-    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const ownedSpecies = useMemo(() => {
     if (!plantSpecies) return []
@@ -117,12 +76,7 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
           images: fd.getAll('images').map((entry) => entry.toString()),
         })
 
-        const results = await Promise.all(deletedPaths.map((path) => deleteImage(path)))
-        const errors = results.filter((r) => r.error)
-        if (errors.length !== 0) {
-          alert('Error al eliminar una o más imágenes')
-        }
-        setDeletedPaths([])
+        await commitDeletions()
 
         if (result?.id) {
           navigate({
@@ -134,47 +88,6 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
         setError(err instanceof Error ? err.message : 'Error inesperado')
       }
     })
-  }
-
-  const handleImageUpload: ChangeEventHandler<HTMLInputElement> = async (ev) => {
-    if (!allowUploads || !ev.currentTarget.files) return
-
-    const files: File[] = [...ev.currentTarget.files].splice(0, maxImages - imagesCount)
-
-    setPreviewUrls(files.map((f) => URL.createObjectURL(f)))
-    setIsUploading(true)
-
-    const ress = await Promise.all(
-      files.map(async (file, fileIndex) => {
-        const { filepath, error } = await uploadImage(file)
-        if (error) return { error }
-
-        setImagePaths((state) => [...state, filepath])
-
-        const previewUrl = previewUrls[fileIndex]
-        URL.revokeObjectURL(previewUrl)
-        setPreviewUrls((state) => state.filter((blob) => blob !== previewUrl))
-      })
-    )
-
-    const errors = ress.filter((r) => r && r.error)
-    if (errors.length !== 0) {
-      alert('Error al subir una o más imágenes')
-    }
-
-    setIsUploading(false)
-  }
-
-  const handleRequestDeleteImage = (imagePath: string) => {
-    deleteTargetImagePath.current = imagePath
-    showConfirmDeleteImageDialog()
-  }
-
-  const handleConfirmDeleteImage = () => {
-    setDeletedPaths((state) => [...state, deleteTargetImagePath.current])
-    setImagePaths(imagePaths.filter((path) => path !== deleteTargetImagePath.current))
-    deleteTargetImagePath.current = ''
-    closeConfirmDeleteImageDialog()
   }
 
   function handleDelete() {
@@ -283,7 +196,7 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
                 <button
                   type="button"
                   className="h-full w-full"
-                  onClick={() => handleRequestDeleteImage(url)}
+                  onClick={() => handleRequestDelete(url)}
                 >
                   <img src={url} alt="image" className="object-cover w-full h-full" />
                   <input name="images" value={url} type="hidden" />
@@ -405,10 +318,14 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
         </div>
       )}
 
-      {SourceDialog}
+      <ImageSourceDialog
+        dialogRef={sourceSelectorDialogRef}
+        onSelectCapture={() => selectImage('environment')}
+        onSelectGallery={() => selectImage(null)}
+      />
 
       <dialog
-        ref={deleteImageDialogRef}
+        ref={deleteDialogRef}
         className="max-w-xl top-1/3 py-8 px-8 bg-surface-raised rounded-2xl"
       >
         <div className="flex flex-col gap-8">
@@ -420,14 +337,14 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
             <button
               className={buttonVariants({ variant: 'primary' })}
               type="button"
-              onClick={handleConfirmDeleteImage}
+              onClick={handleConfirmDelete}
             >
               Confirmar
             </button>
 
             <button
               type="button"
-              onClick={closeConfirmDeleteImageDialog}
+              onClick={closeConfirmDelete}
               className={buttonVariants({ variant: 'secondary' })}
             >
               Cancelar

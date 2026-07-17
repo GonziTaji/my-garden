@@ -1,35 +1,13 @@
-package plant
-
-import (
-	"database/sql"
-	"encoding/json"
-)
+package plantspecies
 
 type NullString struct {
-	sql.NullString
-}
-
-func (ns NullString) MarshalJSON() ([]byte, error) {
-	if !ns.Valid {
-		return []byte("null"), nil
-	}
-	return json.Marshal(ns.String)
-}
-
-func (ns *NullString) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
-		ns.Valid = false
-		return nil
-	}
-	ns.Valid = true
-	return json.Unmarshal(data, &ns.String)
+	String string
+	Valid  bool
 }
 
 func NewNullString(s string) NullString {
-	return NullString{sql.NullString{String: s, Valid: s != ""}}
+	return NullString{String: s, Valid: s != ""}
 }
-
-// Enums
 
 type WaterProfile string
 
@@ -45,6 +23,7 @@ type LightLevel string
 const (
 	LightLevelLow            LightLevel = "low"
 	LightLevelIndirect       LightLevel = "indirect"
+	LightLevelSemishadow     LightLevel = "semishadow"
 	LightLevelBrightIndirect LightLevel = "bright_indirect"
 	LightLevelDirect         LightLevel = "direct"
 )
@@ -78,18 +57,6 @@ const (
 	PetToxicityHighlyToxic  PetToxicity = "highly_toxic"
 )
 
-type EventType string
-
-const (
-	EventTypeWatering      EventType = "watering"
-	EventTypeFertilizing   EventType = "fertilizing"
-	EventTypeRepotting     EventType = "repotting"
-	EventTypeNote          EventType = "note"
-	EventTypeLocationChange EventType = "location_change"
-)
-
-// Entities
-
 type PlantSpecies struct {
 	ID               int64                `json:"id"`
 	CommonName       string               `json:"common_name"`
@@ -101,7 +68,7 @@ type PlantSpecies struct {
 	PetToxicityNotes string               `json:"pet_toxicity_notes"`
 	CategoriesJSON   string               `json:"categories_json"`
 	Notes            string               `json:"notes"`
-	UserID           int64                `json:"user_id"`
+	UserID           *int64               `json:"user_id"`
 	Visibility       string               `json:"visibility"`
 	AuthorUsername   string               `json:"author_username"`
 	Images           []PlantSpeciesImage  `json:"images"`
@@ -120,77 +87,6 @@ type PlantSpeciesImage struct {
 	Position       int    `json:"position"`
 }
 
-type Plant struct {
-	ID            int64      `json:"id"`
-	Nickname      string     `json:"nickname"`
-	Source        NullString `json:"source"`
-	PlantSpeciesID int64      `json:"plant_species_id"`
-	AcquiredAt    NullString `json:"acquired_at"`
-	Notes         NullString `json:"notes"`
-	UserID        int64      `json:"user_id"`
-	CreatedAt     string     `json:"created_at"`
-	UpdatedAt     string     `json:"updated_at"`
-}
-
-type PlantSpeciesBrief struct {
-	ID             int64   `json:"id"`
-	CommonName     string  `json:"common_name"`
-	ScientificName string  `json:"scientific_name"`
-	UserID         int64   `json:"user_id"`
-	Visibility     string  `json:"visibility"`
-	DeletedAt      *string `json:"deleted_at,omitempty"`
-}
-
-type PlantImage struct {
-	ID        int64  `json:"id"`
-	PlantID   int64  `json:"plant_id"`
-	Filepath  string `json:"filepath"`
-	CreatedAt string `json:"created_at"`
-	UserID    int64  `json:"user_id"`
-}
-
-type PlantWithSpecies struct {
-	ID            int64              `json:"id"`
-	Nickname      string             `json:"nickname"`
-	Source        NullString         `json:"source"`
-	AcquiredAt    NullString         `json:"acquired_at"`
-	Location      NullString         `json:"location"`
-	Notes         NullString         `json:"notes"`
-	PlantSpecies  PlantSpeciesBrief  `json:"plant_species"`
-	Images        []PlantImage       `json:"images"`
-	CreatedAt     string             `json:"created_at"`
-	UpdatedAt     string             `json:"updated_at"`
-}
-
-type WateringMetadata struct {
-	Amount string `json:"amount,omitempty"`
-	Type   string `json:"type,omitempty"`
-}
-
-type LocationChangeMetadata struct {
-	Location string `json:"location"`
-}
-
-type PlantEvent struct {
-	ID        int64           `json:"id"`
-	PlantID   int64           `json:"plant_id"`
-	EventType EventType       `json:"event_type"`
-	EventDate string          `json:"event_date"`
-	Notes     string          `json:"notes"`
-	Metadata  json.RawMessage `json:"metadata"`
-	Images    []string        `json:"images"`
-	CreatedAt string          `json:"created_at"`
-	UserID    int64           `json:"user_id"`
-}
-
-type CalendarEntry struct {
-	ID        string    `json:"id"`
-	Date      string    `json:"date"`
-	EventType EventType `json:"eventType"`
-}
-
-// Enum metadata for client consumption
-
 type EnumOption struct {
 	Key   string `json:"key"`
 	Label string `json:"label"`
@@ -206,6 +102,7 @@ var WaterProfiles = []EnumOption{
 var LightLevels = []EnumOption{
 	{"low", "Poca luz"},
 	{"indirect", "Luz indirecta"},
+	{"semishadow", "Semi sombra"},
 	{"bright_indirect", "Luz brillante indirecta"},
 	{"direct", "Sol directo"},
 }
@@ -233,21 +130,12 @@ var PetToxicities = []EnumOption{
 	{"highly_toxic", "Muy tóxico"},
 }
 
-var EventTypes = []EnumOption{
-	{"watering", "Watering"},
-	{"fertilizing", "Fertilizing"},
-	{"repotting", "Repotting"},
-	{"note", "Note"},
-	{"location_change", "Location change"},
-}
-
 func AllEnums() map[string][]EnumOption {
 	return map[string][]EnumOption{
-		"water_profiles":      WaterProfiles,
-		"light_levels":        LightLevels,
-		"soil_types":          SoilTypes,
-		"categories":          PlantCategories,
-		"pet_toxicities":      PetToxicities,
-		"event_types": EventTypes,
+		"water_profiles": WaterProfiles,
+		"light_levels":   LightLevels,
+		"soil_types":     SoilTypes,
+		"categories":     PlantCategories,
+		"pet_toxicities": PetToxicities,
 	}
 }

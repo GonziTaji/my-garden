@@ -141,7 +141,7 @@ func Watch() {
 
 	excludedDirs := []string{"databases"}
 
-	for _, dir := range []string{"./internal", "./domain"} {
+	for _, dir := range []string{"./internal", "./cmd"} {
 		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err

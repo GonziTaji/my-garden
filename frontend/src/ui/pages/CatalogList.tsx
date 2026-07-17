@@ -4,6 +4,7 @@ import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { useAuth } from '@/auth/AuthContext'
 import { cn } from '@sglara/cn'
+import { QueryState } from '@/ui/components/QueryState'
 
 type Tab = 'mine' | 'favorites' | 'linked' | 'all'
 
@@ -24,20 +25,8 @@ export default function CatalogList() {
       ]
     : [{ key: 'all', label: 'Todas' }]
 
-  if (isLoading)
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-neutral-strong">Cargando...</p>
-      </div>
-    )
-  if (error)
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-danger-strong">Error al cargar el catálogo</p>
-      </div>
-    )
-
   return (
+    <QueryState isLoading={isLoading} error={error}>
     <div>
       <div className="flex justify-between items-center px-4 pt-5 pb-1">
         <h2 className="text-2xl font-bold text-neutral-dark">Catálogo de plantas</h2>
@@ -91,5 +80,6 @@ export default function CatalogList() {
         </p>
       )}
     </div>
+    </QueryState>
   )
 }

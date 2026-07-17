@@ -3,6 +3,7 @@ const DateUtils = {
   getMonthDays,
   toDisplayDate,
   toMonthInputValue,
+  formatRelativeDate,
 }
 
 export default DateUtils
@@ -72,4 +73,17 @@ function toMonthInputValue(monthIndex: number, year: number) {
   }
 
   return `${year}-${month}`
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Hoy'
+  if (diffDays === 1) return 'Ayer'
+  if (diffDays < 7) return `Hace ${diffDays} días`
+
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
