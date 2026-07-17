@@ -1,5 +1,5 @@
 SMTP_PASS := $(shell cat ~/.secrets/mygarden-google-secret | tr -d ' \n')
-SESSION_SECRET := $(shell cat ~/.secrets/mygarden-google-secret | tr -d ' \n')
+SESSION_SECRET := $(shell cat ~/.secrets/mygarden-session-secret | tr -d ' \n')
 
 export MY_GARDEN_SMTP_HOST := smtp.gmail.com
 export MY_GARDEN_SMTP_PORT := 587

@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"io/fs"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -164,26 +166,37 @@ func (g *AppRouter) mountStaticFiles() {
 }
 
 func (g *AppRouter) mountFrontend() {
-	assetsFs, err := fs.Sub(g.webapp_fs, "assets")
-	if err != nil {
-		log.Fatal(err)
-	}
-	g.router.StaticFS("/assets", http.FS(assetsFs))
-	g.router.StaticFileFS("/favicon.svg", "favicon.svg", http.FS(g.webapp_fs))
-	g.router.StaticFileFS("/icons.svg", "icons.svg", http.FS(g.webapp_fs))
-
 	g.router.NoRoute(func(ctx *gin.Context) {
-		if strings.HasPrefix(ctx.Request.URL.Path, "/api/") {
+		path := ctx.Request.URL.Path
+
+		if strings.HasPrefix(path, "/api/") {
 			ctx.Status(http.StatusNotFound)
 			return
 		}
 
-		data, err := fs.ReadFile(g.webapp_fs, "index.html")
+		filePath := strings.TrimPrefix(path, "/my-garden")
+		filePath = strings.TrimPrefix(filePath, "/")
+		if filePath == "" {
+			filePath = "index.html"
+		}
+
+		data, err := fs.ReadFile(g.webapp_fs, filePath)
 		if err != nil {
-			ctx.Status(http.StatusNotFound)
+			data, err = fs.ReadFile(g.webapp_fs, "index.html")
+			if err != nil {
+				ctx.Status(http.StatusNotFound)
+				return
+			}
+			ctx.Data(http.StatusOK, "text/html; charset=utf-8", data)
 			return
 		}
-		ctx.Data(http.StatusOK, "text/html; charset=utf-8", data)
+
+		ext := filepath.Ext(filePath)
+		mimeType := mime.TypeByExtension(ext)
+		if mimeType == "" {
+			mimeType = "application/octet-stream"
+		}
+		ctx.Data(http.StatusOK, mimeType, data)
 	})
 }
 

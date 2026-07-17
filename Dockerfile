@@ -1,4 +1,5 @@
 FROM node:24-alpine AS frontend
+ENV CI=true
 WORKDIR /app
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
