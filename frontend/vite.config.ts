@@ -13,8 +13,14 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/uploads': 'http://localhost:8080',
+      '/my-garden/api': {
+        target: 'http://localhost:8080',
+        rewrite: (path) => path.replace(/^\/my-garden/, ''),
+      },
+      '/my-garden/uploads': {
+        target: 'http://localhost:8080',
+        rewrite: (path) => path.replace(/^\/my-garden/, ''),
+      },
     },
   },
 })
