@@ -174,8 +174,7 @@ func (g *AppRouter) mountFrontend() {
 			return
 		}
 
-		filePath := strings.TrimPrefix(path, "/my-garden")
-		filePath = strings.TrimPrefix(filePath, "/")
+		filePath := strings.TrimPrefix(path, "/")
 		if filePath == "" {
 			filePath = "index.html"
 		}

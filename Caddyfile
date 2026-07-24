@@ -1,0 +1,7 @@
+my-garden.yogurtdemora.com {
+    reverse_proxy my-garden:3300
+}
+
+yogurtdemora.com/my-garden/* {
+    redir https://my-garden.yogurtdemora.com/{uri} permanent
+}

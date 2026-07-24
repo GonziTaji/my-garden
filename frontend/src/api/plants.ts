@@ -37,7 +37,7 @@ export async function addPlantImage(
   return {
     id: data.id,
     plantId: data.plant_id,
-    filepath: base + data.filepath,
+    filepath: data.filepath,
     createdAt: data.created_at,
   }
 }

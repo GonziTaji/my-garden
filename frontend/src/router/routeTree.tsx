@@ -149,7 +149,7 @@ const routeTree = rootRoute.addChildren([
   notFoundRoute,
 ])
 
-export const router = createRouter({ routeTree, basepath: '/my-garden' })
+export const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
   interface Register {

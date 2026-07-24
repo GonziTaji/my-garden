@@ -7,8 +7,6 @@ class ApiError extends Error {
   }
 }
 
-const base = import.meta.env.BASE_URL
-
 async function request<T>(
   method: string,
   path: string,
@@ -23,7 +21,7 @@ async function request<T>(
     opts.body = JSON.stringify(body)
   }
 
-  const res = await fetch(base + path, opts)
+  const res = await fetch(path, opts)
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
@@ -35,7 +33,7 @@ async function request<T>(
 }
 
 async function upload(path: string, formData: FormData): Promise<Response> {
-  const res = await fetch(base + path, {
+  const res = await fetch(path, {
     method: 'POST',
     body: formData,
     credentials: 'include',

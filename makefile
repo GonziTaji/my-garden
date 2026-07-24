@@ -27,4 +27,4 @@ build:
 	MY_GARDEN_ENV=prod go build -o my-garden .
 
 prod:
-	MY_GARDEN_ENV=prod MY_GARDEN_ORIGIN=179.2.50.11/my-garden go run .
+	MY_GARDEN_ENV=prod MY_GARDEN_ORIGIN=https://my-garden.yogurtdemora.com go run .

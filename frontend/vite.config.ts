@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/my-garden',
   plugins: [
     react(),
     tailwindcss(),
@@ -13,14 +12,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/my-garden/api': {
-        target: 'http://localhost:8080',
-        rewrite: (path) => path.replace(/^\/my-garden/, ''),
-      },
-      '/my-garden/uploads': {
-        target: 'http://localhost:8080',
-        rewrite: (path) => path.replace(/^\/my-garden/, ''),
-      },
+      '/api': 'http://localhost:8080',
+      '/uploads': 'http://localhost:8080',
     },
   },
 })

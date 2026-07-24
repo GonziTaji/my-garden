@@ -1,15 +1,27 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - my-garden
+    restart: unless-stopped
+
   my-garden:
     build: .
+    env_file: .env
     ports:
       - "3300:3300"
-    env_file: .env
     environment:
       MY_GARDEN_ENV: prod
       MY_GARDEN_ADDR: ":3300"
       MY_GARDEN_DB: /app/data/main.db
       MY_GARDEN_FRONTEND_FOLDER: frontend/dist
-      MY_GARDEN_ORIGIN: http://localhost:8080
+      MY_GARDEN_ORIGIN: https://my-garden.yogurtdemora.com
     volumes:
       - my-garden-data:/app/data
       - uploads:/app/public/uploads
@@ -18,3 +30,4 @@ services:
 volumes:
   my-garden-data:
   uploads:
+  caddy_data:
