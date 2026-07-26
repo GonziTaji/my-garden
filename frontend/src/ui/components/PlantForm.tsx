@@ -1,12 +1,10 @@
-import { useTransition, useState, useMemo, type SubmitEvent } from 'react'
+import { useTransition, useState, useMemo, useRef, type SubmitEvent } from 'react'
 import { buttonVariants } from '@/ui/classVariants/button'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { cn } from '@sglara/cn'
 import { useUpsertPlant, useDeletePlant } from '@/api/plants'
 import { useSpecies } from '@/api/species'
-import { useImageSource } from '@/hooks/use-image-source'
-import { ImageSourceDialog } from '@/ui/components/ImageSourceDialog'
-import { useImageManager } from '@/hooks/use-image-manager'
+import { ImageManagerField, type ImageManagerHandle } from '@/ui/components/ImageManagerField'
 import type { PlantWithSpecies } from '@/domain/plants/plant'
 import DateUtils from '@/utils/dates'
 import { inputVariants } from '@/ui/classVariants/input'
@@ -28,22 +26,8 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
   const { data: plantSpecies } = useSpecies()
   const upsertPlant = useUpsertPlant(plant?.id)
   const deletePlant = useDeletePlant()
-  const { fileInputRef, selectImage, sourceSelectorDialogRef } = useImageSource()
-
-  const {
-    imagePaths,
-    previewUrls,
-    allowUploads,
-    handleImageUpload,
-    handleRequestDelete,
-    handleConfirmDelete,
-    commitDeletions,
-    closeConfirmDelete,
-    deleteDialogRef,
-    isUploading,
-  } = useImageManager({
-    defaultImagePaths: plant?.images.map(({ filepath }) => filepath),
-  })
+  const imageManagerRef = useRef<ImageManagerHandle>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const ownedSpecies = useMemo(() => {
     if (!plantSpecies) return []
@@ -76,7 +60,7 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
           images: fd.getAll('images').map((entry) => entry.toString()),
         })
 
-        await commitDeletions()
+        await imageManagerRef.current?.commitDeletions()
 
         if (result?.id) {
           navigate({
@@ -153,58 +137,12 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
       </fieldset>
 
       <fieldset className="grid gap-6 overflow-auto">
-        <div className="flex gap-4">
-          {allowUploads && (
-            <>
-              <button
-                type="button"
-                onClick={() => selectImage(null)}
-                className="aspect-3/4 h-48 border-2 border-dashed border-primary-default/60 rounded-xl flex items-center justify-center text-neutral-strong hover:border-primary-strong hover:bg-primary-light/50 transition-all duration-200 disabled:opacity-10"
-              >
-                <span className="text-center text-sm">Seleccionar imagen</span>
-              </button>
-
-              <input
-                onChange={handleImageUpload}
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-              />
-            </>
-          )}
-
-          {[...previewUrls, ...imagePaths].map((url) => (
-            <div
-              key={url}
-              className="aspect-3/4 h-48 border border-neutral-subtle/30 rounded-xl overflow-hidden"
-            >
-              {url.startsWith('blob') ? (
-                <div className="h-full w-full grid grid-cols-1 grid-rows-1">
-                  <img src={url} alt="image" className="col-1 row-1 object-cover" />
-                  <span
-                    className={cn(
-                      'text-white bg-neutral-dark/60 h-full w-full font-semibold text-center content-center',
-                      'col-1 row-1 text-sm self-center justify-self-center backdrop-blur-sm'
-                    )}
-                  >
-                    Cargando
-                  </span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="h-full w-full"
-                  onClick={() => handleRequestDelete(url)}
-                >
-                  <img src={url} alt="image" className="object-cover w-full h-full" />
-                  <input name="images" value={url} type="hidden" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <ImageManagerField
+          ref={imageManagerRef}
+          defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
+          imageInputName="images"
+          onIsUploadingChange={setIsUploading}
+        />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="nickname" className="text-sm font-medium text-neutral-strong">
@@ -236,7 +174,6 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
             placeholder="Regalo, compra, etc."
             minLength={1}
             disabled={isPending}
-            required
           />
         </div>
 
@@ -318,40 +255,6 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
         </div>
       )}
 
-      <ImageSourceDialog
-        dialogRef={sourceSelectorDialogRef}
-        onSelectCapture={() => selectImage('environment')}
-        onSelectGallery={() => selectImage(null)}
-      />
-
-      <dialog
-        ref={deleteDialogRef}
-        className="max-w-xl top-1/3 py-8 px-8 bg-surface-raised rounded-2xl"
-      >
-        <div className="flex flex-col gap-8">
-          <span className="text-xl text-center font-medium text-neutral-dark">
-            ¿Quieres eliminar esta foto?
-          </span>
-
-          <div className="flex gap-6 justify-center">
-            <button
-              className={buttonVariants({ variant: 'primary' })}
-              type="button"
-              onClick={handleConfirmDelete}
-            >
-              Confirmar
-            </button>
-
-            <button
-              type="button"
-              onClick={closeConfirmDelete}
-              className={buttonVariants({ variant: 'secondary' })}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </dialog>
     </form>
   )
 }

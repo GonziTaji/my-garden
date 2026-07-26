@@ -1,42 +1,34 @@
 import { useNavigate } from '@tanstack/react-router'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
 import { useCreateSpecies, useUpdateSpecies } from '@/api/species'
-import { useImageUploads } from '@/api/uploads'
-import { useTransition } from 'react'
+import { useTransition, type FormEvent } from 'react'
 
 interface UseSpeciesSubmitParams {
   record: PlantSpecies
   fromPlantForm?: boolean
+  imagePaths: string[]
+  commitDeletions: () => Promise<void>
 }
 
-export function useSpeciesSubmit({ record, fromPlantForm }: UseSpeciesSubmitParams) {
+export function useSpeciesSubmit({ record, fromPlantForm, imagePaths, commitDeletions }: UseSpeciesSubmitParams) {
   const navigate = useNavigate()
   const createSpecies = useCreateSpecies()
   const updateSpecies = useUpdateSpecies()
-  const { uploadImage } = useImageUploads()
   const [isPending, startTransition] = useTransition()
 
-  const submitAction = async (fd: FormData) => {
+  const submitHandler = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (isPending) return
+
+    const fd = new FormData(e.currentTarget)
+
     startTransition(async () => {
       try {
-        const images: { filepath: string; position: number }[] = []
-
-        for (let pos = 0; pos < 3; pos++) {
-          const fileInput = fd.get(`imagesFile_${pos}`)
-          if (fileInput instanceof File && fileInput.size > 0) {
-            try {
-              const filepath = await uploadImage(fileInput)
-              images.push({ filepath, position: pos })
-            } catch {
-              throw new Error('Error al subir imagen')
-            }
-          } else {
-            const existingPath = fd.get(`imagesExistingId_${pos}`)
-            if (existingPath) {
-              images.push({ filepath: String(existingPath), position: pos })
-            }
-          }
-        }
+        const images = imagePaths.map((filepath, index) => ({
+          filepath,
+          position: index,
+        }))
 
         const categories = fd.getAll('categories') as string[]
 
@@ -65,6 +57,8 @@ export function useSpeciesSubmit({ record, fromPlantForm }: UseSpeciesSubmitPara
           result = await createSpecies.mutateAsync(payload)
         }
 
+        await commitDeletions()
+
         if (fromPlantForm) {
           navigate({
             to: '/plants/new',
@@ -82,5 +76,5 @@ export function useSpeciesSubmit({ record, fromPlantForm }: UseSpeciesSubmitPara
     })
   }
 
-  return { submitAction, isPending }
+  return { submitHandler, isPending }
 }

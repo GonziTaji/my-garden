@@ -1,9 +1,9 @@
-import { ImageSelector } from './ImageSelector'
 import { DetailChecklist } from './DetailChecklist'
 import DetailListItem from './DetailListItem'
 import { SpeciesHeader } from './SpeciesHeader'
 import { SpeciesPlantLinks } from './SpeciesPlantLinks'
 import { useSpeciesSubmit } from '@/hooks/use-species-submit'
+import { ImageManagerField, type ImageManagerHandle } from '@/ui/components/ImageManagerField'
 import { cn } from '@sglara/cn'
 import { plantCategory } from '@/domain/plants/category/plant-category'
 import { lightLevel } from '@/domain/plants/light/light-level'
@@ -15,7 +15,7 @@ import { buttonVariants } from '@/ui/classVariants/button'
 import { useDeleteSpecies } from '@/api/species'
 import { inputVariants } from '../classVariants/input'
 import { useAuth } from '@/auth/AuthContext'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 interface SpeciesViewProps {
@@ -32,7 +32,18 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
   const deleteSpecies = useDeleteSpecies()
   const [favorited, setFavorited] = useState(record.isFavorited || false)
 
-  const { submitAction, isPending: isSubmitting } = useSpeciesSubmit({ record, fromPlantForm })
+  const imageManagerRef = useRef<ImageManagerHandle>(null)
+  const [imagePaths, setImagePaths] = useState<string[]>(
+    record.images.map(({ filepath }) => filepath)
+  )
+  const [isUploading, setIsUploading] = useState(false)
+
+  const { submitHandler, isPending: isSubmitting } = useSpeciesSubmit({
+    record,
+    fromPlantForm,
+    imagePaths,
+    commitDeletions: () => imageManagerRef.current?.commitDeletions() ?? Promise.resolve(),
+  })
 
   const categoriesOptions = useMemo(
     () =>
@@ -101,7 +112,7 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
   return (
     <div className="mx-4 my-4">
       <form
-        action={submitAction}
+        onSubmit={submitHandler}
         className="p-6 overflow-auto bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30"
       >
         {isDeleted && (
@@ -114,7 +125,7 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
         <div className="pb-6">
           <SpeciesHeader
             editMode={editMode}
-            isPending={isPending || isSubmitting}
+            isPending={isPending || isSubmitting || isUploading}
             isDeleted={isDeleted}
             record={record}
             user={user}
@@ -148,26 +159,14 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
           </div>
 
           <div className="mt-4">
-            {editMode ? (
-              <div className="grid gap-3 grid-cols-3">
-                {[0, 1, 2].map((n) => (
-                  <ImageSelector image={record.images[n]} key={n} position={n} />
-                ))}
-              </div>
-            ) : (
-              <div className="grid gap-3 grid-cols-3">
-                {record.images.map((image) => (
-                  <img
-                    width="200"
-                    height="200"
-                    key={image.id}
-                    className="h-32 w-full object-cover border border-neutral-subtle/30 rounded-xl"
-                    src={image.filepath}
-                    alt="Imagen de planta"
-                  />
-                ))}
-              </div>
-            )}
+            <ImageManagerField
+              ref={imageManagerRef}
+              defaultImagePaths={record.images.map(({ filepath }) => filepath)}
+              maxImages={3}
+              readOnly={!editMode}
+              onIsUploadingChange={setIsUploading}
+              onImagePathsChange={setImagePaths}
+            />
           </div>
 
           {!editMode && user && record.id && (
@@ -279,6 +278,7 @@ export default function SpeciesView({ record, editMode, fromPlantForm }: Species
             )}
           </dl>
         </div>
+
       </form>
     </div>
   )

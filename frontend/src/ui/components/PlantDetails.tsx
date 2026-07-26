@@ -1,10 +1,9 @@
 import type { PlantWithSpecies } from '@/domain/plants/plant'
-import { useState, type ChangeEventHandler } from 'react'
+import { useState } from 'react'
 import { buttonVariants } from '../classVariants/button'
 import { inputVariants } from '../classVariants/input'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useImageManager } from '@/hooks/use-image-manager'
-import { PlantImageGallery } from './PlantImageGallery'
+import { ImageManagerField } from '@/ui/components/ImageManagerField'
 import { LocationChangeDialog } from './LocationChangeDialog'
 
 interface PlantDetailProps {
@@ -14,33 +13,7 @@ interface PlantDetailProps {
 export default function PlantDetails({ plant }: PlantDetailProps) {
   const [editingField, setEditingField] = useState<'nickname' | 'acquiredAt' | 'notes' | null>(null)
   const [editingImages, setEditingImages] = useState(false)
-
-  const {
-    imagePaths,
-    handleRequestDelete,
-    handleConfirmDelete,
-    closeConfirmDelete,
-    deleteDialogRef,
-    handleImageUpload,
-    isUploading,
-  } = useImageManager({
-    defaultImagePaths: plant.images.map(({ filepath }) => filepath),
-  })
-
   const navigate = useNavigate()
-
-  const handleUpload: ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.currentTarget.files?.item(0)
-    if (file) {
-      const dt = new DataTransfer()
-      dt.items.add(file)
-      const syntheticEvent = {
-        currentTarget: { files: dt.files },
-      } as React.ChangeEvent<HTMLInputElement>
-      handleImageUpload(syntheticEvent)
-    }
-    e.currentTarget.value = ''
-  }
 
   return (
     <section className="mx-4 my-4 p-6 flex flex-col gap-6 bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30">
@@ -119,14 +92,23 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
       <hr className="border-neutral-subtle/40" />
 
-      <PlantImageGallery
-        imagePaths={imagePaths}
-        editingImages={editingImages}
-        isUploading={isUploading}
-        onToggleEditing={() => setEditingImages(!editingImages)}
-        onRequestDelete={handleRequestDelete}
-        onUpload={handleUpload}
-      />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-neutral-strong">Imágenes</label>
+          <button
+            type="button"
+            className={buttonVariants({ variant: 'clean', size: 'sm' })}
+            onClick={() => setEditingImages(!editingImages)}
+          >
+            {editingImages ? 'Cancelar' : 'Editar'}
+          </button>
+        </div>
+
+        <ImageManagerField
+          defaultImagePaths={plant.images.map(({ filepath }) => filepath)}
+          readOnly={!editingImages}
+        />
+      </div>
 
       <div className="flex justify-end gap-4">
         <Link
@@ -139,35 +121,6 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       </div>
 
       <LocationChangeDialog plantId={plant.id} />
-
-      <dialog
-        ref={deleteDialogRef}
-        className="max-w-xl top-1/3 py-8 px-8 bg-surface-raised rounded-2xl"
-      >
-        <div className="flex flex-col gap-8">
-          <span className="text-xl text-center font-medium text-neutral-dark">
-            ¿Quieres eliminar esta foto?
-          </span>
-
-          <div className="flex gap-6 justify-center">
-            <button
-              className={buttonVariants({ variant: 'primary' })}
-              type="button"
-              onClick={handleConfirmDelete}
-            >
-              Confirmar
-            </button>
-
-            <button
-              type="button"
-              onClick={closeConfirmDelete}
-              className={buttonVariants({ variant: 'secondary' })}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </dialog>
     </section>
   )
 }
