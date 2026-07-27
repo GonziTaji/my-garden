@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"slices"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -17,6 +18,12 @@ func runMain(ctx context.Context) {
 	log.Println("executing!")
 
 	runCmd := exec.CommandContext(ctx, "go", "run", ".")
+	runCmd.Cancel = func() error {
+		if runCmd.Process == nil {
+			return nil
+		}
+		return runCmd.Process.Signal(syscall.SIGINT)
+	}
 
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr

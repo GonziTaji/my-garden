@@ -42,7 +42,7 @@ func (s *Service) RequestLogin(email string) (*SendLinkResult, error) {
 		return nil, fmt.Errorf("a token was already sent recently, please wait before requesting a new one")
 	}
 
-	rawToken, err := generateCode(8)
+	rawToken, err := generateCode(6)
 	if err != nil {
 		return nil, fmt.Errorf("generate code: %w", err)
 	}

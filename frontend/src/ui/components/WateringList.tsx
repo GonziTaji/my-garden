@@ -27,7 +27,7 @@ export default function WateringList() {
     startTransition(() => {
       toggleWatering.mutateAsync({
         plantId: plantid,
-        date: new Date().toLocaleDateString(),
+        date: DateUtils.toInputValue(new Date()),
       })
     })
   }
@@ -62,7 +62,9 @@ export default function WateringList() {
                 {p.images[0]?.filepath ? (
                   <img className="h-full w-20 object-cover rounded-lg" src={p.images[0].filepath} />
                 ) : (
-                  <div className="h-full w-20 rounded-lg bg-primary-light flex items-center justify-center text-xs text-neutral-default">?</div>
+                  <div className="h-full w-20 rounded-lg bg-primary-light flex items-center justify-center text-xs text-neutral-default">
+                    ?
+                  </div>
                 )}
               </button>
 

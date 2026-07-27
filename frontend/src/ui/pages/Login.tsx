@@ -47,10 +47,10 @@ export default function Login() {
               inputMode="numeric"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              placeholder="Ej: 83924715"
+              placeholder="Ej: 839247"
               required
               autoFocus
-              maxLength={8}
+              maxLength={6}
               className="border border-neutral-subtle/60 rounded-xl p-3 text-center text-lg tracking-widest bg-surface-raised text-neutral-dark focus:outline-none focus:border-primary-strong focus:ring-2 focus:ring-primary-subtle transition-all"
             />
             {error && <p className="text-danger-strong text-sm text-center">{error}</p>}

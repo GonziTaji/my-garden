@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -28,7 +30,7 @@ type ServerConfig struct {
 	SMTPFrom       string
 }
 
-func StartWebServer(cfg ServerConfig) error {
+func StartWebServer(ctx context.Context, cfg ServerConfig) error {
 	db, err := database.GetDatabase()
 	if err != nil {
 		return fmt.Errorf("get database for server: %w", err)
@@ -52,9 +54,15 @@ func StartWebServer(cfg ServerConfig) error {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	defer s.Close()
+	go func() {
+		<-ctx.Done()
+		log.Println("Shutting down web server...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		s.Shutdown(shutdownCtx)
+	}()
 
-	if err := s.ListenAndServe(); err != nil {
+	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 

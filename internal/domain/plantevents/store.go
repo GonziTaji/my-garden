@@ -169,7 +169,6 @@ func (s *Store) GetLastEventDates(plantIDs []int64, eventType *string) (map[int6
 		from plants p
 		left join plant_events e on e.plant_id = p.id`
 	args := make([]any, 0, len(plantIDs)+1)
-	args = append(args, int64sToAny(plantIDs)...)
 
 	if eventType != nil {
 		query += ` and e.event_type = ?`
@@ -178,8 +177,9 @@ func (s *Store) GetLastEventDates(plantIDs []int64, eventType *string) (map[int6
 
 	query += ` where p.id in (` + placeholders(len(plantIDs)) + `)
 		group by p.id`
+	args = append(args, int64sToAny(plantIDs)...)
 
-	rows, err := s.db.Query(query, int64sToAny(plantIDs)...)
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("get last event dates: %w", err)
 	}

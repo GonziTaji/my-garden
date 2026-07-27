@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"log"
 	"my-garden/internal/database"
 	"my-garden/internal/server"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func Start() {
@@ -83,8 +86,11 @@ func Start() {
 		log.Fatalf("Error applying schema: %s", err)
 	}
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	log.Println("Starting web server...")
-	if err := server.StartWebServer(srvCfg); err != nil {
+	if err := server.StartWebServer(ctx, srvCfg); err != nil {
 		log.Fatalf("Error starting web server: %s", err)
 	}
 }
