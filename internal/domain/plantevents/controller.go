@@ -2,6 +2,7 @@ package plantevents
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -38,6 +39,7 @@ func (h *Handler) ListEvents(c *gin.Context) {
 	userID := userIDFromContext(c)
 	events, err := h.service.ListEvents(plantID, userID)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar eventos"})
 		return
 	}
@@ -63,14 +65,17 @@ func (h *Handler) CreateEvent(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
 		var uniqueErr *UniqueConstraintError
 		if errors.As(err, &uniqueErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusConflict, gin.H{"error": uniqueErr.Message, "field": uniqueErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear evento"})
 		return
 	}
@@ -90,9 +95,11 @@ func (h *Handler) GetEventHandler(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener evento"})
 		return
 	}
@@ -111,9 +118,11 @@ func (h *Handler) DeleteEvent(c *gin.Context) {
 	if err := h.service.DeleteEvent(eventID, userID); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar evento"})
 		return
 	}
@@ -133,6 +142,7 @@ func (h *Handler) GetCalendarEvents(c *gin.Context) {
 	userID := userIDFromContext(c)
 	entries, err := h.service.GetCalendarEvents(plantID, start, end, userID)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener calendario"})
 		return
 	}
@@ -150,6 +160,7 @@ func (h *Handler) GetEventsRange(c *gin.Context) {
 	userID := userIDFromContext(c)
 	events, err := h.service.GetEventsRange(input, userID)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener eventos"})
 		return
 	}
@@ -169,6 +180,7 @@ func (h *Handler) GetLastEventDates(c *gin.Context) {
 
 	dates, err := h.service.GetLastEventDates(input.PlantIDs, input.EventType)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener ultimas fechas"})
 		return
 	}

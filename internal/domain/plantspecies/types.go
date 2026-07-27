@@ -68,7 +68,7 @@ type PlantSpecies struct {
 	PetToxicityNotes string               `json:"pet_toxicity_notes"`
 	CategoriesJSON   string               `json:"categories_json"`
 	Notes            string               `json:"notes"`
-	UserID           *int64               `json:"user_id"`
+	UserID           int64                  `json:"user_id"`
 	Visibility       string               `json:"visibility"`
 	AuthorUsername   string               `json:"author_username"`
 	Images           []PlantSpeciesImage  `json:"images"`

@@ -2,6 +2,7 @@ package plants
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -42,6 +43,7 @@ func (h *Handler) ListPlants(c *gin.Context) {
 	userID := userIDFromContext(c)
 	plants, err := h.service.ListPlants(speciesID, userID)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al listar plantas"})
 		return
 	}
@@ -61,9 +63,11 @@ func (h *Handler) GetPlant(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener planta"})
 		return
 	}
@@ -83,9 +87,11 @@ func (h *Handler) CreatePlant(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear planta"})
 		return
 	}
@@ -111,9 +117,11 @@ func (h *Handler) UpdatePlant(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar planta"})
 		return
 	}
@@ -132,9 +140,11 @@ func (h *Handler) DeletePlant(c *gin.Context) {
 	if err := h.service.DeletePlant(id, userID); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar planta"})
 		return
 	}

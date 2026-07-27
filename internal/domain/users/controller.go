@@ -45,6 +45,7 @@ func (h *Handler) Verify(c *gin.Context) {
 
 	result, err := h.service.VerifyLogin(strings.ToUpper(req.Code))
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
@@ -72,6 +73,7 @@ func (h *Handler) Me(c *gin.Context) {
 
 	user, err := h.store.GetUserByID(uid)
 	if err != nil || user == nil {
+		log.Printf("Error: %s\n", err)
 		c.Status(http.StatusNoContent)
 		return
 	}

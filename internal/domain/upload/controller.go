@@ -3,6 +3,7 @@ package upload
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,9 +28,11 @@ func (h *Handler) UploadFile(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al subir imagen"})
 		return
 	}
@@ -47,10 +50,12 @@ func (h *Handler) DeleteUploadedFile(c *gin.Context) {
 	if err := h.service.DeleteFile(fp); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
 
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Error al eliminar archivo: %s", err.Error())})
 		return
 	}

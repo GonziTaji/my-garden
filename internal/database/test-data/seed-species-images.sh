@@ -3,9 +3,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-IMAGES_DIR="$SCRIPT_DIR/plant-species-images"
-UPLOADS_DIR="$PROJECT_ROOT/public/uploads"
-DB_PATH="$PROJECT_ROOT/internal/database/databases/main.db"
+
+DB_PATH="${DB_PATH:-$PROJECT_ROOT/internal/database/databases/main.db}"
+UPLOADS_DIR="${UPLOADS_DIR:-$PROJECT_ROOT/public/uploads}"
+IMAGES_DIR="${IMAGES_DIR:-$SCRIPT_DIR/plant-species-images}"
 
 if [ ! -d "$IMAGES_DIR" ]; then
   echo "Error: Images directory not found: $IMAGES_DIR"
@@ -18,6 +19,19 @@ if [ ! -f "$DB_PATH" ]; then
 fi
 
 mkdir -p "$UPLOADS_DIR"
+
+generate_uuid() {
+  if [ -f /proc/sys/kernel/random/uuid ]; then
+    cat /proc/sys/kernel/random/uuid
+  elif command -v uuidgen >/dev/null 2>&1; then
+    uuidgen | tr '[:upper:]' '[:lower:]'
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -c "import uuid; print(uuid.uuid4())"
+  else
+    echo "Error: No UUID generator available (need uuidgen, python3, or /proc/sys/kernel/random/uuid)" >&2
+    exit 1
+  fi
+}
 
 declare -A SPECIES_MAP
 SPECIES_MAP=(
@@ -87,7 +101,7 @@ for image_file in "$IMAGES_DIR"/*.webp "$IMAGES_DIR"/*.jpg; do
 
   ext="${filename##*.}"
   timestamp=$(date +%s%3N)
-  uuid=$(python3 -c "import uuid; print(uuid.uuid4())")
+  uuid=$(generate_uuid)
   new_filename="${timestamp}-${uuid}.${ext}"
   target_path="$UPLOADS_DIR/$new_filename"
 

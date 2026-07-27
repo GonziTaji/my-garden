@@ -2,14 +2,15 @@ package database
 
 import (
 	"database/sql"
-	_ "embed"
+	"embed"
 	"fmt"
 
+	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
 
-//go:embed schema.sql
-var schemaSQL string
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
 
 type ConnectionConfig struct {
 	DBName string
@@ -49,13 +50,15 @@ func ApplyMigrations() error {
 		return fmt.Errorf("No open database")
 	}
 
-	_, err := open_db.Exec(schemaSQL)
-	if err != nil {
-		return fmt.Errorf("apply schema: %w", err)
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return fmt.Errorf("set dialect: %w", err)
 	}
 
-	// Soft delete support for plant_species
-	open_db.Exec("ALTER TABLE plant_species ADD COLUMN deleted_at TEXT DEFAULT NULL")
+	if err := goose.Up(open_db, "migrations"); err != nil {
+		return fmt.Errorf("apply migrations: %w", err)
+	}
 
 	return nil
 }

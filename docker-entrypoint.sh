@@ -10,6 +10,10 @@ species_count=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM plant_species WHERE del
 if [ "$species_count" -eq 0 ] && [ -d "$SEED_DIR" ]; then
   echo "=== Empty database detected, seeding ==="
 
+  echo "Seeding initial users..."
+  sqlite3 "$DB_PATH" < "$SEED_DIR/users.sql"
+  echo "Done: plant species inserted"
+
   echo "Seeding plant species..."
   sqlite3 "$DB_PATH" < "$SEED_DIR/plant-species-popular.sql"
   echo "Done: plant species inserted"

@@ -78,7 +78,7 @@ func (s *Store) ListPlantSpecies(userID int64, scope string) ([]PlantSpecies, er
 		var isQuickInt int
 		var userPlantCount int
 		var isFavoritedInt int
-		var userID sql.NullInt64
+		var userID int64
 		err := rows.Scan(
 			&sp.ID,
 			&sp.CommonName,
@@ -103,9 +103,7 @@ func (s *Store) ListPlantSpecies(userID int64, scope string) ([]PlantSpecies, er
 		if err != nil {
 			return nil, fmt.Errorf("scan species: %w", err)
 		}
-		if userID.Valid {
-			sp.UserID = &userID.Int64
-		}
+		sp.UserID = userID
 		sp.IsQuick = isQuickInt == 1
 		sp.UserPlantCount = userPlantCount
 		sp.IsFavorited = isFavoritedInt == 1
@@ -182,7 +180,7 @@ func (s *Store) GetPlantSpecies(id int64, userID int64) (*PlantSpecies, error) {
 	var isQuickInt int
 	var userPlantCount int
 	var isFavoritedInt int
-	var nullUserID sql.NullInt64
+	var nullUserID int64
 	err := row.Scan(&sp.ID, &sp.CommonName, &sp.ScientificName, &sp.WaterProfile,
 		&sp.LightLevel, &sp.SoilType, &sp.PetToxicity, &sp.PetToxicityNotes,
 		&sp.CategoriesJSON, &sp.Notes, &nullUserID, &sp.Visibility,
@@ -195,9 +193,7 @@ func (s *Store) GetPlantSpecies(id int64, userID int64) (*PlantSpecies, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get species: %w", err)
 	}
-	if nullUserID.Valid {
-		sp.UserID = &nullUserID.Int64
-	}
+	sp.UserID = nullUserID
 	sp.IsQuick = isQuickInt == 1
 	sp.UserPlantCount = userPlantCount
 	sp.IsFavorited = isFavoritedInt == 1

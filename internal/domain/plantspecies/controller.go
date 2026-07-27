@@ -67,9 +67,11 @@ func (h *Handler) GetPlantSpecies(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener tipo de planta"})
 		return
 	}
@@ -89,14 +91,17 @@ func (h *Handler) CreatePlantSpecies(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
 		var uniqueErr *UniqueConstraintError
 		if errors.As(err, &uniqueErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusConflict, gin.H{"error": uniqueErr.Message, "field": uniqueErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear tipo de planta"})
 		return
 	}
@@ -122,14 +127,17 @@ func (h *Handler) UpdatePlantSpecies(c *gin.Context) {
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
 		var uniqueErr *UniqueConstraintError
 		if errors.As(err, &uniqueErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusConflict, gin.H{"error": uniqueErr.Message, "field": uniqueErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar tipo de planta"})
 		return
 	}
@@ -148,9 +156,11 @@ func (h *Handler) DeletePlantSpecies(c *gin.Context) {
 	if err := h.service.DeleteSpecies(id, userID); err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {
+			log.Printf("Error: %s\n", err)
 			c.JSON(http.StatusNotFound, gin.H{"error": valErr.Message, "field": valErr.Field})
 			return
 		}
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar tipo de planta"})
 		return
 	}
@@ -168,6 +178,7 @@ func (h *Handler) ToggleFavorite(c *gin.Context) {
 	userID := userIDFromContext(c)
 	favorited, err := h.service.ToggleFavorite(id, userID)
 	if err != nil {
+		log.Printf("Error: %s\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al cambiar favorito"})
 		return
 	}

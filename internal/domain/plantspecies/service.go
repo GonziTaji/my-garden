@@ -60,7 +60,7 @@ func (s *Service) CreateSpecies(input UpsertSpeciesInput, userID int64) (*PlantS
 		return nil, err
 	}
 
-	validated.UserID = &userID
+	validated.UserID = userID
 	validated.Visibility = "public"
 	validated.IsQuick = input.IsQuick
 
@@ -81,7 +81,7 @@ func (s *Service) UpdateSpecies(id int64, input UpsertSpeciesInput, userID int64
 	if existing == nil {
 		return nil, &ValidationError{Field: "id", Message: "Tipo de planta no encontrado"}
 	}
-	if existing.UserID == nil || *existing.UserID != userID {
+	if existing.UserID != userID {
 		return nil, &ValidationError{Field: "id", Message: "No tienes permiso para editar este tipo de planta"}
 	}
 
@@ -96,7 +96,7 @@ func (s *Service) UpdateSpecies(id int64, input UpsertSpeciesInput, userID int64
 	}
 
 	validated.ID = id
-	validated.UserID = &userID
+	validated.UserID = userID
 	validated.Visibility = existing.Visibility
 	if err := s.store.UpdatePlantSpecies(validated); err != nil {
 		return nil, fmt.Errorf("update species: %w", err)
@@ -130,7 +130,7 @@ func (s *Service) DeleteSpecies(id int64, userID int64) error {
 	if existing == nil {
 		return &ValidationError{Field: "id", Message: "Tipo de planta no encontrado"}
 	}
-	if existing.UserID == nil || *existing.UserID != userID {
+	if existing.UserID != userID {
 		return &ValidationError{Field: "id", Message: "No tienes permiso para eliminar este tipo de planta"}
 	}
 
