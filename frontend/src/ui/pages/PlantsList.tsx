@@ -2,6 +2,7 @@ import { useSearch, useNavigate } from '@tanstack/react-router'
 import PlantGrid from '@/ui/components/PlantGrid'
 import WateringList from '@/ui/components/WateringList'
 import { cn } from '@sglara/cn'
+import WateringHistoryGridv2 from '../components/WateringHistoryGridv2'
 
 type Tab = 'list' | 'water' | 'history'
 

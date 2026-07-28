@@ -5,6 +5,11 @@ import { inputVariants } from '../classVariants/input'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { ImageManagerField } from '@/ui/components/ImageManagerField'
 import { LocationChangeDialog } from './LocationChangeDialog'
+import { SpeciesChangeDialog } from './SpeciesChangeDialog'
+import PlantCalendar from './PlantCalendar'
+import { useMonthSelector } from '@/hooks/use-month-selector'
+import DateUtils from '@/utils/dates'
+import { useSpeciesById } from '@/api/species'
 
 interface PlantDetailProps {
   plant: PlantWithSpecies
@@ -14,6 +19,12 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   const [editingField, setEditingField] = useState<'nickname' | 'acquiredAt' | 'notes' | null>(null)
   const [editingImages, setEditingImages] = useState(false)
   const navigate = useNavigate()
+  const { data: species, isLoading: isSpeciesLoading } = useSpeciesById(plant?.species.id!)
+
+  const { monthIndex, year, setPreviousMonth, setNextMonth } = useMonthSelector({
+    defaultMonthIndex: new Date().getMonth(),
+    defaultYear: new Date().getFullYear(),
+  })
 
   return (
     <section className="mx-4 my-4 p-6 flex flex-col gap-6 bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30">
@@ -47,23 +58,37 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
           defaultValue={plant.nickname}
           className={inputVariants({
             disabled: editingField !== 'nickname',
+            className: 'text-2xl',
           })}
+          onClick={() => setEditingField('nickname')}
           onBlur={() => setEditingField(null)}
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-neutral-strong">Tipo</label>
-        <Link to="/catalog">
-          <div className="flex gap-2 items-baseline group">
-            <span className="text-lg font-medium text-neutral-dark group-hover:text-primary-dark transition-colors">
-              {plant.species.commonName}
-            </span>
-            <span className="italic text-xs text-neutral-strong">
-              {plant.species.scientificName}
-            </span>
-          </div>
-        </Link>
+        <span className="flex gap-3 items-center">
+          <Link to="/catalog">
+            {species && (
+              <div className="p-3 flex gap-2 baseline group items-center border rounded-md border-primary-strong bg-primary-default">
+                <img className="aspect-square w-12 rounded-sm" src={species.images[0].filepath} />
+                <div className="flex flex-col items-baseline">
+                  <span className="text-lg font-medium text-neutral-dark group-hover:text-primary-dark transition-colors">
+                    {species.commonName}
+                  </span>
+                  <span className="italic text-xs text-neutral-strong">{species.scientificName}</span>
+                </div>
+              </div>
+            )}
+          </Link>
+          <button
+            className={buttonVariants({ variant: 'clean', size: 'sm' })}
+            command="show-modal"
+            commandfor="create-species-change-dialog"
+          >
+            Cambiar
+          </button>
+        </span>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -86,8 +111,18 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-neutral-strong">Notas</label>
-        <span className="text-neutral-dark">{plant.notes || '-'}</span>
+        <label htmlFor="notes" className="text-sm font-medium text-neutral-strong">Notas</label>
+        <textarea
+          id="notes"
+          name="notes"
+          defaultValue={plant.notes || ''}
+          placeholder="-"
+          className={inputVariants({
+            disabled: editingField !== 'notes',
+          })}
+          onClick={() => setEditingField('notes')}
+          onBlur={() => setEditingField(null)}
+        />
       </div>
 
       <hr className="border-neutral-subtle/40" />
@@ -110,6 +145,46 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         />
       </div>
 
+      <hr className="border-neutral-subtle/40" />
+
+      <div>
+        <span className="text-sm font-medium text-neutral-strong">Eventos</span>
+
+        <span className="block text-center">{DateUtils.toMonthDisplayValue(monthIndex, year)}</span>
+
+        <div className="flex gap-2 items-center justify-center">
+          <button
+            type="button"
+            onClick={setPreviousMonth}
+            className={buttonVariants({ variant: 'primary', className: 'min-w-min' })}
+          >
+            &lt;
+          </button>
+
+          <div className="shadow-sm ">
+            <PlantCalendar plantId={plant.id} monthIndex={monthIndex} year={year} />
+          </div>
+
+          <button
+            type="button"
+            onClick={setNextMonth}
+            className={buttonVariants({ variant: 'primary', className: 'min-w-min' })}
+          >
+            &gt;
+          </button>
+        </div>
+
+        <div className="pt-4 flex justify-center gap-4">
+          <button type="button" className={buttonVariants({ variant: 'primary' })}>
+            Riego rapido
+          </button>
+
+          <button type="button" className={buttonVariants({ variant: 'primary' })}>
+            Crear evento
+          </button>
+        </div>
+      </div>
+
       <div className="flex justify-end gap-4">
         <Link
           to="/catalog/$plantspeciesid/new-plant"
@@ -121,6 +196,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       </div>
 
       <LocationChangeDialog plantId={plant.id} />
+      <SpeciesChangeDialog plantId={plant.id} currentSpeciesId={plant.species.id} />
     </section>
   )
 }

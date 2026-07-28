@@ -4,6 +4,7 @@ const DateUtils = {
   toDisplayDate,
   toMonthInputValue,
   formatRelativeDate,
+  toMonthDisplayValue,
 }
 
 export default DateUtils
@@ -73,6 +74,14 @@ function toMonthInputValue(monthIndex: number, year: number) {
   }
 
   return `${year}-${month}`
+}
+
+function toMonthDisplayValue(monthIndex: number, year: number) {
+  const d = new Date()
+  d.setMonth(monthIndex)
+  d.setFullYear(year)
+
+  return Intl.DateTimeFormat('default', { month: 'short', year: 'numeric' }).format(d)
 }
 
 function formatRelativeDate(dateStr: string): string {

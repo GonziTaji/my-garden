@@ -98,7 +98,7 @@ export default function PlantCalendar({ plantId, onDaySelect, monthIndex, year }
             disabled={gridDay.date === null || isLoading}
             key={gridDay.date?.toString() || i}
             className={cn(
-              'text-center m-1.5 w-8 h-8 rounded-lg cursor-pointer text-sm transition-all duration-150',
+              'text-center  w-8 h-8 rounded-lg cursor-pointer text-sm transition-all duration-150',
               gridDay.date === null && 'cursor-default',
               gridDay.isToday &&
                 !gridDay.isWatered &&

@@ -28,4 +28,16 @@ if [ "$species_count" -eq 0 ] && [ -d "$SEED_DIR" ]; then
   echo "=== Seed complete ==="
 fi
 
+# Backup database with timestamp
+if [ -f "$DB_PATH" ]; then
+  BACKUP_DIR="/app/data/backups"
+  mkdir -p "$BACKUP_DIR"
+  BACKUP_FILE="$BACKUP_DIR/main_$(date +%Y%m%d_%H%M%S).db"
+  cp "$DB_PATH" "$BACKUP_FILE"
+  echo "=== Database backed up to $BACKUP_FILE ==="
+
+  # Keep only the last 30 backups
+  ls -1t "$BACKUP_DIR"/main_*.db 2>/dev/null | tail -n +31 | xargs rm -f 2>/dev/null || true
+fi
+
 exec "$@"

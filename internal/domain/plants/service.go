@@ -37,9 +37,9 @@ type UpdatePlantInput struct {
 }
 
 type Service struct {
-	store         StoreInterface
-	speciesStore  PlantSpeciesStore
-	eventStore    EventStore
+	store        StoreInterface
+	speciesStore PlantSpeciesStore
+	eventStore   EventStore
 }
 
 func NewService(store StoreInterface, speciesStore PlantSpeciesStore, eventStore EventStore) *Service {
@@ -126,7 +126,36 @@ func (s *Service) GetPlant(id int64, userID int64) (*PlantWithSpecies, error) {
 }
 
 func (s *Service) ListPlants(speciesID *int64, userID int64) ([]PlantWithSpecies, error) {
-	return s.store.ListPlantsWithSpecies(speciesID, userID)
+	plants, err := s.store.ListPlantsWithSpecies(speciesID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	speciesImageCache := make(map[int64]string)
+	for i := range plants {
+		if len(plants[i].Images) > 0 {
+			continue
+		}
+		speciesID := plants[i].PlantSpecies.ID
+		if filepath, ok := speciesImageCache[speciesID]; ok {
+			if filepath != "" {
+				plants[i].Images = []PlantImage{{PlantID: plants[i].ID, Filepath: filepath}}
+			}
+			continue
+		}
+		filepaths, err := s.speciesStore.GetSpeciesImageFilepaths(speciesID)
+		if err != nil {
+			return nil, fmt.Errorf("get species images: %w", err)
+		}
+		if len(filepaths) > 0 {
+			speciesImageCache[speciesID] = filepaths[0]
+			plants[i].Images = []PlantImage{{PlantID: plants[i].ID, Filepath: filepaths[0]}}
+		} else {
+			speciesImageCache[speciesID] = ""
+		}
+	}
+
+	return plants, nil
 }
 
 func (s *Service) UpdatePlant(id int64, input UpdatePlantInput, userID int64) (*PlantWithSpecies, error) {

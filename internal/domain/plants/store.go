@@ -85,9 +85,11 @@ func (s *Store) ListPlantsWithSpecies(speciesID *int64, userID int64) ([]PlantWi
 			 where plant_id = p.id and event_type = 'location_change'
 			 order by event_date desc, id desc limit 1),
 			''
-		) as location
+		) as location,
+		spi.filepath
 	from plants p
 	inner join plant_species sp on sp.id = p.plant_species_id
+	inner join plant_species_images spi on sp.id = spi.plant_species_id
 	where p.user_id = ?`
 
 	if speciesID != nil {
@@ -106,11 +108,13 @@ func (s *Store) ListPlantsWithSpecies(speciesID *int64, userID int64) ([]PlantWi
 	plants := make([]PlantWithSpecies, 0)
 	for rows.Next() {
 		var p PlantWithSpecies
+		var speciesFilepath string
+
 		err := rows.Scan(&p.ID, &p.Nickname, &p.Source, &p.AcquiredAt,
 			&p.Notes, &p.CreatedAt, &p.UpdatedAt,
 			&p.PlantSpecies.ID, &p.PlantSpecies.CommonName, &p.PlantSpecies.ScientificName,
 			&p.PlantSpecies.UserID, &p.PlantSpecies.Visibility, &p.PlantSpecies.DeletedAt,
-			&p.Location)
+			&p.Location, &speciesFilepath)
 		if err != nil {
 			return nil, fmt.Errorf("scan plant with species: %w", err)
 		}

@@ -4,6 +4,7 @@ import "my-garden/internal/domain/plantevents"
 
 type PlantSpeciesStore interface {
 	ExistsPlantSpecies(int64) (bool, error)
+	GetSpeciesImageFilepaths(int64) ([]string, error)
 }
 
 type StoreInterface interface {
