@@ -49,6 +49,16 @@ type UploadResult struct {
 	Filepath string `json:"filepath"`
 }
 
+func (s *Service) GetAllowedMimeTypes() []string {
+	keys := []string{}
+
+	for key := range allowedMIMETypes {
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
 func (s *Service) UploadFile(file *multipart.FileHeader) (*UploadResult, error) {
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if !allowedExtensions[ext] {

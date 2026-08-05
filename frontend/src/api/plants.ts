@@ -6,10 +6,7 @@ const base = import.meta.env.BASE_URL
 import type { PlantImage, PlantWithSpecies } from '@/domain/plants/plant'
 import type { PlantSpecies } from '@/domain/plants/plant-species'
 
-export async function deletePlantImage(
-  plantId: number,
-  imageId: number
-): Promise<void> {
+export async function deletePlantImage(plantId: number, imageId: number): Promise<void> {
   const res = await fetch(`${base}api/plants/${plantId}/images/${imageId}`, {
     method: 'DELETE',
   })
@@ -19,10 +16,7 @@ export async function deletePlantImage(
   }
 }
 
-export async function addPlantImage(
-  plantId: number,
-  file: File
-): Promise<PlantImage> {
+export async function addPlantImage(plantId: number, file: File): Promise<PlantImage> {
   const fd = new FormData()
   fd.append('file', file)
   const res = await fetch(`${base}api/plants/${plantId}/images`, {
@@ -133,11 +127,13 @@ export function usePlant(id: number) {
 
 export function useUpsertPlant(id?: number) {
   const qc = useQueryClient()
+
   const url = id ? `/api/plants/${id}` : '/api/plants'
+  const fn = id ? api.put<ApiPlantWithSpecies> : api.post<ApiPlantWithSpecies>
 
   return useMutation({
     mutationFn: (input: UpsertPlantInput) => {
-      return api.post<ApiPlantWithSpecies>(url, input)
+      return fn(url, input)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plants'] })

@@ -10,6 +10,7 @@ import PlantCalendar from './PlantCalendar'
 import { useMonthSelector } from '@/hooks/use-month-selector'
 import DateUtils from '@/utils/dates'
 import { useSpeciesById } from '@/api/species'
+import { useToggleWatering } from '@/api/watering'
 
 interface PlantDetailProps {
   plant: PlantWithSpecies
@@ -19,12 +20,15 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
   const [editingField, setEditingField] = useState<'nickname' | 'acquiredAt' | 'notes' | null>(null)
   const [editingImages, setEditingImages] = useState(false)
   const navigate = useNavigate()
+  const toggleWatering = useToggleWatering()
   const { data: species, isLoading: isSpeciesLoading } = useSpeciesById(plant?.species.id!)
 
   const { monthIndex, year, setPreviousMonth, setNextMonth } = useMonthSelector({
     defaultMonthIndex: new Date().getMonth(),
     defaultYear: new Date().getFullYear(),
   })
+
+  function handleImagePathsChange() {}
 
   return (
     <section className="mx-4 my-4 p-6 flex flex-col gap-6 bg-surface-raised rounded-xl shadow-sm border border-neutral-subtle/30">
@@ -67,19 +71,27 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
 
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-neutral-strong">Tipo</label>
+
         <span className="flex gap-3 items-center">
           <Link to="/catalog">
-            {species && (
-              <div className="p-3 flex gap-2 baseline group items-center border rounded-md border-primary-strong bg-primary-default">
-                <img className="aspect-square w-12 rounded-sm" src={species.images[0].filepath} />
-                <div className="flex flex-col items-baseline">
-                  <span className="text-lg font-medium text-neutral-dark group-hover:text-primary-dark transition-colors">
-                    {species.commonName}
-                  </span>
-                  <span className="italic text-xs text-neutral-strong">{species.scientificName}</span>
-                </div>
-              </div>
-            )}
+            <div className="p-3 flex gap-2 baseline group items-center border rounded-md border-primary-strong bg-primary-default">
+              {isSpeciesLoading && '...'}
+              {species && (
+                <>
+                  <img className="aspect-square w-12 rounded-sm" src={species.images[0].filepath} />
+
+                  <div className="flex flex-col items-baseline">
+                    <span className="text-lg font-medium text-neutral-dark group-hover:text-primary-dark transition-colors">
+                      {species.commonName}
+                    </span>
+
+                    <span className="italic text-xs text-neutral-strong">
+                      {species.scientificName}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
           </Link>
           <button
             className={buttonVariants({ variant: 'clean', size: 'sm' })}
@@ -111,7 +123,9 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="notes" className="text-sm font-medium text-neutral-strong">Notas</label>
+        <label htmlFor="notes" className="text-sm font-medium text-neutral-strong">
+          Notas
+        </label>
         <textarea
           id="notes"
           name="notes"
@@ -142,6 +156,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         <ImageManagerField
           defaultImagePaths={plant.images.map(({ filepath }) => filepath)}
           readOnly={!editingImages}
+          onImagePathsChange={handleImagePathsChange}
         />
       </div>
 
@@ -175,7 +190,16 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
         </div>
 
         <div className="pt-4 flex justify-center gap-4">
-          <button type="button" className={buttonVariants({ variant: 'primary' })}>
+          <button
+            type="button"
+            className={buttonVariants({ variant: 'primary' })}
+            onClick={() =>
+              toggleWatering.mutate({
+                plantId: plant.id,
+                date: DateUtils.toInputValue(new Date()),
+              })
+            }
+          >
             Riego rapido
           </button>
 
@@ -196,7 +220,7 @@ export default function PlantDetails({ plant }: PlantDetailProps) {
       </div>
 
       <LocationChangeDialog plantId={plant.id} />
-      <SpeciesChangeDialog plantId={plant.id} currentSpeciesId={plant.species.id} />
+      <SpeciesChangeDialog plantId={plant.id} currentSpeciesId={plant.species.id!} />
     </section>
   )
 }

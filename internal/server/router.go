@@ -12,12 +12,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"my-garden/internal/auth"
 	"my-garden/internal/domain/plantevents"
 	"my-garden/internal/domain/plants"
 	"my-garden/internal/domain/plantspecies"
 	"my-garden/internal/domain/upload"
 	"my-garden/internal/domain/users"
-	"my-garden/internal/auth"
 	"my-garden/internal/email"
 )
 
@@ -143,6 +143,7 @@ func (g *AppRouter) mountApiRoutes() {
 		protected.POST("/plant-species/:id/favorite", plantspeciesHandler.ToggleFavorite)
 
 		protected.POST("/uploads", uploadHandler.UploadFile)
+		protected.GET("/uploads/mimetypes", uploadHandler.GetAllowedMimeTypes)
 		protected.DELETE("/uploads/*filepath", uploadHandler.DeleteUploadedFile)
 
 		protected.GET("/plants", plantsHandler.ListPlants)

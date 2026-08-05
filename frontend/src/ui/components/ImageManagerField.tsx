@@ -7,7 +7,7 @@ import {
   useImperativeHandle,
   type ChangeEventHandler,
 } from 'react'
-import { useImageUploads } from '@/api/uploads'
+import { useAllowedMimeTypes, useImageUploads } from '@/api/uploads'
 import useDialog from '@/hooks/use-dialog'
 import { ImageSourceDialog } from '@/ui/components/ImageSourceDialog'
 import { ImageDeleteDialog } from '@/ui/components/ImageDeleteDialog'
@@ -47,6 +47,7 @@ export const ImageManagerField = forwardRef<ImageManagerHandle, ImageManagerFiel
     const [isUploading, setIsUploading] = useState(false)
 
     const { uploadImage, deleteImage } = useImageUploads()
+    const { data: mimetypes } = useAllowedMimeTypes()
 
     const deleteImageDialogRef = useRef<HTMLDialogElement>(null)
     const { show: showConfirmDeleteImageDialog, close: closeConfirmDeleteImageDialog } = useDialog({
@@ -175,8 +176,8 @@ export const ImageManagerField = forwardRef<ImageManagerHandle, ImageManagerFiel
                 onChange={handleImageUpload}
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                multiple
+                accept={mimetypes?.join(',')}
+                multiple={maxImages > 1}
                 hidden
               />
 

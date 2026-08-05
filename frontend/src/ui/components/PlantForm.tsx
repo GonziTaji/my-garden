@@ -57,8 +57,16 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
           acquired_at: fd.get('acquiredAt')?.toString() || undefined,
           notes: fd.get('notes')?.toString() || undefined,
           plant_species_id: plantSpeciesId,
-          images: fd.getAll('images').map((entry) => entry.toString()),
+          images: fd.getAll('images').map((v) => v.toString()),
         })
+
+        console.log(
+          fd,
+          fd.getAll('images'),
+          fd.getAll('images').map((v) => v.toString())
+        )
+
+        console.log(result)
 
         await imageManagerRef.current?.commitDeletions()
 
@@ -89,6 +97,8 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
       }
     })
   }
+
+  const plantSpeciesSelected = plantSpecies?.find((ps) => ps.id === plantSpeciesId)
 
   return (
     <form
@@ -142,6 +152,8 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
           defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
           imageInputName="images"
           onIsUploadingChange={setIsUploading}
+          onImagePathsChange={(v) => console.log(v)}
+          maxImages={1}
         />
 
         <div className="flex flex-col gap-1.5">
@@ -153,7 +165,7 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
             id="nickname"
             name="nickname"
             type="text"
-            defaultValue={plant?.nickname ?? ''}
+            defaultValue={plant?.nickname ?? plantSpeciesSelected?.commonName}
             placeholder="Mi monstera del balcón"
             minLength={1}
             disabled={isPending}
@@ -254,7 +266,6 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
           </button>
         </div>
       )}
-
     </form>
   )
 }

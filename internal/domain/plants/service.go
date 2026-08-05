@@ -30,10 +30,13 @@ type CreatePlantInput struct {
 }
 
 type UpdatePlantInput struct {
-	Nickname   *string `json:"nickname"`
-	Source     *string `json:"source"`
-	AcquiredAt *string `json:"acquired_at"`
-	Notes      *string `json:"notes"`
+	Nickname       *string   `json:"nickname"`
+	Source         *string   `json:"source"`
+	AcquiredAt     *string   `json:"acquired_at"`
+	Notes          *string   `json:"notes"`
+	PlantSpeciesID *int64    `json:"plant_species_id"`
+	Location       *string   `json:"location"`
+	Images         *[]string `json:"images"`
 }
 
 type Service struct {
@@ -183,9 +186,71 @@ func (s *Service) UpdatePlant(id int64, input UpdatePlantInput, userID int64) (*
 	if input.Notes != nil {
 		existing.Notes = NewNullString(*input.Notes)
 	}
+	if input.PlantSpeciesID != nil {
+		exists, err := s.speciesStore.ExistsPlantSpecies(*input.PlantSpeciesID)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			return nil, &ValidationError{Field: "plant_species_id", Message: "El tipo de planta seleccionado no existe"}
+		}
+		existing.PlantSpeciesID = *input.PlantSpeciesID
+	}
 
 	if err := s.store.UpdatePlant(existing); err != nil {
 		return nil, fmt.Errorf("update plant: %w", err)
+	}
+
+	if input.Location != nil && *input.Location != "" {
+		eventDate := time.Now().Format("2006-01-02")
+		if input.AcquiredAt != nil {
+			eventDate = *input.AcquiredAt
+		}
+		meta, _ := json.Marshal(struct {
+			Location string `json:"location"`
+		}{Location: *input.Location})
+		_, err := s.eventStore.CreateEvent(&plantevents.PlantEvent{
+			PlantID:   id,
+			EventType: plantevents.EventTypeLocationChange,
+			EventDate: eventDate,
+			Notes:     "Location update",
+			Metadata:  meta,
+			UserID:    userID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create location event: %w", err)
+		}
+	}
+
+	if input.Images != nil {
+		desired := make(map[string]struct{}, len(*input.Images))
+		for _, filepath := range *input.Images {
+			desired[filepath] = struct{}{}
+		}
+
+		existingImages, err := s.store.GetPlantImages(id)
+		if err != nil {
+			return nil, fmt.Errorf("get plant images: %w", err)
+		}
+
+		existingPaths := make(map[string]struct{}, len(existingImages))
+		for _, img := range existingImages {
+			existingPaths[img.Filepath] = struct{}{}
+			if _, ok := desired[img.Filepath]; !ok {
+				if err := s.store.DeletePlantImage(img.ID); err != nil {
+					return nil, fmt.Errorf("delete plant image: %w", err)
+				}
+			}
+		}
+
+		for _, filepath := range *input.Images {
+			if _, ok := existingPaths[filepath]; ok {
+				continue
+			}
+			if _, err := s.store.CreatePlantImage(id, filepath); err != nil {
+				return nil, fmt.Errorf("create plant image: %w", err)
+			}
+		}
 	}
 
 	return s.store.GetPlantWithSpecies(id, userID)

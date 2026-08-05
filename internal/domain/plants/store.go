@@ -53,10 +53,10 @@ func (s *Store) CreatePlant(p *Plant) (int64, error) {
 func (s *Store) UpdatePlant(p *Plant) error {
 	_, err := s.db.Exec(`
 		update plants
-		set nickname = ?, source = ?, acquired_at = ?, notes = ?,
+		set nickname = ?, source = ?, plant_species_id = ?, acquired_at = ?, notes = ?,
 			updated_at = datetime('now', 'localtime')
 		where id = ? and user_id = ?
-	`, p.Nickname, p.Source, p.AcquiredAt, p.Notes, p.ID, p.UserID)
+	`, p.Nickname, p.Source, p.PlantSpeciesID, p.AcquiredAt, p.Notes, p.ID, p.UserID)
 	if err != nil {
 		return fmt.Errorf("update plant: %w", err)
 	}

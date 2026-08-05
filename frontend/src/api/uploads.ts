@@ -1,5 +1,13 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from './client'
+
+export function useAllowedMimeTypes() {
+  return useQuery({
+    queryKey: [],
+    queryFn: () => api.get<{ mimetypes: string[] }>('/api/uploads/mimetypes'),
+    select: (data) => data.mimetypes,
+  })
+}
 
 export function useImageUploads() {
   const uploadMutation = useMutation({

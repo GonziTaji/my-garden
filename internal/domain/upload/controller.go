@@ -17,6 +17,10 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+func (h *Handler) GetAllowedMimeTypes(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"mimetypes": h.service.GetAllowedMimeTypes()})
+}
+
 func (h *Handler) UploadFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {

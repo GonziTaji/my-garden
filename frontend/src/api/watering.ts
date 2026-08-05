@@ -17,6 +17,11 @@ export function useToggleWatering() {
       }),
     onSuccess: (_data, { plantId }) => {
       qc.invalidateQueries({ queryKey: ['events', plantId] })
+      qc.invalidateQueries({ queryKey: ['events', 'calendar', plantId] })
+      qc.invalidateQueries({ queryKey: ['events', 'last-dates'] })
+      qc.invalidateQueries({ queryKey: ['events', 'range'] })
+      qc.invalidateQueries({ queryKey: ['watering', 'last-watered'] })
+      qc.invalidateQueries({ queryKey: ['plant', 'watering', plantId] })
     },
   })
 }
