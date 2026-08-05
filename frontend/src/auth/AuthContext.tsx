@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { api } from '@/api/client'
+import { api } from '@/ui/shared/queries/client'
 
 export interface User {
   id: number
