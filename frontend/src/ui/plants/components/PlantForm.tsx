@@ -4,7 +4,10 @@ import { useNavigate, Link } from '@tanstack/react-router'
 import { cn } from '@sglara/cn'
 import { useUpsertPlant, useDeletePlant } from '@/ui/plants/queries/plants'
 import { useSpecies } from '@/ui/plant-species/queries/species'
-import { ImageManagerField, type ImageManagerHandle } from '@/ui/uploads/components/ImageManagerField'
+import {
+  ImageManagerField,
+  type ImageManagerHandle,
+} from '@/ui/uploads/components/ImageManagerField'
 import type { PlantWithSpecies } from '@/domain/plants/plant'
 import DateUtils from '@/utils/dates'
 import { inputVariants } from '@/ui/class-variants/input'
@@ -98,6 +101,8 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
     })
   }
 
+  function handleImagePathsChange(_paths: string[]) {}
+
   const plantSpeciesSelected = plantSpecies?.find((ps) => ps.id === plantSpeciesId)
 
   return (
@@ -152,7 +157,7 @@ export default function PlantForm({ plant, plantSpeciesId: propsPlantSpeciesId }
           defaultImagePaths={plant?.images.map(({ filepath }) => filepath)}
           imageInputName="images"
           onIsUploadingChange={setIsUploading}
-          onImagePathsChange={(v) => console.log(v)}
+          onImagePathsChange={handleImagePathsChange}
           maxImages={1}
         />
 

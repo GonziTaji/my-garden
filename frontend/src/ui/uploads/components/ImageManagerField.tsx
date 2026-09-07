@@ -46,6 +46,17 @@ export const ImageManagerField = forwardRef<ImageManagerHandle, ImageManagerFiel
     const [deletedPaths, setDeletedPaths] = useState<string[]>([])
     const [isUploading, setIsUploading] = useState(false)
 
+    const defaultImagesKey = defaultImagePaths.join('\u0000')
+    const [defaultImagesKeyState, setDefaultImagesKeyState] = useState(defaultImagesKey)
+
+    useEffect(() => {
+      if (defaultImagesKey !== defaultImagesKeyState) {
+        setDefaultImagesKeyState(defaultImagesKey)
+        setImagePaths(defaultImagePaths)
+        setDeletedPaths([])
+      }
+    }, [defaultImagesKey, defaultImagesKeyState, defaultImagePaths])
+
     const { uploadImage, deleteImage } = useImageUploads()
     const { data: mimetypes } = useAllowedMimeTypes()
 
